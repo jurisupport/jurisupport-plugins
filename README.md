@@ -68,7 +68,7 @@ claude
 |---|---|---|
 | macOS (Apple Silicon / Intel) | ✅ 완전 지원 | 권장 |
 | Linux (Ubuntu 22.04+) | ✅ 완전 지원 | |
-| Windows | ⏳ 추후 지원 | WSL2로 Linux 환경 사용 권장 |
+| Windows + WSL2 | ✅ 지원 | [WINDOWS_WSL.md](WINDOWS_WSL.md) 참조 |
 
 ---
 
@@ -136,6 +136,8 @@ claude
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 기여 가이드 |
 | [SECURITY.md](SECURITY.md) | 보안 정책 |
 | [LICENSE](LICENSE) | MIT + 한국어 면책 |
+| [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) | 강의 청중 사전 설치 가이드 (Mac/Linux) |
+| [WINDOWS_WSL.md](WINDOWS_WSL.md) | 윈도우 사용자 WSL2 설치 가이드 |
 
 ---
 
