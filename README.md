@@ -28,11 +28,37 @@
 
 ## 빠른 시작
 
+### 옵션 A — 한 줄 자동 설치 (권장, Mac/Linux)
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/bootstrap.sh)
+```
+
+위 한 줄이 **Homebrew → jq·git·python·node → Claude Code → 본 패키지 git clone**까지 자동으로 설치합니다 (약 5~10분).
+
+사전 준비:
+- **Claude Pro/Max 가입** (https://claude.ai/upgrade) — 결제 필요, 자동화 불가
+- **관리자 비밀번호** — Homebrew 설치 시 1회 입력
+
+bootstrap 완료 후:
+```bash
+claude                            # 새 터미널에서 OAuth 로그인 1회
+cd ~/jurisupport-plugins && ./install.sh   # 본 패키지 구성요소 설치
+```
+
+### 옵션 B — 수동 설치
+
+사전 준비물을 직접 설치한 경우:
+
 ```bash
 git clone https://github.com/jurisupport/jurisupport-plugins.git
 cd jurisupport-plugins
 ./install.sh
 ```
+
+수동 사전 설치 가이드: [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) (Mac/Linux) / [WINDOWS_WSL.md](WINDOWS_WSL.md) (Windows)
+
+---
 
 설치 후 첫 사건폴더에서:
 
