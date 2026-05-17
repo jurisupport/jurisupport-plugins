@@ -56,15 +56,27 @@ info "Platform: $PLATFORM"
 step "1. Checking prerequisites"
 
 command -v claude >/dev/null || error "Claude Code (CLI) not installed. See https://docs.claude.com/claude-code"
-command -v jq >/dev/null || {
-  warn "jq not installed (needed for data protection hook)"
-  if [[ "$PLATFORM" == "mac" ]]; then
-    echo "  Install: brew install jq"
-  else
-    echo "  Install: sudo apt install jq"
-  fi
-}
 command -v git >/dev/null || error "git required"
+
+# jq is required for hook registration — try auto-install
+if ! command -v jq >/dev/null 2>&1; then
+  warn "jq not installed (required for data protection hook)"
+  if [[ "$PLATFORM" == "mac" ]]; then
+    if command -v brew >/dev/null 2>&1; then
+      info "Auto-installing jq via Homebrew..."
+      brew install jq >/dev/null 2>&1 && info "✓ jq installed" || error "jq install failed. Run manually: brew install jq"
+    else
+      error "Homebrew not installed. Install from https://brew.sh first, then re-run."
+    fi
+  else
+    if command -v apt-get >/dev/null 2>&1; then
+      info "Auto-installing jq via apt..."
+      sudo apt-get install -y jq >/dev/null 2>&1 && info "✓ jq installed" || error "jq install failed. Run manually: sudo apt install jq"
+    else
+      error "Please install jq for your distro and re-run."
+    fi
+  fi
+fi
 
 # ============================================================
 # 2. Data protection hook (always installed)
