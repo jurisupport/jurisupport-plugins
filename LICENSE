@@ -1,0 +1,32 @@
+MIT License
+
+Copyright (c) 2026 쥬리서포트 주식회사 (JuriSupport Inc.)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 사용 책임 면책 (Korean / additional)
+
+본 패키지는 도구일 뿐, 변호사 본인의 검증·판단·법적 책임을 대체하지 아니합니다.
+
+- 클로드코드 및 본 패키지가 생성한 어떠한 결과물(준비서면·법령 인용·판례 인용 등)도
+  변호사 본인의 검증을 거치지 아니하고 법원·의뢰인·상대방에 제출·전달되어서는 아니 됩니다.
+- 의뢰인의 비밀유지의무는 본 패키지를 사용하는 변호사 본인의 절대적 책임입니다.
+- 본 패키지의 데이터 보호 Hook은 보조 수단일 뿐, 완전한 유출 방지를 보장하지 아니합니다.

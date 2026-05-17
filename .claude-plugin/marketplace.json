@@ -1,0 +1,17 @@
+{
+  "name": "jurisupport-plugins",
+  "description": "쥬리서포트 법조 실무 플러그인 마켓플레이스 (한국 민사·송무·자문 워크플로우)",
+  "owner": {
+    "name": "쥬리서포트",
+    "email": "admin@jurisupport.com"
+  },
+  "plugins": [
+    {
+      "name": "songmu-legal",
+      "description": "송무 워크플로우 플러그인 — 사건기록 분석, 쟁점 추출, 서면 초안 작성, 인용 검증, 정본 등록, PDF 산출까지 일괄 처리 (한국 민사소송법 기반). 법원 전자제출은 사용자 수동.",
+      "category": "legal",
+      "source": "./plugins/songmu-legal",
+      "homepage": "https://jurisupport.com"
+    }
+  ]
+}

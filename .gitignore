@@ -1,0 +1,33 @@
+# 사용자 비밀 (Gemini API 키 등)
+**/secrets.env
+**/.env
+**/.env.local
+
+# 사용자 로컬 데이터 (legal-books·case-records DB 본체는 ~/legal-books/, ~/case-records/에 따로 생성)
+toolkit/legal-books/db/
+toolkit/case-records/db/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+logs/
+
+# submodule으로 가져올 자료 — 사용자 노트북에서만 채워짐
+plugins/songmu-legal/CLAUDE.md
