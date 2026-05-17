@@ -24,28 +24,28 @@ esac
 # ============================================================
 # Check Chrome installed (Selenium needs it)
 # ============================================================
-info "Chrome 확인 중 / Checking Chrome installation..."
+info "Chrome 확인 중..."
 if [[ "$PLATFORM" == "mac" ]]; then
   if [[ ! -d "/Applications/Google Chrome.app" ]]; then
     if command -v brew >/dev/null 2>&1; then
-      info "Chrome 자동 설치 중 (Homebrew cask) / Installing Chrome via brew cask..."
+      info "Chrome 자동 설치 중 (Homebrew cask)..."
       brew install --cask google-chrome 2>&1 | tail -3
       if [[ -d "/Applications/Google Chrome.app" ]]; then
-        info "✓ Chrome 설치 완료 / installed"
+        info "✓ Chrome 설치 완료"
       else
-        warn "Chrome 자동 설치 실패 / install failed."
-        echo "  수동 다운로드 / Download manually: https://www.google.com/chrome/"
-        error "Chrome 설치 후 다시 실행 / Install Chrome and re-run."
+        warn "Chrome 자동 설치 실패"
+        echo "  수동 다운로드: https://www.google.com/chrome/"
+        error "Chrome 설치 후 다시 실행하세요."
       fi
     else
-      warn "Homebrew 없음 — Chrome 수동 설치 필요 / brew not found — install Chrome manually:"
+      warn "Homebrew 없음 — Chrome 수동 설치 필요:"
       echo "  https://www.google.com/chrome/"
-      error "Chrome 설치 후 다시 실행 / Install Chrome and re-run."
+      error "Chrome 설치 후 다시 실행하세요."
     fi
   fi
 else
   if ! command -v google-chrome >/dev/null && ! command -v chromium >/dev/null; then
-    info "Chrome 자동 설치 중 (apt + Google 저장소) / Installing Chrome..."
+    info "Chrome 자동 설치 중 (apt + Google 저장소)..."
     # Google 서명키 + 저장소
     if [[ ! -f /etc/apt/trusted.gpg.d/google.gpg ]]; then
       wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google.gpg
@@ -56,19 +56,37 @@ else
     sudo apt-get update -q
     sudo apt-get install -y google-chrome-stable
     if command -v google-chrome >/dev/null; then
-      info "✓ Chrome 설치 완료 / installed: $(google-chrome --version 2>&1 | head -1)"
+      info "✓ Chrome 설치 완료: $(google-chrome --version 2>&1 | head -1)"
     else
-      warn "google-chrome-stable 설치 실패 → chromium-browser 시도 / Trying chromium..."
+      warn "google-chrome-stable 설치 실패 → chromium-browser 시도..."
       sudo apt-get install -y chromium-browser 2>&1 | tail -3
       if command -v chromium-browser >/dev/null || command -v chromium >/dev/null; then
-        info "✓ Chromium 설치 완료 / installed"
+        info "✓ Chromium 설치 완료"
       else
-        error "Chrome/Chromium 설치 실패 / install failed. 수동 설치 후 다시 실행 / Install manually and re-run."
+        error "Chrome/Chromium 설치 실패. 수동 설치 후 다시 실행하세요."
       fi
     fi
   fi
 fi
-info "✓ Chrome 확인됨 / found"
+info "✓ Chrome 확인됨"
+
+# ============================================================
+# Python venv 패키지 확인 (Ubuntu/Debian은 python3-venv 별도 필요)
+# ============================================================
+if [[ "$PLATFORM" == "linux" ]]; then
+  # python3-venv가 없으면 venv 생성 실패. 자동 설치.
+  if ! python3 -c "import ensurepip" 2>/dev/null; then
+    info "python3-venv 자동 설치 중..."
+    # python3.XX-venv 또는 일반 python3-venv 시도
+    PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+    sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
+      sudo apt-get install -y python3-venv 2>&1 | tail -3
+    if ! python3 -c "import ensurepip" 2>/dev/null; then
+      error "python3-venv 설치 실패. 수동 설치 후 다시 실행: sudo apt install python3-venv"
+    fi
+    info "✓ python3-venv 설치 완료"
+  fi
+fi
 
 # ============================================================
 # Python version
@@ -132,11 +150,11 @@ else
   warn "작동 확인 실패. 수동 시도: $ROOT/scripts/search.sh '키워드'"
 fi
 
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}법고을 자동 검색 toolkit 설치 완료${NC}"
+echo -e "${GREEN}========================================${NC}"
 cat <<EOF
-
-${GREEN}========================================
-법고을 자동 검색 toolkit 설치 완료
-========================================${NC}
 
 CLI 사용법:
   ~/jurisupport-beopgoeul/scripts/search.sh "소멸시효 채무승인"

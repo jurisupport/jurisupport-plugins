@@ -139,6 +139,15 @@ install_pkg "git"     "git"         "git"
 install_pkg "python3" "python@3.11" "python3"
 install_pkg "node"    "node"        "nodejs"
 
+# Ubuntu/Debian은 python3-venv 별도 패키지
+if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
+  info "python3-venv 설치 중..."
+  PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+  sudo apt-get install -y "$PYV" python3-venv >/dev/null 2>&1 || \
+    sudo apt-get install -y python3-venv >/dev/null 2>&1
+  info "✓ python3-venv 설치 완료"
+fi
+
 # Linux Node가 너무 오래된 버전이면 NodeSource로 재설치
 if [[ "$PLATFORM" == "linux" ]]; then
   NODE_MAJOR=$(node -v 2>/dev/null | sed 's/v\([0-9]*\).*/\1/' || echo 0)

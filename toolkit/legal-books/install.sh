@@ -68,6 +68,14 @@ mkdir -p "$ROOT/books" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 # Python venv + packages
 # ============================================================
 info "Python 가상환경 생성"
+# Ubuntu/Debian은 python3-venv 별도 설치 필요
+if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
+  info "python3-venv 자동 설치 중..."
+  PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+  sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
+    sudo apt-get install -y python3-venv 2>&1 | tail -3
+  python3 -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
+fi
 python3 -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/bin/activate"
@@ -176,11 +184,11 @@ fi
 # ============================================================
 # Done
 # ============================================================
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}legal-books toolkit 설치 완료${NC}"
+echo -e "${GREEN}========================================${NC}"
 cat <<EOF
-
-${GREEN}========================================
-legal-books toolkit 설치 완료
-========================================${NC}
 
 다음 단계:
   1. 첫 책 스캔 (300dpi, 컬러)
