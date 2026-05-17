@@ -36,9 +36,11 @@ https://claude.ai/upgrade 에서 Pro 이상 가입 + 결제 완료.
 | macOS Apple Silicon | ✅ 가장 권장 |
 | macOS Intel | ✅ |
 | Ubuntu 22.04+ | ✅ |
-| Windows | ⏳ 본 패키지 미지원 (WSL2 사용 필요) |
+| Windows + WSL2 | ✅ (단 추가 설치 30~60분 더) |
 
-Windows만 있으신 분은 강의 전 WSL2(Ubuntu) 설치를 권장하지만, 강의 효율을 위해 가능하면 Mac/Linux 노트북을 빌려서 오시면 좋습니다.
+**Windows 사용자**: 본 패키지는 윈도우 직접 지원 안 함. WSL2(Ubuntu)에서 사용해야 합니다. → **[WINDOWS_WSL.md](WINDOWS_WSL.md) 별도 가이드 참조**.
+
+WSL 설치 자체는 5~15분이지만, 그 안에서 다시 사전 설치 6가지(Node·Chrome 등)를 진행해야 하므로 가능하면 Mac/Linux 노트북을 빌려서 오시는 게 강의 효율상 유리합니다.
 
 ---
 
