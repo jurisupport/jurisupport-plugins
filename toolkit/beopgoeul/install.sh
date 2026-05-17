@@ -24,16 +24,34 @@ esac
 # ============================================================
 # Check Chrome installed (Selenium needs it)
 # ============================================================
-info "Checking Chrome installation..."
+info "Chrome 확인 중 / Checking Chrome installation..."
 if [[ "$PLATFORM" == "mac" ]]; then
   if [[ ! -d "/Applications/Google Chrome.app" ]]; then
-    error "Google Chrome not found. Install from https://www.google.com/chrome/"
+    warn "Google Chrome이 없습니다. 다음에서 다운로드 / Not found. Download from:"
+    echo "  https://www.google.com/chrome/"
+    error "Chrome 설치 후 다시 실행 / Install Chrome and re-run."
   fi
 else
-  command -v google-chrome >/dev/null || command -v chromium >/dev/null \
-    || error "Chrome/Chromium not installed. Install via apt or your package manager."
+  if ! command -v google-chrome >/dev/null && ! command -v chromium >/dev/null; then
+    warn "Chrome/Chromium 미설치 / not installed."
+    read -r -p "지금 자동 설치할까요? / Install Google Chrome now via apt? [Y/n]: " ans
+    if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+      info "Chrome 자동 설치 중 / Installing Chrome..."
+      wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google.gpg
+      echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google.list >/dev/null
+      sudo apt-get update -q
+      sudo apt-get install -y google-chrome-stable
+      if command -v google-chrome >/dev/null; then
+        info "✓ Chrome 설치 완료 / installed: $(google-chrome --version)"
+      else
+        error "Chrome 설치 실패 / install failed. 수동 설치 후 다시 실행 / Install manually and re-run."
+      fi
+    else
+      error "Chrome 없이는 beopgoeul-search toolkit 사용 불가 / Cannot install toolkit without Chrome."
+    fi
+  fi
 fi
-info "✓ Chrome found"
+info "✓ Chrome 확인됨 / found"
 
 # ============================================================
 # Python version

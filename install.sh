@@ -24,15 +24,16 @@ cat <<'BANNER'
 
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
-║   jurisupport-plugins installer                              ║
+║   jurisupport-plugins installer                                ║
 ║   변호사용 클로드코드 통합 패키지 설치                          ║
 ║                                                                ║
 ╠════════════════════════════════════════════════════════════════╣
 ║                                                                ║
-║   ⚠️ 설치 전 반드시 읽어야 할 문서:                            ║
+║   ⚠️ 설치 전 반드시 읽어야 할 문서 / Required reading:         ║
 ║      guides/00_security.md (의뢰인 정보 보호 원칙)             ║
 ║                                                                ║
-║   설치를 계속하시려면 Enter, 취소하려면 Ctrl+C.                ║
+║   계속: Enter / Continue: Enter                                ║
+║   취소: Ctrl+C  / Cancel: Ctrl+C                               ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
 
@@ -155,55 +156,56 @@ done
 step "5. Setting up case info CSV template"
 
 if [[ ! -d "$HOME/사건" ]]; then
-  read -r -p "Create ~/사건 directory and copy CSV template? [Y/n] " ans
+  read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? / Create ~/사건 dir and copy CSV template? [Y/n] " ans
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "Skipped. You can run: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
+    info "건너뛰기 / Skipped. 나중에 실행 / Run later: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
   else
     mkdir -p "$HOME/사건"
     cp "$TOOLKIT_DIR/templates/사건정보_관리표.csv" "$HOME/사건/_사건정보관리표.csv"
     cp "$TOOLKIT_DIR/templates/사건정보_입력가이드.md" "$HOME/사건/_입력가이드.md"
-    info "Templates copied to ~/사건/"
+    info "템플릿 복사됨 / Templates copied to ~/사건/"
   fi
 else
-  info "~/사건 already exists. Templates available at $TOOLKIT_DIR/templates/"
+  info "~/사건 이미 존재 / already exists. Templates at $TOOLKIT_DIR/templates/"
 fi
 
 # ============================================================
 # 6. Optional: legal-books toolkit
 # ============================================================
-step "6. (Optional) legal-books search server"
+step "6. (선택) legal-books 검색 서버 / Optional: legal-books search server"
 
-read -r -p "Install legal-books search server now? [y/N] " ans
+read -r -p "legal-books 검색 서버 지금 설치? / Install legal-books server now? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh"
+  bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패 / install failed. 나중에 재시도 / Retry later."
 else
-  info "Skipped. Run later: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
+  info "건너뛰기 / Skipped. 나중에 / Run later: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
 fi
 
 # ============================================================
 # 7. Optional: case-records toolkit
 # ============================================================
-step "7. (Optional) case-records search server"
+step "7. (선택) case-records 검색 서버 / Optional: case-records search server"
 
-read -r -p "Install case-records search server now? [y/N] " ans
+read -r -p "case-records 검색 서버 지금 설치? / Install case-records server now? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/case-records/install.sh"
+  bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패 / install failed. 나중에 재시도 / Retry later."
 else
-  info "Skipped. Run later: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
+  info "건너뛰기 / Skipped. 나중에 / Run later: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
 fi
 
 # ============================================================
 # 8. Optional: beopgoeul (법고을) auto-search toolkit
 # ============================================================
-step "8. (Optional) 법고을 (lx.scourt.go.kr) auto-search via Selenium"
+step "8. (선택) 법고을 자동 검색 (Selenium) / Optional: 법고을 auto-search"
 
-read -r -p "Install 법고을 auto-search toolkit? [y/N] " ans
+read -r -p "법고을 자동 검색 toolkit 지금 설치? / Install 법고을 auto-search toolkit? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
+  # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
+  bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패 / install failed. lbox-guide(수동) 사용 가능 / Use lbox-guide as fallback."
 else
-  info "Skipped. Without this, beopgoeul-search skill will be unavailable."
-  info "Use lbox-guide skill (manual search) as fallback."
-  info "Install later: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
+  info "건너뛰기 / Skipped. beopgoeul-search 스킬 비활성 / unavailable."
+  info "대안: lbox-guide(수동 검색) / Alternative: lbox-guide manual search."
+  info "나중에 설치 / Install later: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
 fi
 
 # ============================================================
@@ -212,17 +214,18 @@ fi
 cat <<EOF
 
 ${GREEN}========================================
-✓ jurisupport-plugins installation complete.
+✓ 설치 완료 / installation complete.
 ========================================${NC}
 
-Next steps:
-  1. Read: $TOOLKIT_DIR/guides/00_security.md (5 min)
-  2. Open a new Claude Code session in any directory:
+다음 단계 / Next steps:
+  1. 필독 / Read: $TOOLKIT_DIR/guides/00_security.md (5분 / 5 min)
+  2. 새 터미널에서 / In a new terminal:
        claude
-  3. Try: "안녕. 설치된 스킬과 플러그인 보여줘."
-  4. First real case: /songmu-legal:cold-start-interview
-  5. First brief: /songmu-legal:brief-protocol
+  3. 시작 명령 / Try:
+       "안녕. 설치된 스킬과 플러그인 보여줘."
+  4. 첫 사건 / First case: /songmu-legal:cold-start-interview
+  5. 첫 준비서면 / First brief: /songmu-legal:brief-protocol
 
-Full guide: $TOOLKIT_DIR/README.md
+전체 가이드 / Full guide: $TOOLKIT_DIR/README.md
 
 EOF
