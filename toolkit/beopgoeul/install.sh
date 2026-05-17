@@ -18,7 +18,7 @@ OS="$(uname -s)"
 case "$OS" in
   Darwin*) PLATFORM="mac" ;;
   Linux*)  PLATFORM="linux" ;;
-  *) error "Unsupported OS: $OS (Mac/Linux only)" ;;
+  *) error "지원하지 않는 OS: $OS (macOS/Linux만 지원)" ;;
 esac
 
 # ============================================================
