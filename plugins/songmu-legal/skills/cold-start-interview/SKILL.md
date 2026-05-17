@@ -68,7 +68,8 @@ metadata:
 기본값 제시 + 변경 여부 확인:
 
 - 법령 인용 시 `korean-law` MCP 검증 **필수** (기본 ON)
-- 판례 인용 시 `lbox-search` 검증 **필수** (기본 ON)
+- 판례 인용 자동 검증: `korean-law` 1차 + `beopgoeul-search`(법고을) 2차 **필수** (기본 ON)
+  - ⚠️ `lbox-search` 스킬은 자동 호출하지 않음(도구 불안정). lbox.kr 사이트 자체는 사용자가 직접 수동 검색해 결과를 알려주는 방식으로만 활용
 - 직접인용은 원문 글자 단위 일치, 못 맞추면 간접인용 (기본 ON)
 - 교과서 인용 시 저자·서명·페이지 명시 (기본 ON)
 
@@ -82,12 +83,25 @@ metadata:
 - HWP 변환은 비활성 (한글 품질 신뢰 어려움)
 - docx 변환 시 점(•) 글머리 사용? (기본 OFF)
 
-### Step 5: 사건기록 저장소
+### Step 5: 사건기록 저장소 + CSV 사건 인덱스
 
-- JuriSupport (기본)
+#### 5-1. 저장소 경로
+- JuriSupport (기본, 연동된 경우)
 - 로컬 디렉토리 경로 확인 (`~/법원기록_md/`, `~/법원기록/`)
 - OneDrive rclone 리모트명 확인 (`onedrive:`)
 - 구글드라이브 사용 여부 (기본 OFF)
+
+#### 5-2. CSV 사건 인덱스 (JuriSupport 미사용자 또는 보조 사용자)
+JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확인:
+
+- "CSV 사건 인덱스를 사용하시겠습니까?"
+  - **사용 (JuriSupport 미연동자 기본)**: 경로를 묻는다. 기본 제안: `<클라우드 사건폴더 경로>/_index.csv`
+  - **사용 (JuriSupport 보조)**: 사용자가 명시 요청한 경우에만. 백업·오프라인 뷰 용도
+  - **미사용 (JuriSupport 전용자 기본)**: JuriSupport가 정본
+- CSV 경로 확정되면:
+  - 파일이 없으면 `python3 <plugin>/skills/case-index/case_index.py --csv <경로> init` 으로 헤더만 생성
+  - CLAUDE.md §5에 경로 기록 (`<CSV 사건 인덱스 경로>` placeholder 치환)
+- 컬럼은 고정: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`
 
 ### Step 6: 법원 제출 정책 안내
 
@@ -126,6 +140,7 @@ metadata:
 - `<업무 이메일>` / `<개인 이메일>` → 입력
 - `<로컬 사건기록 디렉토리 경로>` → 입력 (예: `/Users/xxx/법원기록_md/`)
 - `<클라우드 사건폴더 경로>` → 입력 (예: `onedrive:진행중사건/`)
+- `<CSV 사건 인덱스 경로>` → 입력 (예: `onedrive:진행중사건/_index.csv`) 또는 "사용 안함"
 
 ### Step 11: 메모리 동기화
 

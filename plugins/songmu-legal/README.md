@@ -5,14 +5,22 @@
 ## 무엇이 들어있나
 
 ### 스킬 (이 플러그인)
-- **`/songmu-legal:cold-start-interview`** — 사무소 플레이북 학습 (최초 1회). 의뢰인 호칭 규칙, 인용 표기 정책, 파일 포맷, 사건기록 저장 위치 등을 인터뷰하여 CLAUDE.md를 채운다.
+- **`/songmu-legal:cold-start-interview`** — 사무소 플레이북 학습 (최초 1회). 의뢰인 호칭 규칙, 인용 표기 정책, 파일 포맷, 사건기록 저장 위치, CSV 사건 인덱스 경로 등을 인터뷰하여 CLAUDE.md를 채운다.
 - **`/songmu-legal:brief-protocol`** — 준비서면 작성 표준 절차 (intake → 사건기록 → 쟁점 → 교과서·판례 검증 → MD 초안 → 정본 등록 → PDF 추출까지의 오케스트레이션).
+- **`/songmu-legal:case-index`** — CSV 한 파일(`_index.csv`)로 사건 목록·다음기일을 관리. JuriSupport MCP 미사용자용 정본, 또는 연동자의 백업·오프라인 뷰. list/get/add/update/close 명령 제공.
 
 ### 참조하는 공개 인프라 (배포본에서 기본 작동)
-- **korean-law MCP** — 법령·판례 실존 확인 (필수 검증 경로)
+- **korean-law MCP** — 법령·판례 실존 확인 (필수 1차 검증 경로)
   - `search_law`, `get_law_text` — 법령
   - `search_precedents`, `get_precedent_text` — 판례
+- **beopgoeul-search 스킬** — 법고을(대법원도서관 lx.scourt.go.kr) 무료 공식 판례 검색 (2차 검증, korean-law에서 못 찾았을 때)
 - **로컬 파일 시스템** — 초안·정본 모두 Markdown 파일로 저장 (기본값)
+
+> ⚠️ **lbox-search 스킬은 자동 호출하지 않는다** — 도구 불안정으로 결과 신뢰 불가. 자동 판례 검증은 korean-law(1차) → 법고을(2차) 경로만 사용. lbox.kr 사이트 자체는 사용자가 직접 수동 검색해 결과를 알려주는 방식으로 활용 가능.
+
+### 경량 대안: CSV 사건 인덱스 (배포본 포함)
+
+JuriSupport를 쓰지 않는 사용자는 `case-index` 스킬로 CSV 한 파일에 사건 목록을 유지할 수 있습니다. 컬럼: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`. 엑셀로 직접 열어 편집해도 되고, 헬퍼 스크립트로 add/update/close 가능. 콜드스타트에서 경로를 설정합니다 (기본 제안: `<클라우드 사건폴더 경로>/_index.csv`).
 
 ### 권장 통합: JuriSupport MCP
 
@@ -40,7 +48,6 @@
 - **hearing-check** (글로벌 스킬) — 2주 이내 기일 점검
 - **case-records** (글로벌 스킬) — 과거 사건 DB 하이브리드 검색
 - **legal-books** (글로벌 스킬) — 교과서 DB 검색 (사용자 보유 서적)
-- **lbox-search** (글로벌 스킬) — 개인 lbox.kr 계정 기반 판례 진본 검색
 - **google-workspace MCP** — 개인 캘린더·Gmail
 - **plugin:telegram** — 개인 텔레그램 봇 토큰
 
@@ -57,7 +64,7 @@
 
 이 플러그인이 활성화되면 모든 송무 작업에 다음 규칙이 적용된다:
 - 법령 인용 시 `korean-law` MCP로 실존 확인 (필수)
-- 판례 인용은 `korean-law` MCP `search_precedents`가 1차 검증. lbox-search는 로컬 옵션
+- 판례 인용은 `korean-law` MCP `search_precedents`가 1차 검증, 법고을(`beopgoeul-search`)이 2차 검증. lbox-search 스킬 자동 호출 금지 (lbox.kr 자체는 사용자 수동 검색용)
 - 직접인용(" ")은 원문과 글자 단위로 일치, 아니면 간접인용
 - 출처 표기 필수 (저자, 서명, 페이지)
 - 서면 제출은 사용자 명시 허락 후 (전자서명·전자제출 직전 정지)

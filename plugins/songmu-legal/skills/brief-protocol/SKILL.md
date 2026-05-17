@@ -1,6 +1,6 @@
 ---
 name: brief-protocol
-description: 준비서면 작성 표준 절차 - 사건 인테이크부터 정본 등록·PDF 추출까지 일관된 오케스트레이션. brief-draft, korean-law, JuriSupport(또는 MD) 스킬을 순서대로 호출하고 각 단계에서 사용자 승인을 받음. 법원 전자제출 자체는 자동화하지 않으며 사용자가 직접 수행.
+description: 준비서면 작성 표준 절차 - 사건 인테이크부터 정본 등록·PDF 추출까지 일관된 오케스트레이션. brief-draft, korean-law, beopgoeul-search, JuriSupport(또는 MD) 스킬을 순서대로 호출하고 각 단계에서 사용자 승인을 받음. 판례 자동 검증은 korean-law 1차 + 법고을 2차 (lbox-search 스킬 자동 호출 안 함, lbox는 사용자 수동 검색용). 법원 전자제출 자체는 자동화하지 않으며 사용자가 직접 수행.
 license: MIT
 metadata:
   category: legal
@@ -34,7 +34,12 @@ metadata:
 - **제출 기한** (선택)
 - **특별 지시사항** (선택)
 
-`hearing-check` 스킬로 임박 기일 확인:
+#### 사건 메타데이터 조회 (다음 순서)
+1. JuriSupport MCP 연동 시: `get_case` / `list_cases` 로 사건 정보 확보
+2. 미연동 또는 못 찾으면: **`case-index` 스킬** 로 CSV 인덱스 조회 — `case_index.py --csv <CSV 사건 인덱스 경로> get <사건번호>`
+3. 두 곳 모두 없으면 사용자에게 직접 묻고, 확인된 정보는 CSV에 `add` 하거나 (JuriSupport 연동 시) `create_case` 호출
+
+`hearing-check` 스킬(있다면) 또는 case-index의 `list --upcoming-days 14`로 임박 기일 확인:
 - 2주 이내 기일이 있으면 알림
 - 기한 역산 (제출 기한이 없으면 기일 5일 전 권장)
 
@@ -69,18 +74,23 @@ metadata:
 ```
 초안의 모든 "대법원 0000. 0. 00. 선고 0000다00000 판결" 패턴 추출
 
-[1차 검증 — 공개 인프라, 플러그인 기본 동작]
+[1차 검증 — korean-law MCP, 플러그인 기본 동작]
 → korean-law MCP search_precedents(query=판례번호 또는 키워드) 호출
 → 결과에 동일 판례번호가 있으면 ✅ 일치
 → get_precedent_text 로 본문 확보 후 인용구 글자단위 비교
 
-[2차 검증 — 로컬 전용, lbox-search 스킬이 설치되어 있을 때만]
-→ 1차에서 못 찾은 판례만 lbox-search 스킬로 재조회
-→ lbox-search는 사용자 개인 계정 기반이므로 플러그인 배포본에는 포함되지 않음
-→ lbox-search 스킬이 없으면 이 단계는 자동 스킵
+[2차 검증 — 법고을(beopgoeul-search), 무료 공식 인프라]
+→ 1차에서 못 찾은 판례만 beopgoeul-search 스킬로 재조회
+  (대법원도서관 lx.scourt.go.kr, ~/jurisupport-beopgoeul/ toolkit)
+→ 사건번호·법원·선고일·PDF URL을 구조화 데이터로 반환
+→ beopgoeul-search 스킬이 없으면 이 단계는 자동 스킵
+
+⚠️ lbox-search **스킬 자동 호출 금지** — 도구 불안정으로 결과 신뢰 불가.
+   다만 lbox.kr 사이트 자체는 사용자가 직접 수동 검색해도 됨 (필요 시 사용자에게 안내).
 
 [최종 처리]
-→ 두 경로 모두 실패 → "(미확인)" 표시 또는 인용 제거 제안
+→ 두 경로 모두 실패 → "(미확인)" 표시하고 사용자에게 보고
+→ 사용자가 lbox.kr 등에서 수동으로 확인해 알려주면 그 결과를 반영
 → 절대 가짜 판례번호를 그대로 두지 말 것
 ```
 
