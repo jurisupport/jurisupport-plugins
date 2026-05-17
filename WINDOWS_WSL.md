@@ -169,6 +169,33 @@ https://aistudio.google.com/apikey 에서 키 발급. 강의에서 등록.
 
 ---
 
+## Step 4-A. (대안) bootstrap.sh 한 줄 자동 설치
+
+위 4-1 ~ 4-4 (시스템 도구 + Node + Claude Code + git clone)를 **수동으로 하지 않고 한 줄로 자동 설치**할 수 있습니다.
+
+WSL Ubuntu 터미널에서:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/bootstrap.sh)
+```
+
+→ 약 5~10분 자동 진행. sudo 비밀번호 1회 입력만 필요.
+
+bootstrap.sh가 자동으로 설치하는 것:
+- jq, git, python3, build-essential
+- Node.js LTS (NodeSource)
+- Claude Code (`npm install -g @anthropic-ai/claude-code`)
+- jurisupport-plugins git clone → `~/jurisupport-plugins/`
+
+자동으로 **하지 않는** 것 (사용자 별도 진행):
+- Google Chrome 설치 (4-4 명령으로 수동)
+- Gemini API 키 발급 (4-6)
+- `claude` OAuth 로그인 (bootstrap 후 본인이 `claude` 실행)
+
+→ **Chrome + Gemini는 강의 전 수동 진행** 권장. 그 외는 bootstrap에 맡겨도 됩니다.
+
+---
+
 ## Step 5. 검증 (강의 전날 셀프 점검)
 
 WSL Ubuntu 터미널에서 다음을 모두 실행:
