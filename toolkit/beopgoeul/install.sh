@@ -77,14 +77,14 @@ PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info
 PYMAJ=$(echo "$PYV" | cut -d. -f1)
 PYMIN=$(echo "$PYV" | cut -d. -f2)
 if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 9 ]]; then
-  error "Python 3.9+ required (found $PYV)"
+  error "Python 3.9 이상 필요 (현재 $PYV)"
 fi
 
 # ============================================================
 # Install
 # ============================================================
 ROOT="$HOME/jurisupport-beopgoeul"
-info "Installing to $ROOT"
+info "설치 위치: $ROOT"
 mkdir -p "$ROOT/scripts"
 
 python3 -m venv "$ROOT/.venv"
@@ -92,7 +92,7 @@ python3 -m venv "$ROOT/.venv"
 source "$ROOT/.venv/bin/activate"
 pip install --quiet --upgrade pip
 pip install --quiet selenium==4.25.0
-info "Selenium installed"
+info "Selenium 설치 완료"
 
 # Copy search script
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -119,31 +119,31 @@ cp "$TOOLKIT_DIR/../../skills/beopgoeul-search/SKILL.md" "$SKILL_DST/SKILL.md"
 # Remove old beopgoeul-guide if exists (replaced by beopgoeul-search)
 if [[ -d "$HOME/.claude/skills/beopgoeul-guide" ]]; then
   rm -rf "$HOME/.claude/skills/beopgoeul-guide"
-  info "Removed old beopgoeul-guide skill (replaced by beopgoeul-search)"
+  info "옛 beopgoeul-guide 스킬 제거 (beopgoeul-search로 교체됨)"
 fi
 
 # ============================================================
 # Smoke test
 # ============================================================
-info "Smoke test..."
+info "작동 확인 중..."
 if "$ROOT/scripts/search.sh" "민법 제162조" --max 1 >/dev/null 2>&1; then
-  info "✓ Smoke test passed"
+  info "✓ 작동 확인 완료"
 else
-  warn "Smoke test failed. Try manually: $ROOT/scripts/search.sh '키워드'"
+  warn "작동 확인 실패. 수동 시도: $ROOT/scripts/search.sh '키워드'"
 fi
 
 cat <<EOF
 
 ${GREEN}========================================
-법고을 자동 검색 toolkit installed.
+법고을 자동 검색 toolkit 설치 완료
 ========================================${NC}
 
-CLI usage:
+CLI 사용법:
   ~/jurisupport-beopgoeul/scripts/search.sh "소멸시효 채무승인"
   ~/jurisupport-beopgoeul/scripts/search.sh "2024다302217" --max 1
   ~/jurisupport-beopgoeul/scripts/search.sh "민법 750조" --format json
 
-In Claude Code (skill: beopgoeul-search):
+클로드코드에서 (스킬: beopgoeul-search):
   "법고을에서 시효 완성 후 채무승인 판결 찾아줘"
   → 클로드가 자동으로 search.sh 호출, 결과 정리
 

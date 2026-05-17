@@ -44,37 +44,37 @@ OS="$(uname -s)"
 case "$OS" in
   Darwin*) PLATFORM="mac" ;;
   Linux*)  PLATFORM="linux" ;;
-  *) error "Unsupported OS: $OS. Mac/Linux only. Windows: use WSL2." ;;
+  *) error "지원하지 않는 OS: $OS. macOS/Linux만 지원합니다. (Windows는 WSL2 사용)" ;;
 esac
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-info "Toolkit directory: $TOOLKIT_DIR"
-info "Platform: $PLATFORM"
+info "패키지 경로: $TOOLKIT_DIR"
+info "플랫폼: $PLATFORM"
 
 # ============================================================
 # 1. Prerequisites
 # ============================================================
-step "1. Checking prerequisites"
+step "1. 필수 도구 확인"
 
-command -v claude >/dev/null || error "Claude Code (CLI) not installed. See https://docs.claude.com/claude-code"
-command -v git >/dev/null || error "git required"
+command -v claude >/dev/null || error "클로드코드(CLI) 미설치. 설치: https://docs.claude.com/claude-code"
+command -v git >/dev/null || error "git 필요. (먼저 git 설치 후 재실행)"
 
 # jq is required for hook registration — try auto-install
 if ! command -v jq >/dev/null 2>&1; then
-  warn "jq not installed (required for data protection hook)"
+  warn "jq 미설치 (데이터 보호 Hook에 필요)"
   if [[ "$PLATFORM" == "mac" ]]; then
     if command -v brew >/dev/null 2>&1; then
-      info "Auto-installing jq via Homebrew..."
-      brew install jq >/dev/null 2>&1 && info "✓ jq installed" || error "jq install failed. Run manually: brew install jq"
+      info "Homebrew로 jq 자동 설치 중..."
+      brew install jq >/dev/null 2>&1 && info "✓ jq 설치 완료" || error "jq 설치 실패. 수동 실행: brew install jq"
     else
-      error "Homebrew not installed. Install from https://brew.sh first, then re-run."
+      error "Homebrew 미설치. https://brew.sh 에서 먼저 설치 후 재실행."
     fi
   else
     if command -v apt-get >/dev/null 2>&1; then
-      info "Auto-installing jq via apt..."
-      sudo apt-get install -y jq >/dev/null 2>&1 && info "✓ jq installed" || error "jq install failed. Run manually: sudo apt install jq"
+      info "apt로 jq 자동 설치 중..."
+      sudo apt-get install -y jq >/dev/null 2>&1 && info "✓ jq 설치 완료" || error "jq 설치 실패. 수동 실행: sudo apt install jq"
     else
-      error "Please install jq for your distro and re-run."
+      error "사용 중인 배포판에 jq 설치 후 재실행."
     fi
   fi
 fi
@@ -82,7 +82,7 @@ fi
 # ============================================================
 # 2. Data protection hook (always installed)
 # ============================================================
-step "2. Installing data protection hook"
+step "2. 데이터 보호 Hook 설치"
 
 HOOK_SRC="$TOOLKIT_DIR/hooks/pretool_data_protection.sh"
 chmod +x "$HOOK_SRC"
@@ -100,44 +100,44 @@ if ! grep -q "pretool_data_protection.sh" "$SETTINGS"; then
       "hooks": [{"type": "command", "command": $cmd}]
     }]
   ' "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS"
-  info "Hook registered in $SETTINGS"
+  info "Hook 등록 완료: $SETTINGS"
 else
-  info "Hook already registered"
+  info "Hook 이미 등록됨"
 fi
 
 # ============================================================
 # 3. songmu-legal plugin (same repo — register only)
 # ============================================================
-step "3. Registering songmu-legal plugin"
+step "3. songmu-legal 플러그인 등록"
 
 SONGMU_LOCAL="$TOOLKIT_DIR/plugins/songmu-legal"
 SONGMU_DST="$HOME/.claude/plugins/cache/jurisupport-plugins/songmu-legal"
 
 if [[ ! -f "$SONGMU_LOCAL/.claude-plugin/plugin.json" ]]; then
-  warn "songmu-legal plugin not found at $SONGMU_LOCAL"
-  echo "  Did you clone the full repo? Run:"
+  warn "songmu-legal 플러그인 없음: $SONGMU_LOCAL"
+  echo "  전체 리포를 받으셨나요? 다음 실행:"
   echo "    git clone https://github.com/jurisupport/jurisupport-plugins.git"
 else
   mkdir -p "$(dirname "$SONGMU_DST")"
   if [[ -L "$SONGMU_DST" || -e "$SONGMU_DST" ]]; then
-    info "songmu-legal already registered"
+    info "songmu-legal 이미 등록됨"
   else
     ln -s "$SONGMU_LOCAL" "$SONGMU_DST"
-    info "songmu-legal registered"
+    info "songmu-legal 등록 완료"
   fi
 
   # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
   if [[ ! -f "$SONGMU_LOCAL/CLAUDE.md" ]] && [[ -f "$SONGMU_LOCAL/CLAUDE.md.example" ]]; then
     cp "$SONGMU_LOCAL/CLAUDE.md.example" "$SONGMU_LOCAL/CLAUDE.md"
-    info "Created $SONGMU_LOCAL/CLAUDE.md from template"
-    info "→ Run '/songmu-legal:cold-start-interview' in Claude Code to fill it"
+    info "템플릿에서 CLAUDE.md 생성: $SONGMU_LOCAL/CLAUDE.md"
+    info "→ 클로드코드에서 /songmu-legal:cold-start-interview 실행하여 채우세요"
   fi
 fi
 
 # ============================================================
 # 4. Skills (lbox-guide always; beopgoeul-search if toolkit installed later)
 # ============================================================
-step "4. Installing guide skills"
+step "4. 가이드 스킬 설치"
 
 SKILLS_DST="$HOME/.claude/skills"
 mkdir -p "$SKILLS_DST"
@@ -146,66 +146,66 @@ mkdir -p "$SKILLS_DST"
 for SKILL in lbox-guide; do
   mkdir -p "$SKILLS_DST/$SKILL"
   cp "$TOOLKIT_DIR/skills/$SKILL/SKILL.md" "$SKILLS_DST/$SKILL/SKILL.md"
-  info "Installed skill: $SKILL"
+  info "스킬 설치 완료: $SKILL"
 done
 # beopgoeul-search is installed conditionally below (Step 8)
 
 # ============================================================
 # 5. CSV template
 # ============================================================
-step "5. Setting up case info CSV template"
+step "5. 사건정보 관리표 템플릿 설정"
 
 if [[ ! -d "$HOME/사건" ]]; then
-  read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? / Create ~/사건 dir and copy CSV template? [Y/n] " ans
+  read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? [Y/n] " ans
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기 / Skipped. 나중에 실행 / Run later: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
+    info "건너뛰기. 나중에 실행: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
   else
     mkdir -p "$HOME/사건"
     cp "$TOOLKIT_DIR/templates/사건정보_관리표.csv" "$HOME/사건/_사건정보관리표.csv"
     cp "$TOOLKIT_DIR/templates/사건정보_입력가이드.md" "$HOME/사건/_입력가이드.md"
-    info "템플릿 복사됨 / Templates copied to ~/사건/"
+    info "템플릿을 ~/사건/ 에 복사 완료"
   fi
 else
-  info "~/사건 이미 존재 / already exists. Templates at $TOOLKIT_DIR/templates/"
+  info "~/사건 이미 존재. 템플릿은 $TOOLKIT_DIR/templates/ 에 있음"
 fi
 
 # ============================================================
 # 6. Optional: legal-books toolkit
 # ============================================================
-step "6. (선택) legal-books 검색 서버 / Optional: legal-books search server"
+step "6. (선택) legal-books 검색 서버 설치"
 
-read -r -p "legal-books 검색 서버 지금 설치? / Install legal-books server now? [y/N] " ans
+read -r -p "지금 설치할까요? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패 / install failed. 나중에 재시도 / Retry later."
+  bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
 else
-  info "건너뛰기 / Skipped. 나중에 / Run later: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
+  info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
 fi
 
 # ============================================================
 # 7. Optional: case-records toolkit
 # ============================================================
-step "7. (선택) case-records 검색 서버 / Optional: case-records search server"
+step "7. (선택) case-records 검색 서버 설치"
 
-read -r -p "case-records 검색 서버 지금 설치? / Install case-records server now? [y/N] " ans
+read -r -p "지금 설치할까요? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패 / install failed. 나중에 재시도 / Retry later."
+  bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패. 나중에 다시 시도하세요."
 else
-  info "건너뛰기 / Skipped. 나중에 / Run later: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
+  info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
 fi
 
 # ============================================================
 # 8. Optional: beopgoeul (법고을) auto-search toolkit
 # ============================================================
-step "8. (선택) 법고을 자동 검색 (Selenium) / Optional: 법고을 auto-search"
+step "8. (선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
-read -r -p "법고을 자동 검색 toolkit 지금 설치? / Install 법고을 auto-search toolkit? [y/N] " ans
+read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
   # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
-  bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패 / install failed. lbox-guide(수동) 사용 가능 / Use lbox-guide as fallback."
+  bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. 수동 검색용 lbox-guide 스킬은 사용 가능."
 else
-  info "건너뛰기 / Skipped. beopgoeul-search 스킬 비활성 / unavailable."
-  info "대안: lbox-guide(수동 검색) / Alternative: lbox-guide manual search."
-  info "나중에 설치 / Install later: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
+  info "건너뛰기. beopgoeul-search 스킬은 비활성화됩니다."
+  info "대신 lbox-guide 스킬(수동 검색)을 사용할 수 있습니다."
+  info "나중에 설치: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
 fi
 
 # ============================================================
@@ -214,18 +214,18 @@ fi
 cat <<EOF
 
 ${GREEN}========================================
-✓ 설치 완료 / installation complete.
+✓ 설치 완료
 ========================================${NC}
 
-다음 단계 / Next steps:
-  1. 필독 / Read: $TOOLKIT_DIR/guides/00_security.md (5분 / 5 min)
-  2. 새 터미널에서 / In a new terminal:
+다음 단계:
+  1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
+  2. 새 터미널에서 클로드코드 시작:
        claude
-  3. 시작 명령 / Try:
+  3. 시작 명령:
        "안녕. 설치된 스킬과 플러그인 보여줘."
-  4. 첫 사건 / First case: /songmu-legal:cold-start-interview
-  5. 첫 준비서면 / First brief: /songmu-legal:brief-protocol
+  4. 첫 사건 설정: /songmu-legal:cold-start-interview
+  5. 첫 준비서면: /songmu-legal:brief-protocol
 
-전체 가이드 / Full guide: $TOOLKIT_DIR/README.md
+전체 가이드: $TOOLKIT_DIR/README.md
 
 EOF

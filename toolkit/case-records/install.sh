@@ -14,19 +14,19 @@ OS="$(uname -s)"
 case "$OS" in
   Darwin*) PLATFORM="mac" ;;
   Linux*)  PLATFORM="linux" ;;
-  *) error "Unsupported OS: $OS (Mac/Linux only)" ;;
+  *) error "지원하지 않는 OS: $OS (macOS/Linux만 지원)" ;;
 esac
-info "Platform: $PLATFORM"
+info "플랫폼: $PLATFORM"
 
 # Prerequisites
-command -v python3 >/dev/null || error "Python 3.10+ required"
-command -v curl >/dev/null || error "curl required"
+command -v python3 >/dev/null || error "Python 3.10 이상 필요"
+command -v curl >/dev/null || error "curl 필요"
 
 ROOT="$HOME/case-records"
-info "Creating $ROOT"
+info "디렉토리 생성: $ROOT"
 mkdir -p "$ROOT/cases" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 
-info "Creating Python venv"
+info "Python 가상환경 생성"
 python3 -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/bin/activate"
@@ -36,7 +36,7 @@ pip install --quiet \
   sqlite-utils==3.37 google-genai==0.3.0 pypdf==5.0.1 \
   numpy==1.26.4 python-dotenv==1.0.1 python-docx==1.1.2
 
-info "Initializing SQLite DB"
+info "SQLite DB 초기화"
 python3 - <<'PY'
 import sqlite3, os
 ROOT = os.path.expanduser("~/case-records")
@@ -73,7 +73,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
 """)
 con.commit()
 con.close()
-print("DB initialized")
+print("DB 초기화 완료")
 PY
 
 # Reuse Gemini key from legal-books if exists
@@ -81,15 +81,15 @@ SECRETS="$HOME/.jurisupport/secrets.env"
 if [[ ! -f "$SECRETS" ]] || ! grep -q "GEMINI_API_KEY" "$SECRETS"; then
   mkdir -p "$(dirname "$SECRETS")"; chmod 700 "$(dirname "$SECRETS")"
   echo ""
-  echo "Gemini API key not yet registered (used for embeddings)."
-  echo "Get a free key at: https://aistudio.google.com/apikey"
-  read -r -p "Enter Gemini API key (or press Enter to skip): " GEMINI_KEY
+  echo "Gemini API 키 미등록 (임베딩에 사용)."
+  echo "무료 키 발급: https://aistudio.google.com/apikey"
+  read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY
   if [[ -n "${GEMINI_KEY:-}" ]]; then
     echo "GEMINI_API_KEY=${GEMINI_KEY}" >> "$SECRETS"
     chmod 600 "$SECRETS"
   fi
 else
-  info "Reusing existing Gemini API key from $SECRETS"
+  info "기존 Gemini API 키 재사용: $SECRETS"
 fi
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -106,32 +106,32 @@ cp "$TOOLKIT_DIR/../../skills/case-records/SKILL.md" "$SKILL_DST/SKILL.md"
 "$ROOT/scripts/server.sh" start
 sleep 2
 if curl -sf http://localhost:8767/health >/dev/null; then
-  info "Server running on port 8767"
+  info "서버 실행 중 (포트 8767)"
 else
-  warn "Server start failed. Check $ROOT/logs/server.log"
+  warn "서버 시작 실패. 로그 확인: $ROOT/logs/server.log"
 fi
 
 cat <<EOF
 
 ${GREEN}========================================
-case-records toolkit installed.
+case-records toolkit 설치 완료
 ========================================${NC}
 
-Next steps:
-  1. Index your first case:
+다음 단계:
+  1. 첫 사건 인덱싱:
        ~/case-records/scripts/ingest_case.sh \\
          --case-dir ~/사건/2018가단11111_홍○○_대여금 \\
          --case-id 2018가단11111 \\
          --case-name "홍○○ 대여금" \\
          --status 종결 --result 전부승소
 
-  2. Or batch-index all cases under ~/사건/:
+  2. 또는 ~/사건/ 아래 모든 사건 일괄 인덱싱:
        ~/case-records/scripts/ingest_all.sh --root ~/사건
 
-  3. Search test:
+  3. 검색 테스트:
        curl -X POST http://localhost:8767/search \\
          -H 'Content-Type: application/json' \\
          -d '{"query":"보증금","top_k":3}'
 
-Guide: ~/jurisupport-plugins/guides/03_case_records.md
+가이드: ~/jurisupport-plugins/guides/03_case_records.md
 EOF

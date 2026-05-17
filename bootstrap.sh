@@ -61,7 +61,7 @@ case "$OS" in
   Linux*)  PLATFORM="linux" ;;
   *) error "Unsupported OS: $OS. Mac/Linux only. Windows: WSL2 사용 (https://github.com/jurisupport/jurisupport-plugins/blob/main/WINDOWS_WSL.md)" ;;
 esac
-info "Platform: $PLATFORM"
+info "플랫폼: $PLATFORM"
 
 # ============================================================
 # 1. sudo pre-auth + background keepalive

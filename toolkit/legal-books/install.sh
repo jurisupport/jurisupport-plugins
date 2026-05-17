@@ -24,29 +24,29 @@ OS="$(uname -s)"
 case "$OS" in
   Darwin*) PLATFORM="mac" ;;
   Linux*)  PLATFORM="linux" ;;
-  *) error "Unsupported OS: $OS (Mac/Linux only). Windows users should use WSL2." ;;
+  *) error "지원하지 않는 OS: $OS (macOS/Linux만 지원). Windows는 WSL2 사용." ;;
 esac
-info "Detected platform: $PLATFORM"
+info "플랫폼: $PLATFORM"
 
 # ============================================================
 # Check prerequisites
 # ============================================================
-info "Checking prerequisites..."
+info "필수 도구 확인 중..."
 
 check_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
-    error "$1 is required but not installed. $2"
+    error "$1 필요. $2"
   fi
 }
 
-check_cmd python3 "Install Python 3.10+ first."
-check_cmd ocrmypdf "Run: brew install ocrmypdf  (Mac) or apt install ocrmypdf (Linux)"
-check_cmd tesseract "Run: brew install tesseract tesseract-lang  (Mac) or apt install tesseract-ocr tesseract-ocr-kor (Linux)"
-check_cmd curl "curl is required."
+check_cmd python3 "먼저 Python 3.10+ 설치."
+check_cmd ocrmypdf "설치: brew install ocrmypdf (Mac) 또는 apt install ocrmypdf (Linux)"
+check_cmd tesseract "설치: brew install tesseract tesseract-lang (Mac) 또는 apt install tesseract-ocr tesseract-ocr-kor (Linux)"
+check_cmd curl "curl 필요."
 
 # Check Tesseract Korean
 if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
-  error "Tesseract Korean language pack not installed. Mac: brew install tesseract-lang. Linux: apt install tesseract-ocr-kor"
+  error "Tesseract 한국어 언어팩 미설치. Mac: brew install tesseract-lang. Linux: apt install tesseract-ocr-kor"
 fi
 
 # Check Python version >= 3.10
@@ -54,25 +54,25 @@ PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info
 PYMAJ=$(echo "$PYV" | cut -d. -f1)
 PYMIN=$(echo "$PYV" | cut -d. -f2)
 if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 10 ]]; then
-  error "Python 3.10+ required (found $PYV)"
+  error "Python 3.10 이상 필요 (현재 $PYV)"
 fi
 
 # ============================================================
 # Directory layout
 # ============================================================
 ROOT="$HOME/legal-books"
-info "Creating directory layout at $ROOT"
+info "디렉토리 구조 생성: $ROOT"
 mkdir -p "$ROOT/books" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 
 # ============================================================
 # Python venv + packages
 # ============================================================
-info "Creating Python venv"
+info "Python 가상환경 생성"
 python3 -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/bin/activate"
 
-info "Installing Python packages (this may take a few minutes)"
+info "Python 패키지 설치 중 (수 분 소요)"
 pip install --quiet --upgrade pip
 pip install --quiet \
   fastapi==0.115.0 \
@@ -87,7 +87,7 @@ pip install --quiet \
 # ============================================================
 # Initialize SQLite DB
 # ============================================================
-info "Initializing SQLite DB"
+info "SQLite DB 초기화"
 python3 - <<'PY'
 import sqlite3, os, pathlib
 ROOT = os.path.expanduser("~/legal-books")
@@ -113,7 +113,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
 """)
 con.commit()
 con.close()
-print("DB initialized at", db_path)
+print("DB 초기화 완료:", db_path)
 PY
 
 # ============================================================
@@ -124,20 +124,20 @@ mkdir -p "$(dirname "$SECRETS")"
 chmod 700 "$(dirname "$SECRETS")"
 
 if [[ -f "$SECRETS" ]] && grep -q "GEMINI_API_KEY" "$SECRETS"; then
-  info "Gemini API key already registered in $SECRETS"
+  info "Gemini API 키 이미 등록됨: $SECRETS"
 else
   echo ""
   echo "================================================================"
-  echo "  Gemini API key registration"
-  echo "  Get a free key at: https://aistudio.google.com/apikey"
+  echo "  Gemini API 키 등록"
+  echo "  무료 키 발급: https://aistudio.google.com/apikey"
   echo "================================================================"
-  read -r -p "Enter your Gemini API key (or press Enter to skip): " GEMINI_KEY
+  read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY
   if [[ -n "${GEMINI_KEY:-}" ]]; then
     echo "GEMINI_API_KEY=${GEMINI_KEY}" >> "$SECRETS"
     chmod 600 "$SECRETS"
-    info "Saved to $SECRETS (chmod 600)"
+    info "저장 완료: $SECRETS (chmod 600)"
   else
-    warn "Skipped. Set later by adding GEMINI_API_KEY=xxx to $SECRETS"
+    warn "건너뛰기. 나중에 $SECRETS 에 GEMINI_API_KEY=xxx 추가."
   fi
 fi
 
@@ -145,7 +145,7 @@ fi
 # Copy server and scripts from toolkit
 # ============================================================
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-info "Copying server and scripts"
+info "서버·스크립트 복사 중"
 cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
 cp "$TOOLKIT_DIR/scripts/add_book.sh" "$ROOT/scripts/add_book.sh"
 cp "$TOOLKIT_DIR/scripts/server.sh" "$ROOT/scripts/server.sh"
@@ -155,7 +155,7 @@ chmod +x "$ROOT/scripts/"*.sh
 # ============================================================
 # Install Claude Code skill
 # ============================================================
-info "Installing Claude Code skill"
+info "클로드코드 스킬 설치 중"
 SKILL_DST="$HOME/.claude/skills/legal-books"
 mkdir -p "$SKILL_DST"
 cp "$TOOLKIT_DIR/../../skills/legal-books/SKILL.md" "$SKILL_DST/SKILL.md"
@@ -163,14 +163,14 @@ cp "$TOOLKIT_DIR/../../skills/legal-books/SKILL.md" "$SKILL_DST/SKILL.md"
 # ============================================================
 # Start server (background)
 # ============================================================
-info "Starting search server on port 8766"
+info "검색 서버 시작 (포트 8766)"
 "$ROOT/scripts/server.sh" start
 
 sleep 2
 if curl -sf http://localhost:8766/health >/dev/null; then
-  info "Server is running. Test: curl http://localhost:8766/health"
+  info "서버 실행 중. 확인: curl http://localhost:8766/health"
 else
-  warn "Server did not respond. Check logs: $ROOT/logs/server.log"
+  warn "서버 응답 없음. 로그 확인: $ROOT/logs/server.log"
 fi
 
 # ============================================================
@@ -179,22 +179,22 @@ fi
 cat <<EOF
 
 ${GREEN}========================================
-legal-books toolkit installed.
+legal-books toolkit 설치 완료
 ========================================${NC}
 
-Next steps:
-  1. Scan your first book (300dpi, color)
-  2. Add it:
+다음 단계:
+  1. 첫 책 스캔 (300dpi, 컬러)
+  2. 추가:
        ~/legal-books/scripts/add_book.sh \\
-         --pdf /path/to/scan.pdf \\
+         --pdf /경로/scan.pdf \\
          --author "곽윤직" --title "민법총칙" \\
          --edition "제9판" --year 2018 --publisher "박영사"
-  3. Search test:
+  3. 검색 테스트:
        curl -X POST http://localhost:8766/search \\
          -H 'Content-Type: application/json' \\
          -d '{"query":"소멸시효","top_k":3}'
-  4. In Claude Code:
+  4. 클로드코드에서:
        "민법 시효 쟁점에 대해 교과서 바탕으로 정리해줘"
 
-Guide: ~/jurisupport-plugins/guides/02_book_scanning.md
+가이드: ~/jurisupport-plugins/guides/02_book_scanning.md
 EOF
