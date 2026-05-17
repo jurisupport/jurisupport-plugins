@@ -27,27 +27,44 @@ esac
 info "Chrome 확인 중 / Checking Chrome installation..."
 if [[ "$PLATFORM" == "mac" ]]; then
   if [[ ! -d "/Applications/Google Chrome.app" ]]; then
-    warn "Google Chrome이 없습니다. 다음에서 다운로드 / Not found. Download from:"
-    echo "  https://www.google.com/chrome/"
-    error "Chrome 설치 후 다시 실행 / Install Chrome and re-run."
+    if command -v brew >/dev/null 2>&1; then
+      info "Chrome 자동 설치 중 (Homebrew cask) / Installing Chrome via brew cask..."
+      brew install --cask google-chrome 2>&1 | tail -3
+      if [[ -d "/Applications/Google Chrome.app" ]]; then
+        info "✓ Chrome 설치 완료 / installed"
+      else
+        warn "Chrome 자동 설치 실패 / install failed."
+        echo "  수동 다운로드 / Download manually: https://www.google.com/chrome/"
+        error "Chrome 설치 후 다시 실행 / Install Chrome and re-run."
+      fi
+    else
+      warn "Homebrew 없음 — Chrome 수동 설치 필요 / brew not found — install Chrome manually:"
+      echo "  https://www.google.com/chrome/"
+      error "Chrome 설치 후 다시 실행 / Install Chrome and re-run."
+    fi
   fi
 else
   if ! command -v google-chrome >/dev/null && ! command -v chromium >/dev/null; then
-    warn "Chrome/Chromium 미설치 / not installed."
-    read -r -p "지금 자동 설치할까요? / Install Google Chrome now via apt? [Y/n]: " ans
-    if [[ ! "$ans" =~ ^[Nn]$ ]]; then
-      info "Chrome 자동 설치 중 / Installing Chrome..."
+    info "Chrome 자동 설치 중 (apt + Google 저장소) / Installing Chrome..."
+    # Google 서명키 + 저장소
+    if [[ ! -f /etc/apt/trusted.gpg.d/google.gpg ]]; then
       wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google.gpg
+    fi
+    if [[ ! -f /etc/apt/sources.list.d/google.list ]]; then
       echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google.list >/dev/null
-      sudo apt-get update -q
-      sudo apt-get install -y google-chrome-stable
-      if command -v google-chrome >/dev/null; then
-        info "✓ Chrome 설치 완료 / installed: $(google-chrome --version)"
-      else
-        error "Chrome 설치 실패 / install failed. 수동 설치 후 다시 실행 / Install manually and re-run."
-      fi
+    fi
+    sudo apt-get update -q
+    sudo apt-get install -y google-chrome-stable
+    if command -v google-chrome >/dev/null; then
+      info "✓ Chrome 설치 완료 / installed: $(google-chrome --version 2>&1 | head -1)"
     else
-      error "Chrome 없이는 beopgoeul-search toolkit 사용 불가 / Cannot install toolkit without Chrome."
+      warn "google-chrome-stable 설치 실패 → chromium-browser 시도 / Trying chromium..."
+      sudo apt-get install -y chromium-browser 2>&1 | tail -3
+      if command -v chromium-browser >/dev/null || command -v chromium >/dev/null; then
+        info "✓ Chromium 설치 완료 / installed"
+      else
+        error "Chrome/Chromium 설치 실패 / install failed. 수동 설치 후 다시 실행 / Install manually and re-run."
+      fi
     fi
   fi
 fi
