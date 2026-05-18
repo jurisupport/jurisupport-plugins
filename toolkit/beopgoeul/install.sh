@@ -139,7 +139,7 @@ mkdir -p "$ROOT/scripts"
 "$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/$VENV_ACTIVATE"
-pip install --progress-bar on --upgrade pip
+python -m pip install --progress-bar on --upgrade pip
 pip install --progress-bar on selenium==4.25.0
 info "Selenium 설치 완료"
 

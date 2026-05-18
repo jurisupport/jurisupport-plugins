@@ -92,7 +92,7 @@ fi
 source "$ROOT/.venv/$VENV_ACTIVATE"
 
 info "Python 패키지 설치 중 (수 분 소요)"
-pip install --progress-bar on --upgrade pip
+python -m pip install --progress-bar on --upgrade pip
 # Windows에선 ocrmypdf도 pip로 설치 (ghostscript·qpdf·tesseract는 winget으로 시스템 설치됨)
 if [[ "$PLATFORM" == "windows" ]]; then
   pip install --progress-bar on ocrmypdf
