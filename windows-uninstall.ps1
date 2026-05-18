@@ -130,8 +130,7 @@ Write-Step "Step 4/4: winget 시스템 패키지 제거 (선택)"
 "@ | Write-Host -ForegroundColor Yellow
 
 $packages = @(
-    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('qpdf.qpdf', 'JayBerkenbilt.qpdf') },
-    @{ Name = 'Ghostscript (OCRmyPDF 의존성)';   Ids = @('ArtifexSoftware.GhostScript.AGPL', 'ArtifexSoftware.GhostScript') },
+    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('QPDF.QPDF') },
     @{ Name = 'Tesseract OCR';                   Ids = @('UB-Mannheim.TesseractOCR') },
     @{ Name = 'jq';                              Ids = @('jqlang.jq') },
     @{ Name = 'Google Chrome';                   Ids = @('Google.Chrome') },
@@ -139,6 +138,29 @@ $packages = @(
     @{ Name = 'Node.js LTS';                     Ids = @('OpenJS.NodeJS.LTS') },
     @{ Name = 'Git for Windows';                 Ids = @('Git.Git') }
 )
+
+# Ghostscript는 winget이 아니라 GitHub release로 깔린 상태
+# (windows-bootstrap.ps1이 자동 다운로드 후 InnoSetup 무인 설치)
+Write-Host ""
+Write-Host "[추가] Ghostscript는 winget 외부에서 설치된 상태 (GitHub release)" -ForegroundColor Cyan
+$gsDir = Get-ChildItem 'C:\Program Files\gs' -Directory -ErrorAction SilentlyContinue |
+         Sort-Object Name -Descending | Select-Object -First 1
+if ($gsDir) {
+    $uninstaller = Join-Path $gsDir.FullName 'uninstgs.exe'
+    if (Test-Path $uninstaller) {
+        if (Confirm-Y "Ghostscript 제거 (uninstgs.exe 실행)?") {
+            Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait
+            Write-Info "  ✓ Ghostscript 제거 명령 실행"
+        } else {
+            Write-Info "  · 보존"
+        }
+    } else {
+        Write-Warn "  · 제거 프로그램을 찾지 못함: $uninstaller"
+        Write-Warn "    제어판 → 프로그램 추가/제거에서 'GPL Ghostscript' 수동 제거"
+    }
+} else {
+    Write-Info "  · Ghostscript 미설치 (또는 다른 경로)"
+}
 
 foreach ($pkg in $packages) {
     foreach ($id in $pkg.Ids) {

@@ -60,8 +60,8 @@ iwr https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 | Google Chrome | `Google.Chrome` | 법고을 Selenium 자동검색 |
 | jq | `jqlang.jq` | Hook JSON 설정 |
 | Tesseract OCR | `UB-Mannheim.TesseractOCR` | 책 스캔 OCR (한국어 포함) |
-| Ghostscript | `ArtifexSoftware.GhostScript` | OCRmyPDF 의존성 |
-| qpdf | `qpdf.qpdf` | OCRmyPDF 의존성 |
+| qpdf | `QPDF.QPDF` | OCRmyPDF 의존성 |
+| Ghostscript | (winget 카탈로그 부재) | OCRmyPDF 의존성 — **GitHub release에서 자동 다운로드·무인 설치** |
 
 이후 자동으로 진행되는 것:
 - `npm install -g @anthropic-ai/claude-code` (Claude Code CLI 글로벌 설치)

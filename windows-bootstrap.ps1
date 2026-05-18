@@ -119,15 +119,15 @@ Write-Step "2. 공통 패키지 설치 (winget)"
 # Required: 실패 시 본 패키지 사용 자체가 불가
 # Optional: 실패해도 메인 기능은 동작 (legal-books toolkit의 OCR만 영향)
 # Ids: winget 카탈로그에서 fallback 후보. 첫 ID부터 순차 시도, 성공한 것 사용.
+# 주의: Ghostscript는 winget 카탈로그에 없어 별도 함수로 GitHub release에서 자동 설치.
 $packages = @(
-    @{ Name = 'Git for Windows (Bash 포함)';    Ids = @('Git.Git');                                                  Required = $true },
-    @{ Name = 'Node.js LTS';                     Ids = @('OpenJS.NodeJS.LTS');                                        Required = $true },
-    @{ Name = 'Python 3.12';                     Ids = @('Python.Python.3.12');                                       Required = $true },
-    @{ Name = 'Google Chrome';                   Ids = @('Google.Chrome');                                            Required = $true },
-    @{ Name = 'jq (JSON CLI)';                   Ids = @('jqlang.jq');                                                Required = $true },
-    @{ Name = 'Tesseract OCR (한글 포함)';       Ids = @('UB-Mannheim.TesseractOCR');                                 Required = $false },
-    @{ Name = 'Ghostscript (OCRmyPDF 의존성)';   Ids = @('ArtifexSoftware.GhostScript.AGPL', 'ArtifexSoftware.GhostScript', 'Ghostscript.Ghostscript'); Required = $false },
-    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('qpdf.qpdf', 'JayBerkenbilt.qpdf');                          Required = $false }
+    @{ Name = 'Git for Windows (Bash 포함)';    Ids = @('Git.Git');                  Required = $true },
+    @{ Name = 'Node.js LTS';                     Ids = @('OpenJS.NodeJS.LTS');        Required = $true },
+    @{ Name = 'Python 3.12';                     Ids = @('Python.Python.3.12');       Required = $true },
+    @{ Name = 'Google Chrome';                   Ids = @('Google.Chrome');            Required = $true },
+    @{ Name = 'jq (JSON CLI)';                   Ids = @('jqlang.jq');                Required = $true },
+    @{ Name = 'Tesseract OCR (한글 포함)';       Ids = @('UB-Mannheim.TesseractOCR'); Required = $false },
+    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('QPDF.QPDF');                Required = $false }
 )
 
 $total = $packages.Count
@@ -205,9 +205,58 @@ if ($failedRequired.Count -gt 0) {
 if ($failedOptional.Count -gt 0) {
     Write-Warn "선택 패키지 미설치: $($failedOptional -join ', ')"
     Write-Warn "  → OCRmyPDF(책 스캔용)만 영향. 다른 기능은 정상 동작합니다."
-    Write-Warn "  수동 설치 필요 시:"
-    Write-Warn "    Ghostscript : https://ghostscript.com/releases/gsdnld.html"
-    Write-Warn "    qpdf        : https://github.com/qpdf/qpdf/releases"
+}
+
+# ============================================================
+# 2-B. Ghostscript (winget 카탈로그에 없음 → GitHub release 직접 다운로드)
+# ============================================================
+Write-Host ""
+Write-Host "[추가] Ghostscript (OCRmyPDF 의존성, winget 카탈로그 부재)" -ForegroundColor Cyan
+
+$gsInstalled = Get-Command gswin64c -ErrorAction SilentlyContinue
+if ($gsInstalled) {
+    Write-Host "  ✓ Ghostscript 이미 설치됨: $($gsInstalled.Source)" -ForegroundColor DarkGray
+} else {
+    Write-Host "  → GitHub release에서 자동 다운로드 시도..." -ForegroundColor DarkGray
+    try {
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        $api = 'https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest'
+        $rel = Invoke-RestMethod -Uri $api -TimeoutSec 30 -UserAgent 'jurisupport-bootstrap'
+        $asset = $rel.assets | Where-Object { $_.name -match '^gs\d+w64\.exe$' } | Select-Object -First 1
+        if (-not $asset) {
+            Write-Warn "  · Ghostscript Windows 64-bit installer를 release에서 찾지 못했습니다."
+            Write-Warn "    수동: https://ghostscript.com/releases/gsdnld.html"
+        } else {
+            $url = $asset.browser_download_url
+            $tmp = Join-Path $env:TEMP $asset.name
+            Write-Host "  → 다운로드: $($asset.name) ($([math]::Round($asset.size / 1MB, 1)) MB)" -ForegroundColor DarkGray
+            Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
+            Write-Host "  → 무인 설치 중 (UAC 팝업 가능)..." -ForegroundColor DarkGray
+            $proc = Start-Process -FilePath $tmp -ArgumentList '/S' -Wait -PassThru
+            Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+            if ($proc.ExitCode -eq 0) {
+                Write-Host "  ✓ Ghostscript 설치 완료" -ForegroundColor Green
+                # 일반 설치 경로 PATH 추가 (현재 세션)
+                $gsDir = Get-ChildItem 'C:\Program Files\gs' -Directory -ErrorAction SilentlyContinue |
+                         Sort-Object Name -Descending | Select-Object -First 1
+                if ($gsDir) {
+                    $gsBin = Join-Path $gsDir.FullName 'bin'
+                    if (Test-Path $gsBin) {
+                        $env:Path = "$gsBin;$env:Path"
+                        Write-Host "  · PATH 추가(현재 세션): $gsBin" -ForegroundColor DarkGray
+                    }
+                }
+            } else {
+                Write-Warn "  · 설치 실패 (exit $($proc.ExitCode)). 수동: https://ghostscript.com/releases/gsdnld.html"
+            }
+        }
+    } catch {
+        Write-Warn "  · 자동 다운로드 실패: $($_.Exception.Message)"
+        Write-Warn "    수동 설치: https://ghostscript.com/releases/gsdnld.html"
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
 }
 
 # 새 셸 PATH 갱신 (현재 세션에서 즉시 활용)
