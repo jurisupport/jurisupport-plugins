@@ -88,6 +88,19 @@ winget settings --enable LocalManifestFiles 2>$null | Out-Null
 # ============================================================
 Write-Step "2. 공통 패키지 설치 (winget)"
 
+@"
+
+⚠ 중요 — UAC 권한 팝업이 여러 번 뜹니다.
+
+  일부 패키지(Git, Chrome, Python 등)는 시스템 영역 설치라 관리자 승격이 필요합니다.
+  팝업이 PowerShell 창 뒤에 가려질 수 있으니 작업 표시줄을 확인해 주세요.
+  ▶ 노란 방패 아이콘이 깜빡이면 클릭 → "예" 누르기
+
+  팝업을 못 봤거나 차단했다면 설치가 무한 대기 상태로 보일 수 있습니다.
+  그럴 땐 Ctrl+C로 중단 후 본 스크립트를 다시 실행하세요.
+
+"@ | Write-Host -ForegroundColor Yellow
+
 $packages = @(
     @{ Id = 'Git.Git';                      Name = 'Git for Windows (Bash 포함)' },
     @{ Id = 'OpenJS.NodeJS.LTS';            Name = 'Node.js LTS' },
@@ -122,10 +135,13 @@ foreach ($pkg in $packages) {
 
     # winget 실시간 출력 그대로 노출 (다운로드 % · 설치 진행)
     # --silent: 패키지 인스톨러 GUI 숨김 / winget 자체 progress는 유지됨
+    # --disable-interactivity 제거: 일부 환경에서 무한 대기 유발하던 옵션
+    Write-Host "  → winget install $($pkg.Id) (UAC 팝업이 뜨면 '예' 클릭)" -ForegroundColor DarkGray
     & winget install --id $pkg.Id --exact --silent `
-        --accept-package-agreements --accept-source-agreements --disable-interactivity
+        --accept-package-agreements --accept-source-agreements
 
-    if ($LASTEXITCODE -eq 0) {
+    if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq -1978335189) {
+        # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (이미 최신)
         Write-Host "  ✓ $($pkg.Name) 설치 완료" -ForegroundColor Green
     } else {
         Write-Host "  ✗ $($pkg.Name) 설치 실패 (exit $LASTEXITCODE)" -ForegroundColor Yellow
