@@ -11,9 +11,45 @@ set -euo pipefail
 ROOT="$HOME/legal-books"
 # OS 감지 → venv activate 경로 (Windows venv는 Scripts/, 그 외는 bin/)
 case "$(uname -s)" in
-  MINGW*|MSYS*|CYGWIN*) VENV="$ROOT/.venv/Scripts/activate"; PY=python ;;
-  *)                    VENV="$ROOT/.venv/bin/activate"; PY=python3 ;;
+  MINGW*|MSYS*|CYGWIN*) VENV="$ROOT/.venv/Scripts/activate"; PY=python; PLATFORM=windows ;;
+  Darwin*)              VENV="$ROOT/.venv/bin/activate";     PY=python3; PLATFORM=mac ;;
+  *)                    VENV="$ROOT/.venv/bin/activate";     PY=python3; PLATFORM=linux ;;
 esac
+
+# OCR 의존성 사전 점검 (책 추가 시점에 필요)
+missing=""
+command -v ocrmypdf  >/dev/null 2>&1 || missing+="ocrmypdf "
+command -v tesseract >/dev/null 2>&1 || missing+="tesseract "
+if [[ -n "$missing" ]]; then
+  echo "[add_book] 다음 도구가 필요합니다: $missing" >&2
+  echo "" >&2
+  case "$PLATFORM" in
+    mac)
+      echo "  설치: brew install ocrmypdf tesseract tesseract-lang" >&2 ;;
+    linux)
+      echo "  설치: sudo apt install ocrmypdf tesseract-ocr tesseract-ocr-kor" >&2 ;;
+    windows)
+      echo "  설치 (PowerShell):" >&2
+      echo "    winget install UB-Mannheim.TesseractOCR" >&2
+      echo "    winget install ArtifexSoftware.GhostScript.AGPL" >&2
+      echo "    winget install qpdf.qpdf       # 없으면 https://github.com/qpdf/qpdf/releases" >&2
+      echo "    그리고 venv 안에서:" >&2
+      echo "      source ~/legal-books/.venv/Scripts/activate" >&2
+      echo "      pip install ocrmypdf" >&2
+      echo "  설치 후 새 Git Bash 창에서 본 스크립트 재실행" >&2
+      ;;
+  esac
+  exit 1
+fi
+
+# 한국어 언어팩 확인
+if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
+  echo "[add_book] Tesseract 한국어 언어팩(kor) 없음." >&2
+  echo "  Mac:    brew install tesseract-lang" >&2
+  echo "  Linux:  sudo apt install tesseract-ocr-kor" >&2
+  echo "  Windows: UB-Mannheim 빌드 재설치(설치 마법사에서 'Korean' 체크)" >&2
+  exit 1
+fi
 
 PDF=""; AUTHOR=""; TITLE=""; EDITION=""; YEAR=""; PUBLISHER=""
 

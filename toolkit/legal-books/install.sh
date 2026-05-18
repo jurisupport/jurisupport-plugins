@@ -51,13 +51,43 @@ check_cmd() {
 }
 
 "$PY" --version >/dev/null 2>&1 || error "Python 3.10+ 필요."
-check_cmd ocrmypdf "Mac: brew install ocrmypdf | Linux: apt install ocrmypdf | Windows: pip install ocrmypdf (windows-bootstrap.ps1이 의존성 자동 설치)"
-check_cmd tesseract "Mac: brew install tesseract tesseract-lang | Linux: apt install tesseract-ocr tesseract-ocr-kor | Windows: winget install UB-Mannheim.TesseractOCR"
 check_cmd curl "curl 필요."
 
-# Check Tesseract Korean
-if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
-  error "Tesseract 한국어 언어팩 미설치. Mac: brew install tesseract-lang. Linux: apt install tesseract-ocr-kor. Windows: UB-Mannheim 빌드 재설치(언어팩 포함)."
+# OCRmyPDF · Tesseract는 책 스캔(add_book.sh)할 때만 필요.
+# 검색 서버는 OCR 없이도 가동 가능하므로 여기선 warn으로 강등.
+OCR_READY=true
+if ! command -v ocrmypdf >/dev/null 2>&1; then
+  warn "ocrmypdf 미설치 — 책 스캔할 때만 필요. 검색 서버는 OCR 없이도 가동됩니다."
+  case "$PLATFORM" in
+    mac)     warn "  설치: brew install ocrmypdf" ;;
+    linux)   warn "  설치: sudo apt install ocrmypdf" ;;
+    windows) warn "  설치: 본 스크립트가 venv 안에 pip install ocrmypdf 시도 (ghostscript·qpdf 필요)" ;;
+  esac
+  OCR_READY=false
+fi
+
+if ! command -v tesseract >/dev/null 2>&1; then
+  warn "tesseract 미설치 — 책 OCR에만 필요. (이미 OCR된 PDF 입력 시 불요)"
+  case "$PLATFORM" in
+    mac)     warn "  설치: brew install tesseract tesseract-lang" ;;
+    linux)   warn "  설치: sudo apt install tesseract-ocr tesseract-ocr-kor" ;;
+    windows) warn "  설치: PowerShell에서 'winget install UB-Mannheim.TesseractOCR' 후 새 Git Bash 창" ;;
+  esac
+  OCR_READY=false
+elif ! tesseract --list-langs 2>&1 | grep -q "kor"; then
+  warn "Tesseract 설치됨, 한국어 언어팩 없음 — 한글 책 OCR에 필요."
+  case "$PLATFORM" in
+    mac)     warn "  설치: brew install tesseract-lang" ;;
+    linux)   warn "  설치: sudo apt install tesseract-ocr-kor" ;;
+    windows) warn "  설치: UB-Mannheim 빌드 재설치(설치 마법사에서 'Korean' 체크)" ;;
+  esac
+  OCR_READY=false
+fi
+
+if $OCR_READY; then
+  info "✓ OCR 도구 모두 준비됨 (ocrmypdf + tesseract + 한국어)"
+else
+  warn "→ 검색 서버는 가동 가능. 책 스캔하려면 위 안내 따라 보완 후 add_book.sh 실행."
 fi
 
 # Check Python version >= 3.10

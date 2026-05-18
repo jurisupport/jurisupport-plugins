@@ -204,6 +204,8 @@ claude
 | `./install.sh: bad interpreter` | Git Bash가 아닌 다른 셸 | Git Bash로 다시 실행 |
 | Git Bash에서 한글 깨짐 | 콘솔 인코딩 | Git Bash 옵션 → Text → Locale "ko_KR", Character set "UTF-8" |
 | `step` 함수 색 코드가 raw text로 보임 | 콘솔 ANSI 미지원 | Windows Terminal 설치 권장 |
+| `[error] ocrmypdf 필요` (legal-books 6단계) | OCRmyPDF는 책 스캔 시점에만 필요 | 새 버전(4470c54+)에서 warn으로 강등. 검색 서버는 가동됨. 책 추가 시 `add_book.sh`가 다시 안내 |
+| `winget install` 후 Git Bash가 명령을 못 찾음 (`tesseract: command not found` 등) | Git Bash가 PATH를 캐시 | **Git Bash 창을 닫고 새로 열기** (PowerShell PATH 변경은 새 셸 필요) |
 
 ### 사용 단계
 
