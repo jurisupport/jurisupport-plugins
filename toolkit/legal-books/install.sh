@@ -17,6 +17,51 @@ info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
 
+PLAN_MODE=0
+for arg in "$@"; do
+  case "$arg" in
+    --plan|--dry-run) PLAN_MODE=1 ;;
+    *) error "unknown option: $arg (supported: --plan, --dry-run)" ;;
+  esac
+done
+
+DRY_RUN="${DRY_RUN:-${JURISUPPORT_DRY_RUN:-0}}"
+if [[ "$PLAN_MODE" -eq 1 ]]; then
+  DRY_RUN=1
+fi
+is_dry_run() { [[ "${DRY_RUN:-0}" == "1" || "${DRY_RUN:-0}" == "true" || "${DRY_RUN:-0}" == "yes" ]]; }
+plan() { echo "PLAN: $*"; }
+run_or_plan() {
+  if is_dry_run; then
+    plan "$*"
+  else
+    "$@"
+  fi
+}
+run_shell_or_plan() {
+  if is_dry_run; then
+    plan "$*"
+  else
+    bash -c "$*"
+  fi
+}
+
+print_plan() {
+  cat <<'EOF'
+GREEN: toolkit/legal-books/install.sh --plan / --dry-run (no changes will be made)
+- Would check python3, ocrmypdf, tesseract, curl and Korean OCR language pack.
+- Would create $HOME/legal-books layout, Python venv, and install FastAPI/uvicorn/Gemini/pdf dependencies.
+- Would initialize SQLite FTS DB and optionally write Gemini API key under $HOME/.jurisupport/secrets.env.
+- Would copy server/scripts and Claude Code legal-books skill.
+- Would start search server on port 8766 and health-check with curl.
+- Guard: in --plan/--dry-run mode this script exits before mkdir/venv/pip/python DB/secrets/cp/chmod/server/curl operations.
+EOF
+}
+
+if is_dry_run; then
+  print_plan
+fi
+
 # ============================================================
 # Detect OS
 # ============================================================
@@ -39,22 +84,26 @@ check_cmd() {
   fi
 }
 
-check_cmd python3 "먼저 Python 3.10+ 설치."
-check_cmd ocrmypdf "설치: brew install ocrmypdf (Mac) 또는 apt install ocrmypdf (Linux)"
-check_cmd tesseract "설치: brew install tesseract tesseract-lang (Mac) 또는 apt install tesseract-ocr tesseract-ocr-kor (Linux)"
-check_cmd curl "curl 필요."
+if is_dry_run; then plan "command -v python3"; else check_cmd python3 "먼저 Python 3.10+ 설치."; fi
+if is_dry_run; then plan "command -v ocrmypdf"; else check_cmd ocrmypdf "설치: brew install ocrmypdf (Mac) 또는 apt install ocrmypdf (Linux)"; fi
+if is_dry_run; then plan "command -v tesseract"; else check_cmd tesseract "설치: brew install tesseract tesseract-lang (Mac) 또는 apt install tesseract-ocr tesseract-ocr-kor (Linux)"; fi
+if is_dry_run; then plan "command -v curl"; else check_cmd curl "curl 필요."; fi
 
 # Check Tesseract Korean
-if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
+if is_dry_run; then plan "tesseract --list-langs | grep kor"; elif ! tesseract --list-langs 2>&1 | grep -q "kor"; then
   error "Tesseract 한국어 언어팩 미설치. Mac: brew install tesseract-lang. Linux: apt install tesseract-ocr-kor"
 fi
 
 # Check Python version >= 3.10
-PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-PYMAJ=$(echo "$PYV" | cut -d. -f1)
-PYMIN=$(echo "$PYV" | cut -d. -f2)
-if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 10 ]]; then
-  error "Python 3.10 이상 필요 (현재 $PYV)"
+if is_dry_run; then
+  plan "python3 -c <check Python version >= 3.10>"
+else
+  PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+  PYMAJ=$(echo "$PYV" | cut -d. -f1)
+  PYMIN=$(echo "$PYV" | cut -d. -f2)
+  if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 10 ]]; then
+    error "Python 3.10 이상 필요 (현재 $PYV)"
+  fi
 fi
 
 # ============================================================
@@ -62,27 +111,28 @@ fi
 # ============================================================
 ROOT="$HOME/legal-books"
 info "디렉토리 구조 생성: $ROOT"
-mkdir -p "$ROOT/books" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
+run_or_plan mkdir -p "$ROOT/books" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 
 # ============================================================
 # Python venv + packages
 # ============================================================
 info "Python 가상환경 생성"
 # Ubuntu/Debian은 python3-venv 별도 설치 필요
-if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
+if [[ "$PLATFORM" == "linux" ]] && is_dry_run; then
+  plan "python3 -c 'import ensurepip'; install python3-venv with apt-get if missing"
+elif [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
   info "python3-venv 자동 설치 중..."
   PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
-  sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
-    sudo apt-get install -y python3-venv 2>&1 | tail -3
+  run_shell_or_plan "sudo apt-get install -y '$PYV' python3-venv 2>&1 | tail -3 || sudo apt-get install -y python3-venv 2>&1 | tail -3"
   python3 -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
 fi
-python3 -m venv "$ROOT/.venv"
+run_or_plan python3 -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
-source "$ROOT/.venv/bin/activate"
+if is_dry_run; then plan "source $ROOT/.venv/bin/activate"; else source "$ROOT/.venv/bin/activate"; fi
 
 info "Python 패키지 설치 중 (수 분 소요)"
-pip install --quiet --upgrade pip
-pip install --quiet \
+run_or_plan pip install --quiet --upgrade pip
+run_or_plan pip install --quiet \
   fastapi==0.115.0 \
   uvicorn==0.31.0 \
   pydantic==2.9.2 \
@@ -96,6 +146,9 @@ pip install --quiet \
 # Initialize SQLite DB
 # ============================================================
 info "SQLite DB 초기화"
+if is_dry_run; then
+  plan "python3 initialize SQLite FTS DB"
+else
 python3 - <<'PY'
 import sqlite3, os, pathlib
 ROOT = os.path.expanduser("~/legal-books")
@@ -123,27 +176,28 @@ con.commit()
 con.close()
 print("DB 초기화 완료:", db_path)
 PY
+fi
 
 # ============================================================
 # Secrets (Gemini API key)
 # ============================================================
 SECRETS="$HOME/.jurisupport/secrets.env"
-mkdir -p "$(dirname "$SECRETS")"
-chmod 700 "$(dirname "$SECRETS")"
+run_or_plan mkdir -p "$(dirname "$SECRETS")"
+run_or_plan chmod 700 "$(dirname "$SECRETS")"
 
 if [[ -f "$SECRETS" ]] && grep -q "GEMINI_API_KEY" "$SECRETS"; then
-  info "Gemini API 키 이미 등록됨: $SECRETS"
+  if is_dry_run; then info "Gemini API 키 등록 상태 확인 예정: $SECRETS (dry-run: 실제 변경 없음)"; else info "Gemini API 키 이미 등록됨: $SECRETS"; fi
 else
   echo ""
   echo "================================================================"
   echo "  Gemini API 키 등록"
   echo "  무료 키 발급: https://aistudio.google.com/apikey"
   echo "================================================================"
-  read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY
+  if is_dry_run; then plan "read Gemini API key prompt; default skip"; GEMINI_KEY=""; else read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY; fi
   if [[ -n "${GEMINI_KEY:-}" ]]; then
-    echo "GEMINI_API_KEY=${GEMINI_KEY}" >> "$SECRETS"
-    chmod 600 "$SECRETS"
-    info "저장 완료: $SECRETS (chmod 600)"
+    if is_dry_run; then plan "append GEMINI_API_KEY to $SECRETS"; else echo "GEMINI_API_KEY=${GEMINI_KEY}" >> "$SECRETS"; fi
+    run_or_plan chmod 600 "$SECRETS"
+    if is_dry_run; then info "저장 예정: $SECRETS chmod 600 (dry-run: 실제 변경 없음)"; else info "저장 완료: $SECRETS (chmod 600)"; fi
   else
     warn "건너뛰기. 나중에 $SECRETS 에 GEMINI_API_KEY=xxx 추가."
   fi
@@ -154,29 +208,31 @@ fi
 # ============================================================
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 info "서버·스크립트 복사 중"
-cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
-cp "$TOOLKIT_DIR/scripts/add_book.sh" "$ROOT/scripts/add_book.sh"
-cp "$TOOLKIT_DIR/scripts/server.sh" "$ROOT/scripts/server.sh"
-cp "$TOOLKIT_DIR/scripts/ingest.py" "$ROOT/scripts/ingest.py"
-chmod +x "$ROOT/scripts/"*.sh
+run_or_plan cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
+run_or_plan cp "$TOOLKIT_DIR/scripts/add_book.sh" "$ROOT/scripts/add_book.sh"
+run_or_plan cp "$TOOLKIT_DIR/scripts/server.sh" "$ROOT/scripts/server.sh"
+run_or_plan cp "$TOOLKIT_DIR/scripts/ingest.py" "$ROOT/scripts/ingest.py"
+run_or_plan chmod +x "$ROOT/scripts/"*.sh
 
 # ============================================================
 # Install Claude Code skill
 # ============================================================
 info "클로드코드 스킬 설치 중"
 SKILL_DST="$HOME/.claude/skills/legal-books"
-mkdir -p "$SKILL_DST"
-cp "$TOOLKIT_DIR/../../skills/legal-books/SKILL.md" "$SKILL_DST/SKILL.md"
+run_or_plan mkdir -p "$SKILL_DST"
+run_or_plan cp "$TOOLKIT_DIR/../../skills/legal-books/SKILL.md" "$SKILL_DST/SKILL.md"
 
 # ============================================================
 # Start server (background)
 # ============================================================
 info "검색 서버 시작 (포트 8766)"
-"$ROOT/scripts/server.sh" start
+run_or_plan "$ROOT/scripts/server.sh" start
 
-sleep 2
-if curl -sf http://localhost:8766/health >/dev/null; then
-  info "서버 실행 중. 확인: curl http://localhost:8766/health"
+if is_dry_run; then plan "sleep 2"; else sleep 2; fi
+if is_dry_run; then
+  plan "curl -sf http://localhost:8766/health"
+elif curl -sf http://localhost:8766/health >/dev/null; then
+  if is_dry_run; then info "서버 실행 확인 예정: curl http://localhost:8766/health (dry-run: 실제 변경 없음)"; else info "서버 실행 중. 확인: curl http://localhost:8766/health"; fi
 else
   warn "서버 응답 없음. 로그 확인: $ROOT/logs/server.log"
 fi
@@ -186,7 +242,7 @@ fi
 # ============================================================
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}legal-books toolkit 설치 완료${NC}"
+if is_dry_run; then echo -e "${GREEN}legal-books toolkit PLAN 완료 (dry-run: 실제 변경 없음)${NC}"; else echo -e "${GREEN}legal-books toolkit 설치 완료${NC}"; fi
 echo -e "${GREEN}========================================${NC}"
 cat <<EOF
 
