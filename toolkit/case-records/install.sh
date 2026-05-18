@@ -49,8 +49,8 @@ fi
 "$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/$VENV_ACTIVATE"
-pip install --quiet --upgrade pip
-pip install --quiet \
+pip install --progress-bar on --upgrade pip
+pip install --progress-bar on \
   fastapi==0.115.0 uvicorn==0.31.0 pydantic==2.9.2 \
   sqlite-utils==3.37 google-genai==0.3.0 pypdf==5.0.1 \
   numpy==1.26.4 python-dotenv==1.0.1 python-docx==1.1.2

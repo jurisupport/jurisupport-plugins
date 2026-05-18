@@ -11,11 +11,24 @@
 
 set -euo pipefail
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+TOTAL_STEPS=8
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
-step()  { echo -e "\n${BLUE}=== $* ===${NC}"; }
+step()  {
+  local n="$1"; shift
+  local bar=""
+  local i
+  for ((i=1; i<=TOTAL_STEPS; i++)); do
+    if [[ $i -le $n ]]; then bar+="■"; else bar+="□"; fi
+  done
+  echo ""
+  echo -e "${CYAN}┌──────────────────────────────────────────────────────────┐${NC}"
+  echo -e "${CYAN}│${NC} ${BLUE}[$n/$TOTAL_STEPS]${NC} $*"
+  echo -e "${CYAN}│${NC} 진행: ${GREEN}$bar${NC}"
+  echo -e "${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
+}
 
 # ============================================================
 # 0. Banner + safety check
@@ -55,7 +68,7 @@ info "플랫폼: $PLATFORM"
 # ============================================================
 # 1. Prerequisites
 # ============================================================
-step "1. 필수 도구 확인"
+step 1 "필수 도구 확인"
 
 command -v claude >/dev/null || error "클로드코드(CLI) 미설치. 설치: https://docs.claude.com/claude-code"
 command -v git >/dev/null || error "git 필요. (먼저 git 설치 후 재실행)"
@@ -89,7 +102,7 @@ fi
 # ============================================================
 # 2. Data protection hook (always installed)
 # ============================================================
-step "2. 데이터 보호 Hook 설치"
+step 2 "데이터 보호 Hook 설치"
 
 HOOK_SRC="$TOOLKIT_DIR/hooks/pretool_data_protection.sh"
 chmod +x "$HOOK_SRC"
@@ -125,7 +138,7 @@ fi
 # ============================================================
 # 3. songmu-legal plugin (same repo — register only)
 # ============================================================
-step "3. songmu-legal 플러그인 등록"
+step 3 "songmu-legal 플러그인 등록"
 
 SONGMU_LOCAL="$TOOLKIT_DIR/plugins/songmu-legal"
 SONGMU_DST="$HOME/.claude/plugins/cache/jurisupport-plugins/songmu-legal"
@@ -160,7 +173,7 @@ fi
 # ============================================================
 # 4. Skills (lbox-guide always; beopgoeul-search if toolkit installed later)
 # ============================================================
-step "4. 가이드 스킬 설치"
+step 4 "가이드 스킬 설치"
 
 SKILLS_DST="$HOME/.claude/skills"
 mkdir -p "$SKILLS_DST"
@@ -176,7 +189,7 @@ done
 # ============================================================
 # 5. CSV template
 # ============================================================
-step "5. 사건정보 관리표 템플릿 설정"
+step 5 "사건정보 관리표 템플릿 설정"
 
 if [[ ! -d "$HOME/사건" ]]; then
   read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? [Y/n] " ans
@@ -195,7 +208,7 @@ fi
 # ============================================================
 # 6. Optional: legal-books toolkit
 # ============================================================
-step "6. (선택) legal-books 검색 서버 설치"
+step 6 "(선택) legal-books 검색 서버 설치"
 
 read -r -p "지금 설치할까요? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
@@ -207,7 +220,7 @@ fi
 # ============================================================
 # 7. Optional: case-records toolkit
 # ============================================================
-step "7. (선택) case-records 검색 서버 설치"
+step 7 "(선택) case-records 검색 서버 설치"
 
 read -r -p "지금 설치할까요? [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then
@@ -219,7 +232,7 @@ fi
 # ============================================================
 # 8. Optional: beopgoeul (법고을) auto-search toolkit
 # ============================================================
-step "8. (선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
+step 8 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
 read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [y/N] " ans
 if [[ "$ans" =~ ^[Yy]$ ]]; then

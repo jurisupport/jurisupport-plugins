@@ -99,23 +99,44 @@ $packages = @(
     @{ Id = 'qpdf.qpdf';                    Name = 'qpdf (OCRmyPDF 의존성)' }
 )
 
+$total = $packages.Count
+$i = 0
+$failed = @()
 foreach ($pkg in $packages) {
-    Write-Info "$($pkg.Name) ..."
+    $i++
+    $percent = [int](($i - 1) / $total * 100)
+
+    # 상단 PowerShell 네이티브 progress bar
+    Write-Progress -Id 1 -Activity "Step 2/4: 공통 패키지 설치 ($i / $total)" `
+                   -Status "$($pkg.Name)" -CurrentOperation "winget id: $($pkg.Id)" `
+                   -PercentComplete $percent
+
+    Write-Host ""
+    Write-Host "[$i/$total] $($pkg.Name) ($($pkg.Id))" -ForegroundColor Cyan
+
     $installed = winget list --id $pkg.Id --exact 2>$null | Select-String $pkg.Id
     if ($installed) {
-        Write-Info "  이미 설치됨, 건너뜀"
+        Write-Host "  ✓ 이미 설치됨, 건너뜀" -ForegroundColor DarkGray
         continue
     }
-    try {
-        winget install --id $pkg.Id --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity 2>&1 | ForEach-Object {
-            if ($_ -match 'Installer hash|Successfully installed|already installed|Found') {
-                Write-Host "    $_" -ForegroundColor DarkGray
-            }
-        }
-        Write-Info "  ✓ 설치 완료"
-    } catch {
-        Write-Warn "  $($pkg.Name) 설치 실패 — 수동 설치 후 다시 시도하세요"
+
+    # winget 실시간 출력 그대로 노출 (다운로드 % · 설치 진행)
+    # --silent: 패키지 인스톨러 GUI 숨김 / winget 자체 progress는 유지됨
+    & winget install --id $pkg.Id --exact --silent `
+        --accept-package-agreements --accept-source-agreements --disable-interactivity
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ $($pkg.Name) 설치 완료" -ForegroundColor Green
+    } else {
+        Write-Host "  ✗ $($pkg.Name) 설치 실패 (exit $LASTEXITCODE)" -ForegroundColor Yellow
+        $failed += $pkg.Name
     }
+}
+Write-Progress -Id 1 -Activity "Step 2/4: 공통 패키지 설치" -Completed
+
+if ($failed.Count -gt 0) {
+    Write-Warn "다음 패키지 설치 실패: $($failed -join ', ')"
+    Write-Warn "수동 설치 후 본 스크립트를 다시 실행하세요."
 }
 
 # 새 셸 PATH 갱신 (현재 세션에서 즉시 활용)
@@ -143,31 +164,49 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm 패키지 확인" -PercentComplete 10
+
 $claudeInstalled = npm list -g --depth=0 2>$null | Select-String '@anthropic-ai/claude-code'
 if ($claudeInstalled) {
     Write-Info "Claude Code 이미 설치됨"
 } else {
-    Write-Info "Claude Code 설치 중..."
-    npm install -g @anthropic-ai/claude-code
-    Write-Info "✓ Claude Code 설치 완료: $(claude --version 2>$null)"
+    Write-Host "[npm] @anthropic-ai/claude-code 다운로드·설치 중 (약 1~2분)..." -ForegroundColor Cyan
+    Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm install -g" -PercentComplete 40
+    # npm 자체 progress 출력 유지 (--loglevel http로 다운로드 표시)
+    & npm install -g @anthropic-ai/claude-code --loglevel http
+    if ($LASTEXITCODE -eq 0) {
+        Write-Info "✓ Claude Code 설치 완료: $(claude --version 2>$null)"
+    } else {
+        Write-Err "Claude Code 설치 실패. 새 PowerShell(관리자)에서 직접 실행: npm install -g @anthropic-ai/claude-code"
+    }
 }
+Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Completed
 
 # ============================================================
 # 4. 본 레포 clone
 # ============================================================
 Write-Step "4. jurisupport-plugins git clone"
 
+Write-Progress -Id 1 -Activity "Step 4/4: jurisupport-plugins git clone" -Status "확인 중" -PercentComplete 10
+
 $repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
 if (Test-Path $repoDir) {
     Write-Info "기존 디렉토리 발견: $repoDir"
-    Write-Info "  git pull로 최신화 시도..."
+    Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
     Push-Location $repoDir
-    git pull 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+    & git pull --progress
     Pop-Location
 } else {
-    git clone https://github.com/jurisupport/jurisupport-plugins.git $repoDir
-    Write-Info "✓ Clone 완료: $repoDir"
+    Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
+    # --progress: 압축 해제·다운로드 진행 표시
+    & git clone --progress https://github.com/jurisupport/jurisupport-plugins.git $repoDir
+    if ($LASTEXITCODE -eq 0) {
+        Write-Info "✓ Clone 완료: $repoDir"
+    } else {
+        Write-Err "Clone 실패. 수동 실행: git clone https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+    }
 }
+Write-Progress -Id 1 -Activity "Step 4/4: jurisupport-plugins git clone" -Completed
 
 # ============================================================
 # 5. 마무리 안내
