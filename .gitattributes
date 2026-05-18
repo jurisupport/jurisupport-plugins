@@ -1,0 +1,38 @@
+# Windows core.autocrlf=true 환경에서도 line ending이 일관되게 유지되도록 명시.
+# .sh / .py / .json / .md 는 LF 강제 (bash·python·jq가 CRLF에서 깨짐)
+# .ps1 / .bat 는 CRLF 강제 (Windows 네이티브 도구가 LF에서 일부 동작 불량)
+
+* text=auto eol=lf
+
+# Shell·Python·Markdown·JSON·YAML 등: 항상 LF
+*.sh    text eol=lf
+*.bash  text eol=lf
+*.py    text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.toml  text eol=lf
+*.csv   text eol=lf
+
+# PowerShell·Batch: 항상 CRLF (Windows 네이티브)
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# 바이너리는 손대지 말 것
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.db    binary
+*.sqlite binary
+*.xlsx  binary
+*.docx  binary
+*.hwp   binary

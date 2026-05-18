@@ -198,11 +198,12 @@ claude
 
 ### install.sh 단계 (Git Bash)
 
-| 증상 | 해결 |
-|---|---|
-| `./install.sh: bad interpreter` | Git Bash가 아닌 다른 셸. Git Bash로 다시 실행 |
-| Git Bash에서 한글 깨짐 | Git Bash 옵션 → Text → Locale "ko_KR", Character set "UTF-8" |
-| `step` 함수 색 코드가 raw text로 보임 | 콘솔이 ANSI 미지원. Windows Terminal 설치 권장 |
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `$'\r': command not found` 또는 `set: invalid option name` | Windows core.autocrlf=true가 .sh를 CRLF로 변환 | 새 버전(228c569+)은 `.gitattributes`로 자동 방지. 이전에 받은 경우 다음 실행: `cd ~/jurisupport-plugins && git config core.autocrlf false && git rm --cached -r . && git reset --hard` |
+| `./install.sh: bad interpreter` | Git Bash가 아닌 다른 셸 | Git Bash로 다시 실행 |
+| Git Bash에서 한글 깨짐 | 콘솔 인코딩 | Git Bash 옵션 → Text → Locale "ko_KR", Character set "UTF-8" |
+| `step` 함수 색 코드가 raw text로 보임 | 콘솔 ANSI 미지원 | Windows Terminal 설치 권장 |
 
 ### 사용 단계
 
