@@ -238,6 +238,44 @@ git --version; node --version; python --version
 
 ---
 
+## 언인스톨
+
+### 데이터·등록만 제거 (시스템 패키지 보존)
+
+Git Bash에서:
+
+```bash
+cd ~/jurisupport-plugins
+./uninstall.sh           # 단계별 Y/n
+./uninstall.sh --yes     # 자동
+./uninstall.sh --dry-run # 미리보기
+```
+
+제거: Hook, 플러그인 등록, 스킬, `~/legal-books`, `~/case-records`, `~/jurisupport-beopgoeul`, 검색 서버 stop.
+보존: `~/사건/`, Gemini API 키 (확인 후 선택 제거).
+
+### Claude Code · 본 레포 · winget 시스템 패키지까지 모두 제거
+
+PowerShell에서:
+
+```powershell
+irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-uninstall.ps1 | iex
+```
+
+또는 로컬:
+
+```powershell
+& "$env:USERPROFILE\jurisupport-plugins\windows-uninstall.ps1"
+```
+
+4단계 순차 (각 단계 Y/n):
+1. `uninstall.sh` 호출 (Git Bash)
+2. `npm uninstall -g @anthropic-ai/claude-code`
+3. `~/jurisupport-plugins/` 폴더 삭제
+4. winget 패키지 8개 (Git/Node/Python/Chrome 등) — 다른 앱이 쓸 수 있으니 각각 명시 Y 필요
+
+---
+
 ## 막혔을 때
 
 - 이메일: admin@jurisupport.com

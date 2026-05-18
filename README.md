@@ -178,6 +178,37 @@ claude
 
 ---
 
+## 언인스톨
+
+본 패키지가 만든 등록·데이터를 단계별로 제거할 수 있습니다.
+
+### Mac / Linux / Windows (Git Bash)
+
+```bash
+cd ~/jurisupport-plugins
+./uninstall.sh           # 각 단계마다 Y/n 확인
+./uninstall.sh --yes     # 전 항목 자동 제거 (사용자 데이터는 보존)
+./uninstall.sh --dry-run # 미리보기만
+```
+
+제거 대상: 데이터 보호 Hook 등록, songmu-legal 플러그인 등록, 클로드코드 스킬, toolkit 데이터 폴더(`~/legal-books`, `~/case-records`, `~/jurisupport-beopgoeul`), 검색 서버 stop.
+**보존 대상 (기본)**: `~/사건/` 폴더, Gemini API 키, Claude Code 자체, 시스템 패키지.
+
+### Windows — 시스템 패키지까지 모두 제거
+
+```powershell
+# PowerShell
+irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-uninstall.ps1 | iex
+```
+
+위 스크립트가 순서대로:
+1. `uninstall.sh` 호출 (Git Bash) — 등록·데이터 제거
+2. `npm uninstall -g @anthropic-ai/claude-code` — Claude Code 제거
+3. `~/jurisupport-plugins/` 폴더 제거
+4. winget 시스템 패키지(Git, Node, Python, Chrome 등) — **개별 Y/n 확인**, 기본 보존
+
+---
+
 ## 라이선스 및 책임 면책
 
 MIT License. 본 패키지의 코드·문서·템플릿은 자유롭게 사용·수정·배포할 수 있습니다.
