@@ -9,7 +9,11 @@
 set -euo pipefail
 
 ROOT="$HOME/legal-books"
-VENV="$ROOT/.venv/bin/activate"
+# OS 감지 → venv activate 경로 (Windows venv는 Scripts/, 그 외는 bin/)
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) VENV="$ROOT/.venv/Scripts/activate"; PY=python ;;
+  *)                    VENV="$ROOT/.venv/bin/activate"; PY=python3 ;;
+esac
 
 PDF=""; AUTHOR=""; TITLE=""; EDITION=""; YEAR=""; PUBLISHER=""
 
@@ -62,7 +66,7 @@ ocrmypdf --skip-text --language kor+eng --output-type pdf "$PDF" "$OCR_PDF" || {
 # shellcheck disable=SC1090
 source "$VENV"
 echo "[add_book] Step 2/3: Extracting text and chunking"
-python3 "$ROOT/scripts/ingest.py" \
+"$PY" "$ROOT/scripts/ingest.py" \
   --book-id "$BOOK_ID" \
   --pdf "$OCR_PDF" \
   --book-dir "$BOOK_DIR" \

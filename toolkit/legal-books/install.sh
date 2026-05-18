@@ -22,11 +22,22 @@ error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
 # ============================================================
 OS="$(uname -s)"
 case "$OS" in
-  Darwin*) PLATFORM="mac" ;;
-  Linux*)  PLATFORM="linux" ;;
-  *) error "지원하지 않는 OS: $OS (macOS/Linux만 지원). Windows는 WSL2 사용." ;;
+  Darwin*)              PLATFORM="mac" ;;
+  Linux*)               PLATFORM="linux" ;;
+  MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
+  *) error "지원하지 않는 OS: $OS (macOS/Linux/Windows Git Bash만 지원)" ;;
 esac
 info "플랫폼: $PLATFORM"
+
+# Python 명령 + venv activate 경로
+if [[ "$PLATFORM" == "windows" ]]; then
+  PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
+  [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
+  VENV_ACTIVATE="Scripts/activate"
+else
+  PY="python3"
+  VENV_ACTIVATE="bin/activate"
+fi
 
 # ============================================================
 # Check prerequisites
@@ -39,18 +50,18 @@ check_cmd() {
   fi
 }
 
-check_cmd python3 "먼저 Python 3.10+ 설치."
-check_cmd ocrmypdf "설치: brew install ocrmypdf (Mac) 또는 apt install ocrmypdf (Linux)"
-check_cmd tesseract "설치: brew install tesseract tesseract-lang (Mac) 또는 apt install tesseract-ocr tesseract-ocr-kor (Linux)"
+"$PY" --version >/dev/null 2>&1 || error "Python 3.10+ 필요."
+check_cmd ocrmypdf "Mac: brew install ocrmypdf | Linux: apt install ocrmypdf | Windows: pip install ocrmypdf (windows-bootstrap.ps1이 의존성 자동 설치)"
+check_cmd tesseract "Mac: brew install tesseract tesseract-lang | Linux: apt install tesseract-ocr tesseract-ocr-kor | Windows: winget install UB-Mannheim.TesseractOCR"
 check_cmd curl "curl 필요."
 
 # Check Tesseract Korean
 if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
-  error "Tesseract 한국어 언어팩 미설치. Mac: brew install tesseract-lang. Linux: apt install tesseract-ocr-kor"
+  error "Tesseract 한국어 언어팩 미설치. Mac: brew install tesseract-lang. Linux: apt install tesseract-ocr-kor. Windows: UB-Mannheim 빌드 재설치(언어팩 포함)."
 fi
 
 # Check Python version >= 3.10
-PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PYV=$("$PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 PYMAJ=$(echo "$PYV" | cut -d. -f1)
 PYMIN=$(echo "$PYV" | cut -d. -f2)
 if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 10 ]]; then
@@ -69,19 +80,23 @@ mkdir -p "$ROOT/books" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 # ============================================================
 info "Python 가상환경 생성"
 # Ubuntu/Debian은 python3-venv 별도 설치 필요
-if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
+if [[ "$PLATFORM" == "linux" ]] && ! "$PY" -c "import ensurepip" 2>/dev/null; then
   info "python3-venv 자동 설치 중..."
-  PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+  PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
   sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
     sudo apt-get install -y python3-venv 2>&1 | tail -3
-  python3 -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
+  "$PY" -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
 fi
-python3 -m venv "$ROOT/.venv"
+"$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
-source "$ROOT/.venv/bin/activate"
+source "$ROOT/.venv/$VENV_ACTIVATE"
 
 info "Python 패키지 설치 중 (수 분 소요)"
 pip install --quiet --upgrade pip
+# Windows에선 ocrmypdf도 pip로 설치 (ghostscript·qpdf·tesseract는 winget으로 시스템 설치됨)
+if [[ "$PLATFORM" == "windows" ]]; then
+  pip install --quiet ocrmypdf
+fi
 pip install --quiet \
   fastapi==0.115.0 \
   uvicorn==0.31.0 \
@@ -96,7 +111,7 @@ pip install --quiet \
 # Initialize SQLite DB
 # ============================================================
 info "SQLite DB 초기화"
-python3 - <<'PY'
+"$PY" - <<'PY'
 import sqlite3, os, pathlib
 ROOT = os.path.expanduser("~/legal-books")
 db_path = os.path.join(ROOT, "db", "books_fts.db")
@@ -158,7 +173,11 @@ cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
 cp "$TOOLKIT_DIR/scripts/add_book.sh" "$ROOT/scripts/add_book.sh"
 cp "$TOOLKIT_DIR/scripts/server.sh" "$ROOT/scripts/server.sh"
 cp "$TOOLKIT_DIR/scripts/ingest.py" "$ROOT/scripts/ingest.py"
-chmod +x "$ROOT/scripts/"*.sh
+# Windows: PowerShell 래퍼도 복사
+if [[ "$PLATFORM" == "windows" ]] && ls "$TOOLKIT_DIR/scripts/"*.ps1 >/dev/null 2>&1; then
+  cp "$TOOLKIT_DIR/scripts/"*.ps1 "$ROOT/scripts/"
+fi
+chmod +x "$ROOT/scripts/"*.sh 2>/dev/null || true
 
 # ============================================================
 # Install Claude Code skill
@@ -172,7 +191,11 @@ cp "$TOOLKIT_DIR/../../skills/legal-books/SKILL.md" "$SKILL_DST/SKILL.md"
 # Start server (background)
 # ============================================================
 info "검색 서버 시작 (포트 8766)"
-"$ROOT/scripts/server.sh" start
+if [[ "$PLATFORM" == "windows" ]]; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$ROOT/scripts/server.ps1")" start
+else
+  "$ROOT/scripts/server.sh" start
+fi
 
 sleep 2
 if curl -sf http://localhost:8766/health >/dev/null; then

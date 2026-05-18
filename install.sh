@@ -42,9 +42,10 @@ read -r -p "" _
 
 OS="$(uname -s)"
 case "$OS" in
-  Darwin*) PLATFORM="mac" ;;
-  Linux*)  PLATFORM="linux" ;;
-  *) error "지원하지 않는 OS: $OS. macOS/Linux만 지원합니다. (Windows는 WSL2 사용)" ;;
+  Darwin*)              PLATFORM="mac" ;;
+  Linux*)               PLATFORM="linux" ;;
+  MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
+  *) error "지원하지 않는 OS: $OS. macOS/Linux/Windows(Git Bash)만 지원합니다." ;;
 esac
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,21 +63,27 @@ command -v git >/dev/null || error "git 필요. (먼저 git 설치 후 재실행
 # jq is required for hook registration — try auto-install
 if ! command -v jq >/dev/null 2>&1; then
   warn "jq 미설치 (데이터 보호 Hook에 필요)"
-  if [[ "$PLATFORM" == "mac" ]]; then
-    if command -v brew >/dev/null 2>&1; then
-      info "Homebrew로 jq 자동 설치 중..."
-      brew install jq >/dev/null 2>&1 && info "✓ jq 설치 완료" || error "jq 설치 실패. 수동 실행: brew install jq"
-    else
-      error "Homebrew 미설치. https://brew.sh 에서 먼저 설치 후 재실행."
-    fi
-  else
-    if command -v apt-get >/dev/null 2>&1; then
-      info "apt로 jq 자동 설치 중..."
-      sudo apt-get install -y jq >/dev/null 2>&1 && info "✓ jq 설치 완료" || error "jq 설치 실패. 수동 실행: sudo apt install jq"
-    else
-      error "사용 중인 배포판에 jq 설치 후 재실행."
-    fi
-  fi
+  case "$PLATFORM" in
+    mac)
+      if command -v brew >/dev/null 2>&1; then
+        info "Homebrew로 jq 자동 설치 중..."
+        brew install jq >/dev/null 2>&1 && info "✓ jq 설치 완료" || error "jq 설치 실패. 수동 실행: brew install jq"
+      else
+        error "Homebrew 미설치. https://brew.sh 에서 먼저 설치 후 재실행."
+      fi
+      ;;
+    linux)
+      if command -v apt-get >/dev/null 2>&1; then
+        info "apt로 jq 자동 설치 중..."
+        sudo apt-get install -y jq >/dev/null 2>&1 && info "✓ jq 설치 완료" || error "jq 설치 실패. 수동 실행: sudo apt install jq"
+      else
+        error "사용 중인 배포판에 jq 설치 후 재실행."
+      fi
+      ;;
+    windows)
+      error "jq 미설치. PowerShell에서 'winget install jqlang.jq' 실행 후 새 Git Bash에서 다시 시도하세요."
+      ;;
+  esac
 fi
 
 # ============================================================
@@ -91,10 +98,20 @@ SETTINGS="$HOME/.claude/settings.json"
 mkdir -p "$(dirname "$SETTINGS")"
 [[ -f "$SETTINGS" ]] || echo '{}' > "$SETTINGS"
 
+# Compose hook command (Windows needs Git Bash absolute path)
+if [[ "$PLATFORM" == "windows" ]]; then
+  # Windows 네이티브 Claude Code는 .sh 직접 실행 불가 → Git Bash로 호출
+  BASH_WIN="$(cygpath -w "$(command -v bash)" 2>/dev/null || echo 'C:\Program Files\Git\bin\bash.exe')"
+  HOOK_WIN="$(cygpath -w "$HOOK_SRC")"
+  HOOK_CMD="\"$BASH_WIN\" \"$HOOK_WIN\""
+else
+  HOOK_CMD="$HOOK_SRC"
+fi
+
 # Add hook entry if not present
 if ! grep -q "pretool_data_protection.sh" "$SETTINGS"; then
   TMP=$(mktemp)
-  jq --arg cmd "$HOOK_SRC" '
+  jq --arg cmd "$HOOK_CMD" '
     .hooks.PreToolUse = (.hooks.PreToolUse // []) + [{
       "matcher": "WebFetch|WebSearch|mcp__google-workspace__gmail_send.*|mcp__google-workspace__chat_.*|mcp__claude_ai_Gmail__.*|mcp__plugin_telegram_telegram__reply",
       "hooks": [{"type": "command", "command": $cmd}]
@@ -122,8 +139,14 @@ else
   if [[ -L "$SONGMU_DST" || -e "$SONGMU_DST" ]]; then
     info "songmu-legal 이미 등록됨"
   else
-    ln -s "$SONGMU_LOCAL" "$SONGMU_DST"
-    info "songmu-legal 등록 완료"
+    if [[ "$PLATFORM" == "windows" ]]; then
+      # Windows: 심볼릭 링크는 권한 필요 → cp -R로 복사 (업데이트 시 재실행 필요)
+      cp -R "$SONGMU_LOCAL" "$SONGMU_DST"
+      info "songmu-legal 복사 완료 (Windows: 심볼릭 링크 대신 복사 — 업데이트 시 install.sh 재실행)"
+    else
+      ln -s "$SONGMU_LOCAL" "$SONGMU_DST"
+      info "songmu-legal 등록 완료"
+    fi
   fi
 
   # Bootstrap CLAUDE.md from CLAUDE.md.example if missing

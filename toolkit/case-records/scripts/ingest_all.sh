@@ -20,8 +20,20 @@ ROOT_DIR="${ROOT_DIR/#\~/$HOME}"
 CASE_ROOT="$HOME/case-records"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Pull list of already-indexed case_ids
-INDEXED=$(sqlite3 "$CASE_ROOT/db/cases_fts.db" "SELECT case_id FROM cases" 2>/dev/null || echo "")
+# Pull list of already-indexed case_ids (Python으로 sqlite3 CLI 의존성 제거 — Windows 호환)
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) PY=python ;;
+  *)                    PY=python3 ;;
+esac
+INDEXED=$("$PY" -c "
+import sqlite3
+try:
+    con = sqlite3.connect(r'$CASE_ROOT/db/cases_fts.db')
+    for (cid,) in con.execute('SELECT case_id FROM cases'):
+        print(cid)
+except Exception:
+    pass
+" 2>/dev/null || echo "")
 
 shopt -s nullglob
 for CDIR in "$ROOT_DIR"/*/; do

@@ -12,14 +12,25 @@ error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
 
 OS="$(uname -s)"
 case "$OS" in
-  Darwin*) PLATFORM="mac" ;;
-  Linux*)  PLATFORM="linux" ;;
-  *) error "지원하지 않는 OS: $OS (macOS/Linux만 지원)" ;;
+  Darwin*)              PLATFORM="mac" ;;
+  Linux*)               PLATFORM="linux" ;;
+  MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
+  *) error "지원하지 않는 OS: $OS (macOS/Linux/Windows Git Bash만 지원)" ;;
 esac
 info "플랫폼: $PLATFORM"
 
+# Python 명령 + venv activate 경로
+if [[ "$PLATFORM" == "windows" ]]; then
+  PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
+  [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
+  VENV_ACTIVATE="Scripts/activate"
+else
+  PY="python3"
+  VENV_ACTIVATE="bin/activate"
+fi
+
 # Prerequisites
-command -v python3 >/dev/null || error "Python 3.10 이상 필요"
+"$PY" --version >/dev/null 2>&1 || error "Python 3.10 이상 필요"
 command -v curl >/dev/null || error "curl 필요"
 
 ROOT="$HOME/case-records"
@@ -28,16 +39,16 @@ mkdir -p "$ROOT/cases" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 
 info "Python 가상환경 생성"
 # Ubuntu/Debian은 python3-venv 별도 설치 필요
-if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
+if [[ "$PLATFORM" == "linux" ]] && ! "$PY" -c "import ensurepip" 2>/dev/null; then
   info "python3-venv 자동 설치 중..."
-  PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+  PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
   sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
     sudo apt-get install -y python3-venv 2>&1 | tail -3
-  python3 -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
+  "$PY" -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
 fi
-python3 -m venv "$ROOT/.venv"
+"$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
-source "$ROOT/.venv/bin/activate"
+source "$ROOT/.venv/$VENV_ACTIVATE"
 pip install --quiet --upgrade pip
 pip install --quiet \
   fastapi==0.115.0 uvicorn==0.31.0 pydantic==2.9.2 \
@@ -45,7 +56,7 @@ pip install --quiet \
   numpy==1.26.4 python-dotenv==1.0.1 python-docx==1.1.2
 
 info "SQLite DB 초기화"
-python3 - <<'PY'
+"$PY" - <<'PY'
 import sqlite3, os
 ROOT = os.path.expanduser("~/case-records")
 db_path = os.path.join(ROOT, "db", "cases_fts.db")
@@ -103,15 +114,23 @@ fi
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
 cp "$TOOLKIT_DIR/scripts/"*.{sh,py} "$ROOT/scripts/"
-chmod +x "$ROOT/scripts/"*.sh
+# Windows에선 ps1도 복사 (있다면)
+if [[ "$PLATFORM" == "windows" ]] && ls "$TOOLKIT_DIR/scripts/"*.ps1 >/dev/null 2>&1; then
+  cp "$TOOLKIT_DIR/scripts/"*.ps1 "$ROOT/scripts/"
+fi
+chmod +x "$ROOT/scripts/"*.sh 2>/dev/null || true
 
 # Install skill
 SKILL_DST="$HOME/.claude/skills/case-records"
 mkdir -p "$SKILL_DST"
 cp "$TOOLKIT_DIR/../../skills/case-records/SKILL.md" "$SKILL_DST/SKILL.md"
 
-# Start server
-"$ROOT/scripts/server.sh" start
+# Start server (Windows는 PowerShell, 그 외는 bash)
+if [[ "$PLATFORM" == "windows" ]]; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$ROOT/scripts/server.ps1")" start
+else
+  "$ROOT/scripts/server.sh" start
+fi
 sleep 2
 if curl -sf http://localhost:8767/health >/dev/null; then
   info "서버 실행 중 (포트 8767)"

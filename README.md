@@ -5,7 +5,7 @@
 > 쥬리서포트 주식회사 ([jurisupport.com](https://jurisupport.com))
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey)
+![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
 ![Locale](https://img.shields.io/badge/Locale-ko--KR-red)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Required-orange)
 
@@ -28,7 +28,7 @@
 
 ## 빠른 시작
 
-### 옵션 A — 한 줄 자동 설치 (권장, Mac/Linux)
+### macOS / Linux — 한 줄 자동 설치
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/bootstrap.sh)
@@ -36,27 +36,36 @@ bash <(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plug
 
 위 한 줄이 **Homebrew → jq·git·python·node → Claude Code → 본 패키지 git clone**까지 자동으로 설치합니다 (약 5~10분).
 
-사전 준비:
-- **Claude Pro/Max 가입** (https://claude.ai/upgrade) — 결제 필요, 자동화 불가
-- **관리자 비밀번호** — Homebrew 설치 시 1회 입력
-
 bootstrap 완료 후:
 ```bash
 claude                            # 새 터미널에서 OAuth 로그인 1회
 cd ~/jurisupport-plugins && ./install.sh   # 본 패키지 구성요소 설치
 ```
 
-### 옵션 B — 수동 설치
+### Windows — 두 가지 옵션 중 선택
 
-사전 준비물을 직접 설치한 경우:
+| 옵션 | 설치 명령 | 특징 | 가이드 |
+|---|---|---|---|
+| **W1. 네이티브 (권장)** | PowerShell: `irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 \| iex` | 10~15분, BIOS·재부팅 불필요, 회사 노트북 OK | [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) |
+| **W2. WSL2 (Linux 환경)** | WSL 설치 후 위 Mac/Linux 한 줄 명령 | 30~60분, BIOS 가상화·재부팅 필요, 리눅스 환경 그대로 | [WINDOWS_WSL.md](WINDOWS_WSL.md) |
+
+**대부분의 변호사는 W1(네이티브)을 권합니다.** 회사 노트북 보안프로그램이 강한 경우만 W2 검토.
+
+### 사전 준비
+
+- **클로드 Pro/Max 가입** (https://claude.ai/upgrade) — 결제 필요, 자동화 불가
+- (Mac/Linux) 관리자 비밀번호 — Homebrew 설치 시 1회 입력
+- (Windows) winget 사용 가능한 Windows 10 22H2+ 또는 Windows 11
+
+### 수동 설치 (사전 준비물 직접 설치한 경우)
 
 ```bash
 git clone https://github.com/jurisupport/jurisupport-plugins.git
 cd jurisupport-plugins
-./install.sh
+./install.sh              # Mac/Linux/Windows(Git Bash) 공통
 ```
 
-수동 사전 설치 가이드: [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) (Mac/Linux) / [WINDOWS_WSL.md](WINDOWS_WSL.md) (Windows)
+수동 사전 설치 가이드: [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) (Mac/Linux) / [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) (Windows 네이티브) / [WINDOWS_WSL.md](WINDOWS_WSL.md) (Windows WSL2)
 
 ---
 
@@ -92,9 +101,10 @@ claude
 
 | OS | 지원 | 비고 |
 |---|---|---|
-| macOS (Apple Silicon / Intel) | ✅ 완전 지원 | 권장 |
+| macOS (Apple Silicon / Intel) | ✅ 완전 지원 | |
 | Linux (Ubuntu 22.04+) | ✅ 완전 지원 | |
-| Windows + WSL2 | ✅ 지원 | [WINDOWS_WSL.md](WINDOWS_WSL.md) 참조 |
+| Windows 10 22H2+ / 11 (네이티브 W1) | ✅ 완전 지원 | [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) — winget 기반, BIOS 가상화 불필요 |
+| Windows + WSL2 (W2) | ✅ 완전 지원 | [WINDOWS_WSL.md](WINDOWS_WSL.md) — 리눅스 환경 그대로 사용 |
 
 ---
 
@@ -163,7 +173,8 @@ claude
 | [SECURITY.md](SECURITY.md) | 보안 정책 |
 | [LICENSE](LICENSE) | MIT + 한국어 면책 |
 | [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) | 강의 청중 사전 설치 가이드 (Mac/Linux) |
-| [WINDOWS_WSL.md](WINDOWS_WSL.md) | 윈도우 사용자 WSL2 설치 가이드 |
+| [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) | 윈도우 네이티브 설치 가이드 (W1 권장) |
+| [WINDOWS_WSL.md](WINDOWS_WSL.md) | 윈도우 WSL2 설치 가이드 (W2) |
 
 ---
 

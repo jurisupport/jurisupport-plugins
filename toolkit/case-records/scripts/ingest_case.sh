@@ -4,7 +4,10 @@
 set -euo pipefail
 
 ROOT="$HOME/case-records"
-VENV="$ROOT/.venv/bin/activate"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) VENV="$ROOT/.venv/Scripts/activate"; PY=python ;;
+  *)                    VENV="$ROOT/.venv/bin/activate"; PY=python3 ;;
+esac
 
 CASE_DIR=""; CASE_ID=""; CASE_NAME=""; STATUS=""; RESULT=""; COURT=""
 while [[ $# -gt 0 ]]; do
@@ -31,7 +34,7 @@ CASE_DIR="${CASE_DIR/#\~/$HOME}"
 
 # shellcheck disable=SC1090
 source "$VENV"
-python3 "$ROOT/scripts/ingest_case.py" \
+"$PY" "$ROOT/scripts/ingest_case.py" \
   --case-dir "$CASE_DIR" \
   --case-id "$CASE_ID" \
   --case-name "$CASE_NAME" \

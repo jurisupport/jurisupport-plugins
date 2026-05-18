@@ -16,16 +16,48 @@ error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
 
 OS="$(uname -s)"
 case "$OS" in
-  Darwin*) PLATFORM="mac" ;;
-  Linux*)  PLATFORM="linux" ;;
-  *) error "지원하지 않는 OS: $OS (macOS/Linux만 지원)" ;;
+  Darwin*)              PLATFORM="mac" ;;
+  Linux*)               PLATFORM="linux" ;;
+  MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
+  *) error "지원하지 않는 OS: $OS (macOS/Linux/Windows Git Bash만 지원)" ;;
 esac
+
+# Python 명령 결정 (Windows는 python, 그 외는 python3)
+if [[ "$PLATFORM" == "windows" ]]; then
+  PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
+  [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
+else
+  PY="python3"
+fi
+
+# Venv 활성화 스크립트 경로 (Windows venv는 Scripts/activate)
+if [[ "$PLATFORM" == "windows" ]]; then
+  VENV_ACTIVATE="Scripts/activate"
+else
+  VENV_ACTIVATE="bin/activate"
+fi
 
 # ============================================================
 # Check Chrome installed (Selenium needs it)
 # ============================================================
 info "Chrome 확인 중..."
-if [[ "$PLATFORM" == "mac" ]]; then
+if [[ "$PLATFORM" == "windows" ]]; then
+  # Windows: Chrome은 windows-bootstrap.ps1이 winget으로 설치했음. 레지스트리/기본 경로 확인
+  CHROME_PATHS=(
+    "$PROGRAMFILES/Google/Chrome/Application/chrome.exe"
+    "${PROGRAMFILES_X86:-/c/Program Files (x86)}/Google/Chrome/Application/chrome.exe"
+    "$LOCALAPPDATA/Google/Chrome/Application/chrome.exe"
+  )
+  CHROME_FOUND=""
+  for p in "${CHROME_PATHS[@]}"; do
+    [[ -f "$p" ]] && CHROME_FOUND="$p" && break
+  done
+  if [[ -z "$CHROME_FOUND" ]]; then
+    warn "Chrome을 찾지 못했습니다."
+    error "PowerShell에서 'winget install Google.Chrome' 실행 후 다시 시도하세요."
+  fi
+  info "Chrome 발견: $CHROME_FOUND"
+elif [[ "$PLATFORM" == "mac" ]]; then
   if [[ ! -d "/Applications/Google Chrome.app" ]]; then
     if command -v brew >/dev/null 2>&1; then
       info "Chrome 자동 설치 중 (Homebrew cask)..."
@@ -75,13 +107,12 @@ info "✓ Chrome 확인됨"
 # ============================================================
 if [[ "$PLATFORM" == "linux" ]]; then
   # python3-venv가 없으면 venv 생성 실패. 자동 설치.
-  if ! python3 -c "import ensurepip" 2>/dev/null; then
+  if ! "$PY" -c "import ensurepip" 2>/dev/null; then
     info "python3-venv 자동 설치 중..."
-    # python3.XX-venv 또는 일반 python3-venv 시도
-    PYV=$(python3 -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+    PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
     sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
       sudo apt-get install -y python3-venv 2>&1 | tail -3
-    if ! python3 -c "import ensurepip" 2>/dev/null; then
+    if ! "$PY" -c "import ensurepip" 2>/dev/null; then
       error "python3-venv 설치 실패. 수동 설치 후 다시 실행: sudo apt install python3-venv"
     fi
     info "✓ python3-venv 설치 완료"
@@ -91,7 +122,7 @@ fi
 # ============================================================
 # Python version
 # ============================================================
-PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PYV=$("$PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 PYMAJ=$(echo "$PYV" | cut -d. -f1)
 PYMIN=$(echo "$PYV" | cut -d. -f2)
 if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 9 ]]; then
@@ -105,9 +136,9 @@ ROOT="$HOME/jurisupport-beopgoeul"
 info "설치 위치: $ROOT"
 mkdir -p "$ROOT/scripts"
 
-python3 -m venv "$ROOT/.venv"
+"$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
-source "$ROOT/.venv/bin/activate"
+source "$ROOT/.venv/$VENV_ACTIVATE"
 pip install --quiet --upgrade pip
 pip install --quiet selenium==4.25.0
 info "Selenium 설치 완료"
@@ -116,16 +147,25 @@ info "Selenium 설치 완료"
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp "$TOOLKIT_DIR/scripts/search.py" "$ROOT/scripts/search.py"
 
-# Create wrapper sh for easy CLI use
-cat > "$ROOT/scripts/search.sh" <<'WRAP'
+# Create wrapper sh for easy CLI use (OS-aware activate path + python command)
+cat > "$ROOT/scripts/search.sh" <<WRAP
 #!/usr/bin/env bash
 # Wrapper: activate venv and run search.py
-ROOT="$HOME/jurisupport-beopgoeul"
+ROOT="\$HOME/jurisupport-beopgoeul"
 # shellcheck disable=SC1090
-source "$ROOT/.venv/bin/activate"
-exec python3 "$ROOT/scripts/search.py" "$@"
+source "\$ROOT/.venv/$VENV_ACTIVATE"
+exec python "\$ROOT/scripts/search.py" "\$@"
 WRAP
 chmod +x "$ROOT/scripts/search.sh"
+
+# Windows: PowerShell wrapper도 함께 생성 (Git Bash 미사용 시)
+if [[ "$PLATFORM" == "windows" ]]; then
+  cat > "$ROOT/scripts/search.ps1" <<'PS1'
+# search.ps1 — PowerShell wrapper
+$ROOT = Join-Path $env:USERPROFILE 'jurisupport-beopgoeul'
+& "$ROOT\.venv\Scripts\python.exe" "$ROOT\scripts\search.py" @args
+PS1
+fi
 
 # ============================================================
 # Install Claude Code skill (replaces beopgoeul-guide)
