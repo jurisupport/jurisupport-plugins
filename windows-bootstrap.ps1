@@ -83,6 +83,21 @@ Write-Info "winget 확인됨: $(winget --version)"
 # winget 사용 약관 사전 동의 (자동 설치 흐름에서 프롬프트 회피)
 winget settings --enable LocalManifestFiles 2>$null | Out-Null
 
+# 소스(winget, msstore) agreement 사전 동의 — 안 하면 첫 패키지 설치 시 추가 프롬프트로 멈춤
+Write-Info "winget 소스 약관 사전 동의 + 업데이트 중..."
+& winget source update --accept-source-agreements 2>&1 | Out-Null
+& winget list --accept-source-agreements 2>&1 | Out-Null  # source agreement 트리거
+
+# 첫 패키지 dry-run 검증 — 멈춤 진단용
+Write-Info "winget 동작 검증 (Git.Git 패키지 정보 조회)..."
+$probe = & winget show --id Git.Git --exact 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Warn "winget show가 실패했습니다. 네트워크 또는 winget 카탈로그 문제."
+    Write-Warn "수동 점검: winget search Git.Git"
+} else {
+    Write-Info "✓ winget 정상 동작 확인"
+}
+
 # ============================================================
 # 2. 공통 패키지 설치 (winget)
 # ============================================================
@@ -101,58 +116,98 @@ Write-Step "2. 공통 패키지 설치 (winget)"
 
 "@ | Write-Host -ForegroundColor Yellow
 
+# Required: 실패 시 본 패키지 사용 자체가 불가
+# Optional: 실패해도 메인 기능은 동작 (legal-books toolkit의 OCR만 영향)
+# Ids: winget 카탈로그에서 fallback 후보. 첫 ID부터 순차 시도, 성공한 것 사용.
 $packages = @(
-    @{ Id = 'Git.Git';                      Name = 'Git for Windows (Bash 포함)' },
-    @{ Id = 'OpenJS.NodeJS.LTS';            Name = 'Node.js LTS' },
-    @{ Id = 'Python.Python.3.12';           Name = 'Python 3.12' },
-    @{ Id = 'Google.Chrome';                Name = 'Google Chrome' },
-    @{ Id = 'jqlang.jq';                    Name = 'jq (JSON CLI)' },
-    @{ Id = 'UB-Mannheim.TesseractOCR';     Name = 'Tesseract OCR (한글 포함)' },
-    @{ Id = 'ArtifexSoftware.GhostScript';  Name = 'Ghostscript (OCRmyPDF 의존성)' },
-    @{ Id = 'qpdf.qpdf';                    Name = 'qpdf (OCRmyPDF 의존성)' }
+    @{ Name = 'Git for Windows (Bash 포함)';    Ids = @('Git.Git');                                                  Required = $true },
+    @{ Name = 'Node.js LTS';                     Ids = @('OpenJS.NodeJS.LTS');                                        Required = $true },
+    @{ Name = 'Python 3.12';                     Ids = @('Python.Python.3.12');                                       Required = $true },
+    @{ Name = 'Google Chrome';                   Ids = @('Google.Chrome');                                            Required = $true },
+    @{ Name = 'jq (JSON CLI)';                   Ids = @('jqlang.jq');                                                Required = $true },
+    @{ Name = 'Tesseract OCR (한글 포함)';       Ids = @('UB-Mannheim.TesseractOCR');                                 Required = $false },
+    @{ Name = 'Ghostscript (OCRmyPDF 의존성)';   Ids = @('ArtifexSoftware.GhostScript.AGPL', 'ArtifexSoftware.GhostScript', 'Ghostscript.Ghostscript'); Required = $false },
+    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('qpdf.qpdf', 'JayBerkenbilt.qpdf');                          Required = $false }
 )
 
 $total = $packages.Count
 $i = 0
-$failed = @()
+$failedRequired = @()
+$failedOptional = @()
+
 foreach ($pkg in $packages) {
     $i++
     $percent = [int](($i - 1) / $total * 100)
 
     # 상단 PowerShell 네이티브 progress bar
     Write-Progress -Id 1 -Activity "Step 2/4: 공통 패키지 설치 ($i / $total)" `
-                   -Status "$($pkg.Name)" -CurrentOperation "winget id: $($pkg.Id)" `
+                   -Status "$($pkg.Name)" -CurrentOperation "winget id 후보: $($pkg.Ids -join ', ')" `
                    -PercentComplete $percent
 
+    $tag = if ($pkg.Required) { '[필수]' } else { '[선택]' }
     Write-Host ""
-    Write-Host "[$i/$total] $($pkg.Name) ($($pkg.Id))" -ForegroundColor Cyan
+    Write-Host "[$i/$total] $tag $($pkg.Name)" -ForegroundColor Cyan
 
-    $installed = winget list --id $pkg.Id --exact 2>$null | Select-String $pkg.Id
-    if ($installed) {
-        Write-Host "  ✓ 이미 설치됨, 건너뜀" -ForegroundColor DarkGray
-        continue
+    # 이미 설치된 ID가 있는지 먼저 확인
+    $alreadyInstalled = $false
+    foreach ($id in $pkg.Ids) {
+        $hit = & winget list --id $id --exact 2>$null | Select-String $id
+        if ($hit) {
+            Write-Host "  ✓ 이미 설치됨: $id" -ForegroundColor DarkGray
+            $alreadyInstalled = $true
+            break
+        }
+    }
+    if ($alreadyInstalled) { continue }
+
+    # ID 후보를 순차 시도
+    $installedOk = $false
+    foreach ($id in $pkg.Ids) {
+        # 카탈로그에 ID가 있는지 먼저 확인 (없으면 건너뜀)
+        $probe = & winget show --id $id --exact 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  · ID 후보 없음(카탈로그): $id" -ForegroundColor DarkYellow
+            continue
+        }
+
+        Write-Host "  → winget install $id (UAC 팝업이 뜨면 '예' 클릭)" -ForegroundColor DarkGray
+        & winget install --id $id --exact --silent `
+            --accept-package-agreements --accept-source-agreements
+
+        if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq -1978335189) {
+            # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (이미 최신)
+            Write-Host "  ✓ 설치 완료: $id" -ForegroundColor Green
+            $installedOk = $true
+            break
+        } else {
+            Write-Host "  · 설치 실패: $id (exit $LASTEXITCODE) — 다음 후보 시도" -ForegroundColor DarkYellow
+        }
     }
 
-    # winget 실시간 출력 그대로 노출 (다운로드 % · 설치 진행)
-    # --silent: 패키지 인스톨러 GUI 숨김 / winget 자체 progress는 유지됨
-    # --disable-interactivity 제거: 일부 환경에서 무한 대기 유발하던 옵션
-    Write-Host "  → winget install $($pkg.Id) (UAC 팝업이 뜨면 '예' 클릭)" -ForegroundColor DarkGray
-    & winget install --id $pkg.Id --exact --silent `
-        --accept-package-agreements --accept-source-agreements
-
-    if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq -1978335189) {
-        # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (이미 최신)
-        Write-Host "  ✓ $($pkg.Name) 설치 완료" -ForegroundColor Green
-    } else {
-        Write-Host "  ✗ $($pkg.Name) 설치 실패 (exit $LASTEXITCODE)" -ForegroundColor Yellow
-        $failed += $pkg.Name
+    if (-not $installedOk) {
+        if ($pkg.Required) {
+            Write-Host "  ✗ [필수] $($pkg.Name) 설치 실패 — 진행 중단" -ForegroundColor Red
+            $failedRequired += $pkg.Name
+        } else {
+            Write-Host "  ⚠ [선택] $($pkg.Name) 설치 실패 — 메인 기능엔 영향 없음" -ForegroundColor Yellow
+            $failedOptional += $pkg.Name
+        }
     }
 }
 Write-Progress -Id 1 -Activity "Step 2/4: 공통 패키지 설치" -Completed
 
-if ($failed.Count -gt 0) {
-    Write-Warn "다음 패키지 설치 실패: $($failed -join ', ')"
-    Write-Warn "수동 설치 후 본 스크립트를 다시 실행하세요."
+if ($failedRequired.Count -gt 0) {
+    Write-Err "다음 필수 패키지 설치 실패: $($failedRequired -join ', ')"
+    Write-Err "수동 설치 후 본 스크립트를 다시 실행하세요."
+    Write-Err "수동 검색: winget search <키워드>"
+    exit 1
+}
+if ($failedOptional.Count -gt 0) {
+    Write-Warn "선택 패키지 미설치: $($failedOptional -join ', ')"
+    Write-Warn "  → OCRmyPDF(책 스캔용)만 영향. 다른 기능은 정상 동작합니다."
+    Write-Warn "  수동 설치 필요 시:"
+    Write-Warn "    Ghostscript : https://ghostscript.com/releases/gsdnld.html"
+    Write-Warn "    qpdf        : https://github.com/qpdf/qpdf/releases"
 }
 
 # 새 셸 PATH 갱신 (현재 세션에서 즉시 활용)
@@ -182,19 +237,33 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 
 Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm 패키지 확인" -PercentComplete 10
 
-$claudeInstalled = npm list -g --depth=0 2>$null | Select-String '@anthropic-ai/claude-code'
-if ($claudeInstalled) {
-    Write-Info "Claude Code 이미 설치됨"
-} else {
-    Write-Host "[npm] @anthropic-ai/claude-code 다운로드·설치 중 (약 1~2분)..." -ForegroundColor Cyan
-    Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm install -g" -PercentComplete 40
-    # npm 자체 progress 출력 유지 (--loglevel http로 다운로드 표시)
-    & npm install -g @anthropic-ai/claude-code --loglevel http
-    if ($LASTEXITCODE -eq 0) {
-        Write-Info "✓ Claude Code 설치 완료: $(claude --version 2>$null)"
+# npm은 정보 메시지(npm notice)를 stderr로 보내는데, PowerShell의
+# $ErrorActionPreference='Stop' 환경에서는 이걸 진짜 에러처럼 빨갛게 표시함.
+# → 이 단계만 임시로 Continue로 바꾸고, 실제 성공 여부는 exit code로 판단.
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    $claudeInstalled = npm list -g --depth=0 2>$null | Select-String '@anthropic-ai/claude-code'
+    if ($claudeInstalled) {
+        Write-Info "Claude Code 이미 설치됨"
     } else {
-        Write-Err "Claude Code 설치 실패. 새 PowerShell(관리자)에서 직접 실행: npm install -g @anthropic-ai/claude-code"
+        Write-Host "[npm] @anthropic-ai/claude-code 다운로드·설치 중 (약 1~2분)..." -ForegroundColor Cyan
+        Write-Host "       (npm notice 빨간 메시지가 보여도 정상입니다 — 정보 출력일 뿐)" -ForegroundColor DarkGray
+        Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm install -g" -PercentComplete 40
+
+        # stderr를 stdout으로 합쳐서 PowerShell RemoteException 회피
+        & npm install -g @anthropic-ai/claude-code --loglevel http 2>&1 | ForEach-Object { Write-Host $_ }
+
+        if ($LASTEXITCODE -eq 0) {
+            $ver = & claude --version 2>$null
+            Write-Info "✓ Claude Code 설치 완료: $ver"
+        } else {
+            Write-Err "Claude Code 설치 실패 (exit $LASTEXITCODE)"
+            Write-Err "수동 실행: 새 PowerShell(관리자)에서  npm install -g @anthropic-ai/claude-code"
+        }
     }
+} finally {
+    $ErrorActionPreference = $prevEAP
 }
 Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Completed
 
@@ -205,22 +274,28 @@ Write-Step "4. jurisupport-plugins git clone"
 
 Write-Progress -Id 1 -Activity "Step 4/4: jurisupport-plugins git clone" -Status "확인 중" -PercentComplete 10
 
-$repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
-if (Test-Path $repoDir) {
-    Write-Info "기존 디렉토리 발견: $repoDir"
-    Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
-    Push-Location $repoDir
-    & git pull --progress
-    Pop-Location
-} else {
-    Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
-    # --progress: 압축 해제·다운로드 진행 표시
-    & git clone --progress https://github.com/jurisupport/jurisupport-plugins.git $repoDir
-    if ($LASTEXITCODE -eq 0) {
-        Write-Info "✓ Clone 완료: $repoDir"
+# git도 progress 출력을 stderr로 보냄 → 임시 EAP 변경
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    $repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
+    if (Test-Path $repoDir) {
+        Write-Info "기존 디렉토리 발견: $repoDir"
+        Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
+        Push-Location $repoDir
+        & git pull --progress 2>&1 | ForEach-Object { Write-Host $_ }
+        Pop-Location
     } else {
-        Write-Err "Clone 실패. 수동 실행: git clone https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+        Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
+        & git clone --progress https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -eq 0) {
+            Write-Info "✓ Clone 완료: $repoDir"
+        } else {
+            Write-Err "Clone 실패. 수동 실행: git clone https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+        }
     }
+} finally {
+    $ErrorActionPreference = $prevEAP
 }
 Write-Progress -Id 1 -Activity "Step 4/4: jurisupport-plugins git clone" -Completed
 

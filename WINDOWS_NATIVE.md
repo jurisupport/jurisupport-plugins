@@ -182,17 +182,59 @@ claude
 
 ## 문제 해결
 
+### 부트스트랩 단계 (windows-bootstrap.ps1)
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| **1/8 단계에서 멈춤** (Git for Windows) | UAC 팝업이 다른 모니터·작업 표시줄 뒤에 가려짐 | 작업 표시줄에서 노란 방패 아이콘 클릭 → "예". 또는 `Alt+Tab`으로 창 전환 |
+| 1/8에서 멈춤, UAC 없음 | winget 첫 호출 시 source agreement 동의 대기 | 새 버전(d59fcb4+)에서 사전 동의 자동 처리. `irm "...?t=$(Get-Random)" \| iex`로 캐시 우회 |
+| `입력 조건과 일치하는 패키지를 찾을 수 없습니다` (exit -1978335212) | winget 카탈로그 ID가 변경되었거나 오기 | 새 버전에서 fallback ID 자동 시도. 직접 확인은 `winget search <키워드>` |
+| Ghostscript / qpdf 설치 실패 | winget 카탈로그에 ID 없을 수 있음 (라이선스 별 갈래) | **선택 패키지라 진행 OK**. OCRmyPDF 책 스캔 사용 시만 영향. 수동 설치: [Ghostscript](https://ghostscript.com/releases/gsdnld.html), [qpdf](https://github.com/qpdf/qpdf/releases) |
+| `npm notice ...`가 빨갛게 RemoteException으로 표시 | npm 정보 메시지가 stderr로 출력 → PowerShell이 에러로 오인 | **정상 동작**. 새 버전에서 화면 표시 정상화. `claude --version`이 잘 나오면 설치 성공 |
+| `irm \| iex`가 ExecutionPolicy로 막힘 | 회사 보안 정책 | `Set-ExecutionPolicy Bypass -Scope Process -Force` 먼저 |
+| winget 명령 없음 | Windows 10 구버전 또는 App Installer 미설치 | Microsoft Store에서 "App Installer" 업데이트 또는 https://apps.microsoft.com/detail/9NBLGGH4NNS1 |
+| `npm install -g` 권한 오류 | npm 글로벌 prefix가 보호된 경로 | PowerShell **관리자 권한**으로 재시도 또는 `npm config set prefix "$env:LOCALAPPDATA\npm"` 후 재시도 |
+| `claude --version` "명령을 찾을 수 없음" | PATH가 갱신되지 않음 | 새 PowerShell 창을 열어주세요 |
+
+### install.sh 단계 (Git Bash)
+
 | 증상 | 해결 |
 |---|---|
-| `irm | iex`가 ExecutionPolicy로 막힘 | `Set-ExecutionPolicy Bypass -Scope Process -Force` 먼저 |
-| winget 명령 없음 | Microsoft Store에서 "App Installer" 업데이트 또는 https://apps.microsoft.com/detail/9NBLGGH4NNS1 |
-| `npm install -g` 권한 오류 | PowerShell을 **관리자 권한으로 실행** 후 재시도 또는 `npm config set prefix "$env:LOCALAPPDATA\npm"` 후 재시도 |
-| `claude --version`이 "명령을 찾을 수 없음" | 새 PowerShell 창을 열어주세요 (PATH 갱신 필요) |
+| `./install.sh: bad interpreter` | Git Bash가 아닌 다른 셸. Git Bash로 다시 실행 |
 | Git Bash에서 한글 깨짐 | Git Bash 옵션 → Text → Locale "ko_KR", Character set "UTF-8" |
-| `./install.sh: bad interpreter` | Git Bash가 아닌 다른 셸 사용 중. Git Bash로 다시 실행 |
+| `step` 함수 색 코드가 raw text로 보임 | 콘솔이 ANSI 미지원. Windows Terminal 설치 권장 |
+
+### 사용 단계
+
+| 증상 | 해결 |
+|---|---|
 | ChromeDriver 버전 충돌 | Selenium Manager가 자동 처리. 안 되면 Chrome 업데이트 또는 `pip install -U selenium` |
-| Tesseract에 한국어 없음 | UB-Mannheim 빌드(`winget show UB-Mannheim.TesseractOCR`) 재설치 — 설치 마법사에서 "Korean" 체크 |
-| OCRmyPDF "Could not find gs/qpdf" | `winget install ArtifexSoftware.GhostScript qpdf.qpdf` 재시도 후 새 Git Bash |
+| Tesseract에 한국어 없음 | UB-Mannheim 빌드 재설치 — 설치 마법사에서 "Korean" 체크 |
+| OCRmyPDF "Could not find gs/qpdf" | Ghostscript·qpdf 수동 설치 (위 부트스트랩 표 참조) |
+
+### 진단 체크리스트 (멈춤·실패 시)
+
+부트스트랩이 정상적이지 않으면 다음 순서로 확인하세요.
+
+```powershell
+# 1. winget 버전 (v1.6 이상 권장)
+winget --version
+
+# 2. winget source 정상?
+winget source list
+winget source update
+
+# 3. 개별 패키지 ID 존재 확인
+winget search Git.Git
+winget search ArtifexSoftware.GhostScript
+winget search qpdf
+
+# 4. 수동 설치 시 진행률 확인 (--silent 빼고)
+winget install --id Git.Git --accept-package-agreements --accept-source-agreements
+
+# 5. PATH 갱신 확인 (새 PowerShell 창)
+git --version; node --version; python --version
+```
 
 ---
 
