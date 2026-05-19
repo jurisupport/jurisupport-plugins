@@ -268,9 +268,10 @@ fi
 # ============================================================
 # 9. Optional: JuriSupport MCP 등록
 # ============================================================
-step 9 "(선택) JuriSupport 가입·MCP 연동"
+step 9 "(권장) JuriSupport 가입·MCP 연동 — 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
+JURI_TOKEN_URL="https://jurisupport.com/account/tokens"   # ← 실제 URL 다르면 수정
 JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
 
 # 브라우저 자동 열기 함수 (OS별)
@@ -284,37 +285,52 @@ open_url() {
 
 if claude mcp list 2>&1 | grep -q "^jurisupport:"; then
   info "JuriSupport MCP 이미 등록됨"
-  info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행"
 else
   echo ""
   echo "  JuriSupport SaaS — 사건·문서·기일·할일·증거 통합 관리 (한국 변호사 전용)"
+  echo "  💡 사건 50건까지 무료. 본격 송무 환경 갖추는 데 부담 없이 시작 가능합니다."
+  echo ""
   echo "  · 가입 페이지: $JURI_SIGNUP_URL"
-  echo "  · MCP 엔드포인트: $JURI_MCP_URL (SSE)"
+  echo "  · 토큰 발급:   $JURI_TOKEN_URL  (가입 후)"
+  echo "  · MCP 엔드포인트: $JURI_MCP_URL"
   echo ""
   read -r -p "JuriSupport 가입·MCP 연동을 진행할까요? [Y/n, 엔터=예] " ans
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL"
+    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
   else
-    read -r -p "이미 jurisupport.com 계정이 있으신가요? [Y/n, 엔터=예] " has_account
-    if [[ "$has_account" =~ ^[Nn]$ ]]; then
+    read -r -p "이미 jurisupport.com 계정 + 토큰이 있으신가요? [Y/n, 엔터=예] " has_token
+    if [[ "$has_token" =~ ^[Nn]$ ]]; then
       info "가입 페이지를 브라우저로 엽니다..."
       open_url "$JURI_SIGNUP_URL"
       echo ""
       echo "  ────────────────────────────────────────────────────────────"
-      echo "  1. 브라우저에서 jurisupport.com 가입 진행"
-      echo "  2. (변호사 인증 등) 가입 완료 후 다시 이 터미널로 돌아오기"
-      echo "  3. 엔터 → MCP 등록 진행, Ctrl+C → 건너뛰기"
+      echo "  1. 브라우저에서 jurisupport.com 가입 (사건 50건까지 무료)"
+      echo "  2. 가입·로그인 후 [내 계정 → API 토큰] 에서 토큰 발급"
+      echo "     ($JURI_TOKEN_URL)"
+      echo "  3. 토큰을 복사한 뒤 이 터미널로 돌아오세요"
       echo "  ────────────────────────────────────────────────────────────"
-      read -r -p "가입 완료 후 엔터를 누르세요: " _
+      read -r -p "준비 완료되면 엔터: " _
     fi
 
-    info "MCP 등록 중..."
-    if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" 2>&1 | tail -3; then
-      info "✓ JuriSupport MCP 등록 완료"
-      info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행 (jurisupport.com 로그인)"
+    echo ""
+    echo "  토큰을 붙여넣어 주세요 (입력은 화면에 표시되지 않습니다, 보안):"
+    read -r -s -p "  토큰: " JURI_TOKEN
+    echo ""
+
+    if [[ -z "$JURI_TOKEN" ]]; then
+      warn "토큰 미입력 → MCP 등록 건너뜀."
+      info "나중에 등록:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     else
-      warn "등록 실패. 수동: claude mcp add --transport sse jurisupport $JURI_MCP_URL"
+      info "MCP 등록 중..."
+      if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN" 2>&1 | tail -3; then
+        info "✓ JuriSupport MCP 등록 완료"
+        info "→ 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
+      else
+        warn "등록 실패. 토큰을 다시 확인하고 수동 등록:"
+        warn "  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+      fi
+      unset JURI_TOKEN  # 셸 환경에서 토큰 흔적 제거
     fi
   fi
 fi
