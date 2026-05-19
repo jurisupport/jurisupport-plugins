@@ -127,22 +127,51 @@ else
 fi
 
 # ============================================================
-# Step 2. songmu-legal 플러그인 등록 해제
+# Step 2. songmu-legal 플러그인·marketplace 등록 해제 (Claude Code CLI)
 # ============================================================
-step 2 "songmu-legal 플러그인 등록 해제"
+step 2 "songmu-legal 플러그인·marketplace 등록 해제"
 
+if ! command -v claude >/dev/null 2>&1; then
+  warn "claude CLI 없음 → 플러그인 등록 해제 건너뜀"
+else
+  # 1) 플러그인 uninstall
+  if claude plugin list 2>/dev/null | grep -q "songmu-legal"; then
+    if ask "songmu-legal 플러그인을 제거할까요?"; then
+      if $DRY_RUN; then
+        warn "  [dry-run] claude plugin uninstall songmu-legal"
+      else
+        claude plugin uninstall songmu-legal 2>&1 | tail -3 || warn "  플러그인 제거 실패. 수동: claude plugin uninstall songmu-legal"
+        info "  ✓ songmu-legal 제거"
+      fi
+    fi
+  else
+    info "  · 등록된 songmu-legal 플러그인 없음"
+  fi
+
+  # 2) marketplace remove
+  if claude plugin marketplace list 2>/dev/null | grep -q "jurisupport-plugins"; then
+    if ask "marketplace 'jurisupport-plugins' 등록도 제거할까요?"; then
+      if $DRY_RUN; then
+        warn "  [dry-run] claude plugin marketplace remove jurisupport-plugins"
+      else
+        claude plugin marketplace remove jurisupport-plugins 2>&1 | tail -3 || warn "  marketplace 제거 실패."
+        info "  ✓ marketplace 제거"
+      fi
+    fi
+  else
+    info "  · 등록된 marketplace 없음"
+  fi
+fi
+
+# 옛 cache 심볼릭 링크가 남아있으면 정리 (구버전 install.sh로 깔린 흔적)
 SONGMU_DST="$HOME/.claude/plugins/cache/jurisupport-plugins/songmu-legal"
 SONGMU_PARENT="$HOME/.claude/plugins/cache/jurisupport-plugins"
 if [[ -L "$SONGMU_DST" || -e "$SONGMU_DST" ]]; then
-  if ask "플러그인 등록을 제거할까요? ($SONGMU_DST)"; then
-    do_rm "$SONGMU_DST"
-    # 부모 폴더가 비면 같이 정리
-    if [[ -d "$SONGMU_PARENT" ]] && [[ -z "$(ls -A "$SONGMU_PARENT" 2>/dev/null)" ]]; then
-      do_rm "$SONGMU_PARENT"
-    fi
+  info "  옛 cache 잔여 정리: $SONGMU_DST"
+  do_rm "$SONGMU_DST"
+  if [[ -d "$SONGMU_PARENT" ]] && [[ -z "$(ls -A "$SONGMU_PARENT" 2>/dev/null)" ]]; then
+    do_rm "$SONGMU_PARENT"
   fi
-else
-  info "  · 등록된 songmu-legal 없음"
 fi
 
 # ============================================================
@@ -250,6 +279,28 @@ else
 fi
 
 # ============================================================
+# Step 9. JuriSupport MCP 등록 해제
+# ============================================================
+step 9 "JuriSupport MCP 등록 해제"
+
+if ! command -v claude >/dev/null 2>&1; then
+  warn "claude CLI 없음 → MCP 제거 건너뜀"
+elif claude mcp list 2>&1 | grep -q "^jurisupport:"; then
+  warn "  ⚠ JuriSupport 토큰은 본 명령 후에도 jurisupport.com 계정에 남아있습니다."
+  warn "  토큰 자체 무효화는 https://jurisupport.com/profile 에서 별도 진행."
+  if ask "JuriSupport MCP 등록을 클로드코드에서 제거할까요?"; then
+    if $DRY_RUN; then
+      warn "  [dry-run] claude mcp remove jurisupport"
+    else
+      claude mcp remove jurisupport 2>&1 | tail -3 || warn "  MCP 제거 실패. 수동: claude mcp remove jurisupport"
+      info "  ✓ JuriSupport MCP 등록 해제"
+    fi
+  fi
+else
+  info "  · 등록된 JuriSupport MCP 없음"
+fi
+
+# ============================================================
 # Done
 # ============================================================
 echo ""
@@ -262,6 +313,7 @@ cat <<EOF
 남아 있는 것 (의도적으로 보존):
   - ~/사건/ 폴더 (사용자 사건 자료)
   - 본 레포 자체 (~/jurisupport-plugins/) — 다시 install 가능
+  - 클라우드 측 JuriSupport 계정·데이터 (jurisupport.com 직접 관리)
 
 추가로 제거하려면:
 
@@ -271,7 +323,18 @@ cat <<EOF
   Claude Code 자체 (npm 글로벌):
     npm uninstall -g @anthropic-ai/claude-code
 
-  Windows 시스템 패키지 (Git, Node, Python, Chrome 등):
+  [Mac] 시스템 패키지 (brew):
+    brew uninstall jq ocrmypdf tesseract tesseract-lang
+    brew uninstall --cask google-chrome
+    # Node·Python은 다른 용도로도 쓰면 보존:
+    #   brew uninstall node python@3.12
+
+  [Linux] 시스템 패키지 (apt):
+    sudo apt remove jq ocrmypdf tesseract-ocr tesseract-ocr-kor
+    sudo apt remove google-chrome-stable
+    # Node·Python은 보존 권장
+
+  [Windows] 시스템 패키지:
     PowerShell에서 windows-uninstall.ps1 실행
     또는 winget uninstall <패키지>
 

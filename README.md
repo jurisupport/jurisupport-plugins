@@ -189,13 +189,48 @@ claude
 
 ```bash
 cd ~/jurisupport-plugins
-./uninstall.sh           # 각 단계마다 Y/n 확인
+./uninstall.sh           # 각 단계마다 Y/n 확인 (9단계)
 ./uninstall.sh --yes     # 전 항목 자동 제거 (사용자 데이터는 보존)
 ./uninstall.sh --dry-run # 미리보기만
 ```
 
-제거 대상: 데이터 보호 Hook 등록, songmu-legal 플러그인 등록, 클로드코드 스킬, toolkit 데이터 폴더(`~/legal-books`, `~/case-records`, `~/jurisupport-beopgoeul`), 검색 서버 stop.
-**보존 대상 (기본)**: `~/사건/` 폴더, Gemini API 키, Claude Code 자체, 시스템 패키지.
+**제거 대상** (9단계):
+1. 데이터 보호 Hook 등록 해제 (settings.json jq 편집)
+2. songmu-legal 플러그인 + marketplace 등록 해제 (`claude plugin uninstall`)
+3. 클로드코드 스킬 (lbox-guide, beopgoeul-search, legal-books, case-records)
+4. ~/legal-books/ (서버 stop + 폴더)
+5. ~/case-records/ (서버 stop + 폴더)
+6. ~/jurisupport-beopgoeul/
+7. ~/사건/_사건정보관리표.csv (사용자 데이터 가능성 — 확인 후)
+8. ~/.jurisupport/secrets.env (Gemini API 키 — 확인 후)
+9. JuriSupport MCP 등록 해제 (`claude mcp remove`)
+
+**보존 대상 (기본)**: `~/사건/` 폴더, Claude Code 자체, 시스템 패키지(brew/apt/winget로 깐 것), jurisupport.com 계정·데이터.
+
+### Mac — 시스템 패키지까지 모두 제거
+
+```bash
+# 1) 본 패키지 제거
+cd ~/jurisupport-plugins && ./uninstall.sh --yes
+rm -rf ~/jurisupport-plugins
+
+# 2) Claude Code (npm 글로벌)
+npm uninstall -g @anthropic-ai/claude-code
+
+# 3) Homebrew 시스템 패키지 (다른 용도로 안 쓰면)
+brew uninstall jq ocrmypdf tesseract tesseract-lang
+brew uninstall --cask google-chrome
+# Node·Python은 다른 앱도 쓸 가능성 → 보존 권장
+```
+
+### Linux — 시스템 패키지까지
+
+```bash
+cd ~/jurisupport-plugins && ./uninstall.sh --yes
+rm -rf ~/jurisupport-plugins
+npm uninstall -g @anthropic-ai/claude-code
+sudo apt remove jq ocrmypdf tesseract-ocr tesseract-ocr-kor google-chrome-stable
+```
 
 ### Windows — 시스템 패키지까지 모두 제거
 
