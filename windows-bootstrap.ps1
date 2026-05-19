@@ -357,39 +357,80 @@ try {
 Write-Progress -Id 1 -Activity "Step 4/4: jurisupport-plugins git clone" -Completed
 
 # ============================================================
-# 5. 마무리 안내
+# 5. install.sh 자동 실행 (Git Bash)
 # ============================================================
-Write-Step "5. 다음 단계"
+Write-Step "Step 5/5: install.sh 자동 실행 (Git Bash)"
+
+if (-not (Test-Path $gitBash)) {
+    Write-Err "Git Bash를 찾지 못해 install.sh를 자동 실행하지 못합니다."
+    Write-Err "수동: 시작 메뉴 → Git Bash → cd ~/jurisupport-plugins && ./install.sh"
+} elseif (-not (Test-Path "$repoDir\install.sh")) {
+    Write-Err "install.sh를 찾지 못함: $repoDir\install.sh"
+} else {
+    @"
+
+  install.sh가 곧 시작됩니다. 8단계 대화식 설치:
+    1~4. 의존성 점검, Hook, 플러그인, 스킬 (자동/Enter)
+    5~8. CSV 템플릿·검색 서버 (각 단계 [Y/n] 응답)
+
+  Gemini API 키(무료): https://aistudio.google.com/apikey
+  (6, 7번 단계에서 사용. 건너뛰려면 Enter)
+
+  3초 후 시작...
+"@ | Write-Host -ForegroundColor Cyan
+    Start-Sleep -Seconds 3
+
+    # PowerShell의 stdin을 그대로 bash에 전달 → 대화식 [Y/n] 정상 동작
+    # 임시로 EAP=Continue (bash가 stderr로 정보 보낼 수 있음)
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        Push-Location $repoDir
+        & $gitBash './install.sh'
+        $installExit = $LASTEXITCODE
+        Pop-Location
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
+
+    if ($installExit -eq 0) {
+        Write-Host ""
+        Write-Host "✓ install.sh 완료" -ForegroundColor Green
+    } else {
+        Write-Warn "install.sh 비정상 종료 (exit $installExit). 수동 재실행 가능:"
+        Write-Warn "  Git Bash → cd ~/jurisupport-plugins && ./install.sh"
+    }
+}
+
+# ============================================================
+# 6. 마무리 안내
+# ============================================================
+Write-Step "마무리"
 
 @"
 
-✓ 사전 설치 모두 완료!
+╔════════════════════════════════════════════════════════════╗
+║   ✓ 설치 완료!                                              ║
+╚════════════════════════════════════════════════════════════╝
 
-이제 다음 두 단계만 남았습니다:
+마지막 1단계 — Claude Code 로그인 (1회):
 
-  [1] Claude Code 로그인 (1회)
-      PowerShell 또는 Git Bash에서:
-        claude
-      → 브라우저가 열리며 Claude Pro/Max OAuth 진행
+  PowerShell 또는 Git Bash에서:
 
-  [2] 본 패키지 install.sh 실행 — 반드시 Git Bash 사용
-      ⚠ PowerShell에서 './install.sh' 입력하면 'sh 파일을 열 앱 선택'
-        대화상자가 뜹니다. .sh는 PowerShell이 실행 못 합니다.
+    claude
 
-      방법 A (권장): Git Bash 실행
-        시작 메뉴 → "Git Bash" 검색 → 클릭 → 다음 입력:
-          cd ~/jurisupport-plugins
-          ./install.sh
+  → 브라우저가 자동으로 열리며 Claude Pro/Max OAuth 진행.
+  → 한 번만 로그인하면 이후 영구 유지.
 
-      방법 B: 탐색기에서 폴더 우클릭
-        $repoDir 폴더 우클릭 → "Open Git Bash Here" → ./install.sh
+첫 사건 시작:
 
-      방법 C: PowerShell에서 bash 직접 호출
-        cd `$env:USERPROFILE\jurisupport-plugins
-        bash install.sh
+    mkdir `$env:USERPROFILE\사건\2026-001_홍길동_대여금
+    cd `$env:USERPROFILE\사건\2026-001_홍길동_대여금
+    claude
 
-설치 후 첫 사건 시작:
-  Git Bash에서  cd ~/사건/{사건폴더}  →  claude
+  클로드코드 안에서:
+    /songmu-legal:cold-start-interview      (최초 1회: 사무소 플레이북)
+    /songmu-legal:brief-protocol            (준비서면 작성 표준 절차)
 
 전체 가이드: $repoDir\WINDOWS_NATIVE.md
 GitHub:      https://github.com/jurisupport/jurisupport-plugins

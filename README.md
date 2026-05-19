@@ -42,14 +42,17 @@ claude                            # 새 터미널에서 OAuth 로그인 1회
 cd ~/jurisupport-plugins && ./install.sh   # 본 패키지 구성요소 설치
 ```
 
-### Windows — 두 가지 옵션 중 선택
+### Windows — 한 줄 자동 설치 (PowerShell)
 
-| 옵션 | 설치 명령 | 특징 | 가이드 |
-|---|---|---|---|
-| **W1. 네이티브 (권장)** | PowerShell: `irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 \| iex` | 10~15분, BIOS·재부팅 불필요, 회사 노트북 OK | [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) |
-| **W2. WSL2 (Linux 환경)** | WSL 설치 후 위 Mac/Linux 한 줄 명령 | 30~60분, BIOS 가상화·재부팅 필요, 리눅스 환경 그대로 | [WINDOWS_WSL.md](WINDOWS_WSL.md) |
+```powershell
+irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 | iex
+```
 
-**대부분의 변호사는 W1(네이티브)을 권합니다.** 회사 노트북 보안프로그램이 강한 경우만 W2 검토.
+이 한 줄이 **모든 의존성(Git/Node/Python/Chrome/Tesseract/qpdf/Ghostscript) + Claude Code + 본 레포 + install.sh까지** 자동으로 끝냅니다 (약 15분).
+
+사용자가 답할 것: UAC 팝업 "예", install.sh 단계별 `[Y/n]`, (선택) Gemini API 키.
+
+WSL2를 선호하시면 [WINDOWS_WSL.md](WINDOWS_WSL.md) (W2 옵션) 참조 — 회사 보안프로그램이 매우 강한 경우만 권장.
 
 ### 사전 준비
 

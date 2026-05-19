@@ -35,7 +35,7 @@
 
 ---
 
-## Step 1. PowerShell 한 줄 부트스트랩
+## Step 1. PowerShell 한 줄 — 모든 것 자동
 
 `시작` → `PowerShell` 검색 → **일반 실행** (관리자 권한 불필요) → 다음 한 줄:
 
@@ -43,69 +43,38 @@
 irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 | iex
 ```
 
-`irm | iex`가 차단되면 두 줄로:
+`irm | iex`가 ExecutionPolicy로 차단되면 두 줄로:
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
 iwr https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 -UseBasicParsing | iex
 ```
 
-### 자동 설치되는 것 (winget)
+이 한 줄이 자동으로 5단계 전부 진행:
 
-| 도구 | 패키지 ID | 용도 |
+| Step | 내용 | 사용자 응답 |
 |---|---|---|
-| Git for Windows | `Git.Git` | Git Bash 포함 |
-| Node.js LTS | `OpenJS.NodeJS.LTS` | Claude Code 실행 환경 |
-| Python 3.12 | `Python.Python.3.12` | toolkit Python 서버 |
-| Google Chrome | `Google.Chrome` | 법고을 Selenium 자동검색 |
-| jq | `jqlang.jq` | Hook JSON 설정 |
-| Tesseract OCR | `UB-Mannheim.TesseractOCR` | 책 스캔 OCR (한국어 포함) |
-| qpdf | `QPDF.QPDF` | OCRmyPDF 의존성 |
-| Ghostscript | (winget 카탈로그 부재) | OCRmyPDF 의존성 — **GitHub release에서 자동 다운로드·무인 설치** |
+| 1 | winget 점검·source 동의 | 없음 |
+| 2 | 공통 패키지 8개 winget 설치 (Git/Node/Python/Chrome/jq/Tesseract/qpdf 등) | **UAC 팝업 "예"** (작업 표시줄 노란 방패) |
+| 2-B | Ghostscript GitHub release 자동 다운로드·무인 설치 | UAC 팝업 "예" |
+| 3 | Claude Code npm 글로벌 설치 | 없음 |
+| 4 | 본 레포 git clone (`C:\Users\<계정>\jurisupport-plugins`) | 없음 |
+| 5 | install.sh 자동 실행 (Git Bash 호출) — 8단계 | **각 단계 [Y/n]**, (선택) Gemini API 키 |
 
-이후 자동으로 진행되는 것:
-- `npm install -g @anthropic-ai/claude-code` (Claude Code CLI 글로벌 설치)
-- `git clone https://github.com/jurisupport/jurisupport-plugins.git` → `C:\Users\<계정>\jurisupport-plugins\`
+**소요 시간**: 약 15분 (네트워크 속도 따라).
 
-**소요 시간**: 10~15분 (네트워크 속도 따라).
-
----
-
-## Step 2. 새 PowerShell 또는 Git Bash 실행
-
-PATH가 갱신되어야 하므로 **bootstrap 후에는 새 창**을 열어 주세요.
-
-### Claude Code OAuth 로그인 (1회)
-
-```powershell
-claude
-```
-
-브라우저가 자동으로 열리며 클로드 Pro/Max 계정으로 로그인. 한 번만 하면 됩니다.
-
----
-
-## Step 3. 본 패키지 설치 (Git Bash)
-
-`시작` → `Git Bash` 검색 → 실행 → 다음 두 줄:
-
-```bash
-cd ~/jurisupport-plugins
-./install.sh
-```
-
-대화식으로 진행되는 8단계:
+### install.sh 8단계 내용
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
 | 1 | 의존성 점검 | 필수 |
 | 2 | 데이터 보호 Hook 설치 (Git Bash 절대경로 등록) | 필수 |
-| 3 | songmu-legal 플러그인 등록 (Windows는 복사 방식) | 필수 |
+| 3 | songmu-legal 플러그인 등록 (Windows는 복사) | 필수 |
 | 4 | lbox-guide 스킬 설치 | 필수 |
-| 5 | 사건정보 관리표 CSV (`~/사건/_사건정보관리표.csv`) | 권장 |
-| 6 | legal-books 검색 서버 (Python + SQLite + FastAPI) | 선택 |
-| 7 | case-records 검색 서버 (Python + SQLite + FastAPI) | 선택 |
-| 8 | beopgoeul-search (Selenium 법고을 자동 검색) | 선택 |
+| 5 | 사건정보 관리표 CSV (`~/사건/_사건정보관리표.csv`) | 권장 [Y/n] |
+| 6 | legal-books 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
+| 7 | case-records 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
+| 8 | beopgoeul-search (Selenium 법고을 자동 검색) | 선택 [Y/n] |
 
 ### 첫 실행 시 Windows 방화벽 팝업
 
@@ -116,13 +85,23 @@ cd ~/jurisupport-plugins
 
 ---
 
-## Step 4. 첫 사건 시작
+## Step 2. Claude Code 로그인 (1회)
 
-Git Bash 또는 PowerShell에서:
+bootstrap이 끝나면 PowerShell 또는 Git Bash에서:
 
-```bash
-mkdir -p ~/사건/2026-001_홍길동_대여금
-cd ~/사건/2026-001_홍길동_대여금
+```powershell
+claude
+```
+
+브라우저가 자동으로 열리며 클로드 Pro/Max 계정으로 OAuth 로그인. 한 번만 하면 영구 유지.
+
+---
+
+## Step 3. 첫 사건 시작
+
+```powershell
+mkdir $env:USERPROFILE\사건\2026-001_홍길동_대여금
+cd $env:USERPROFILE\사건\2026-001_홍길동_대여금
 # (사건 자료를 이 폴더에 넣고)
 claude
 ```
