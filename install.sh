@@ -42,11 +42,13 @@ cat <<'BANNER'
 ║                                                                ║
 ╠════════════════════════════════════════════════════════════════╣
 ║                                                                ║
-║   ⚠️ 설치 전 반드시 읽어야 할 문서 / Required reading:         ║
+║   ⚠️ 설치 전 반드시 읽어야 할 문서:                            ║
 ║      guides/00_security.md (의뢰인 정보 보호 원칙)             ║
 ║                                                                ║
-║   계속: Enter / Continue: Enter                                ║
-║   취소: Ctrl+C  / Cancel: Ctrl+C                               ║
+║   💡 각 [Y/n] 프롬프트는 엔터만 치면 '예'로 진행됩니다.        ║
+║      거부할 때만 'n' 입력.                                     ║
+║                                                                ║
+║   계속: Enter    취소: Ctrl+C                                  ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
 
@@ -204,7 +206,7 @@ done
 step 5 "사건정보 관리표 템플릿 설정"
 
 if [[ ! -d "$HOME/사건" ]]; then
-  read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? [Y/n] " ans
+  read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? [Y/n, 엔터=예] " ans
   if [[ "$ans" =~ ^[Nn]$ ]]; then
     info "건너뛰기. 나중에 실행: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
   else
@@ -222,7 +224,7 @@ fi
 # ============================================================
 step 6 "(선택) legal-books 검색 서버 설치"
 
-read -r -p "지금 설치할까요? [Y/n] " ans
+read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
 if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
 else
@@ -234,7 +236,7 @@ fi
 # ============================================================
 step 7 "(선택) case-records 검색 서버 설치"
 
-read -r -p "지금 설치할까요? [Y/n] " ans
+read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
 if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패. 나중에 다시 시도하세요."
 else
@@ -246,7 +248,7 @@ fi
 # ============================================================
 step 8 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
-read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [Y/n] " ans
+read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [Y/n, 엔터=예] " ans
 if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
   bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. 수동 검색용 lbox-guide 스킬은 사용 가능."
@@ -271,7 +273,7 @@ else
   echo "  ($JURI_MCP_URL 원격 SSE 서버. 첫 사용 시 브라우저로 OAuth 로그인)"
   echo "  미가입 시: https://jurisupport.com 에서 가입 후 등록 가능."
   echo ""
-  read -r -p "지금 등록할까요? [Y/n] " ans
+  read -r -p "지금 등록할까요? [Y/n, 엔터=예] " ans
   if [[ ! "$ans" =~ ^[Nn]$ ]]; then
     if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" 2>&1 | tail -3; then
       info "✓ JuriSupport MCP 등록 완료"
