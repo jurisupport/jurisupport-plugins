@@ -372,14 +372,21 @@ Write-Step "5. 다음 단계"
         claude
       → 브라우저가 열리며 Claude Pro/Max OAuth 진행
 
-  [2] 본 패키지 install.sh 실행 (Git Bash 사용)
-      시작 메뉴 → "Git Bash" 검색 → 실행 → 다음 입력:
+  [2] 본 패키지 install.sh 실행 — 반드시 Git Bash 사용
+      ⚠ PowerShell에서 './install.sh' 입력하면 'sh 파일을 열 앱 선택'
+        대화상자가 뜹니다. .sh는 PowerShell이 실행 못 합니다.
 
-        cd ~/jurisupport-plugins
-        ./install.sh
+      방법 A (권장): Git Bash 실행
+        시작 메뉴 → "Git Bash" 검색 → 클릭 → 다음 입력:
+          cd ~/jurisupport-plugins
+          ./install.sh
 
-      → 데이터 보호 Hook, songmu-legal 플러그인, 스킬, 검색 서버 등이
-         대화식으로 설치됩니다 (약 10분).
+      방법 B: 탐색기에서 폴더 우클릭
+        $repoDir 폴더 우클릭 → "Open Git Bash Here" → ./install.sh
+
+      방법 C: PowerShell에서 bash 직접 호출
+        cd `$env:USERPROFILE\jurisupport-plugins
+        bash install.sh
 
 설치 후 첫 사건 시작:
   Git Bash에서  cd ~/사건/{사건폴더}  →  claude
