@@ -30,9 +30,20 @@ esac
 info "플랫폼: $PLATFORM"
 
 # Python 명령 + venv activate 경로
+# Windows: py launcher가 가리키는 python.exe 절대경로를 추출
+# (PY="py -3.12"처럼 공백 들어가면 "$PY" 인용 시 깨지므로)
 if [[ "$PLATFORM" == "windows" ]]; then
-  PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
-  [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
+  if command -v py >/dev/null 2>&1 && py -3.12 --version >/dev/null 2>&1; then
+    PY="$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)"
+    info "Python 3.12 절대경로: $PY"
+  elif command -v py >/dev/null 2>&1 && py -3.11 --version >/dev/null 2>&1; then
+    PY="$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)"
+    info "Python 3.11 절대경로: $PY (3.12 권장)"
+  else
+    PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
+    [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
+    info "Python 경로: $PY ($("$PY" --version 2>&1))"
+  fi
   VENV_ACTIVATE="Scripts/activate"
 else
   PY="python3"
@@ -120,21 +131,24 @@ fi
 "$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/$VENV_ACTIVATE"
+info "venv Python 버전: $(python --version 2>&1)"
 
 info "Python 패키지 설치 중 (수 분 소요)"
 python -m pip install --progress-bar on --upgrade pip
 # Windows에선 ocrmypdf도 pip로 설치 (ghostscript·qpdf·tesseract는 winget으로 시스템 설치됨)
 if [[ "$PLATFORM" == "windows" ]]; then
-  pip install --progress-bar on ocrmypdf
+  pip install --progress-bar on --only-binary :all: ocrmypdf
 fi
-pip install --progress-bar on \
+# --only-binary :all: → wheel만 사용 (Windows에 C 컴파일러 없어도 안전)
+# numpy 버전 pin 풀기: Python 3.13+에서도 wheel 있는 최신 사용
+pip install --progress-bar on --only-binary :all: \
   fastapi==0.115.0 \
   uvicorn==0.31.0 \
   pydantic==2.9.2 \
   sqlite-utils==3.37 \
   google-genai==0.3.0 \
   pypdf==5.0.1 \
-  numpy==1.26.4 \
+  "numpy>=1.26,<3" \
   python-dotenv==1.0.1
 
 # ============================================================

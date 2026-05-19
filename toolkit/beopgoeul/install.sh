@@ -22,18 +22,22 @@ case "$OS" in
   *) error "지원하지 않는 OS: $OS (macOS/Linux/Windows Git Bash만 지원)" ;;
 esac
 
-# Python 명령 결정 (Windows는 python, 그 외는 python3)
+# Python 명령 결정 (Windows: py launcher가 가리키는 python.exe 절대경로 추출)
 if [[ "$PLATFORM" == "windows" ]]; then
-  PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
-  [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
-else
-  PY="python3"
-fi
-
-# Venv 활성화 스크립트 경로 (Windows venv는 Scripts/activate)
-if [[ "$PLATFORM" == "windows" ]]; then
+  if command -v py >/dev/null 2>&1 && py -3.12 --version >/dev/null 2>&1; then
+    PY="$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)"
+    info "Python 3.12 절대경로: $PY"
+  elif command -v py >/dev/null 2>&1 && py -3.11 --version >/dev/null 2>&1; then
+    PY="$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)"
+    info "Python 3.11 절대경로: $PY (3.12 권장)"
+  else
+    PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
+    [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
+    info "Python 경로: $PY ($("$PY" --version 2>&1))"
+  fi
   VENV_ACTIVATE="Scripts/activate"
 else
+  PY="python3"
   VENV_ACTIVATE="bin/activate"
 fi
 
@@ -139,8 +143,9 @@ mkdir -p "$ROOT/scripts"
 "$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/$VENV_ACTIVATE"
+info "venv Python 버전: $(python --version 2>&1)"
 python -m pip install --progress-bar on --upgrade pip
-pip install --progress-bar on selenium==4.25.0
+pip install --progress-bar on --only-binary :all: selenium==4.25.0
 info "Selenium 설치 완료"
 
 # Copy search script
