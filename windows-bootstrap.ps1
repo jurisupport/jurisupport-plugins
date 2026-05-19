@@ -502,7 +502,7 @@ Write-Step "마무리"
 
     [수동 fallback B] JuriSupport MCP (사건 50건까지 무료):
       1) https://jurisupport.com 가입
-      2) [내 계정 → API 토큰] 에서 토큰 발급
+      2) https://jurisupport.com/profile 에서 API 토큰 발급
       3) claude mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse ``
            --header "Authorization: Bearer <발급받은_토큰>"
 

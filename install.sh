@@ -271,7 +271,7 @@ fi
 step 9 "(권장) JuriSupport 가입·MCP 연동 — 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
-JURI_TOKEN_URL="https://jurisupport.com/account/tokens"   # ← 실제 URL 다르면 수정
+JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
 JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
 
 # 브라우저 자동 열기 함수 (OS별)
@@ -306,11 +306,17 @@ else
       echo ""
       echo "  ────────────────────────────────────────────────────────────"
       echo "  1. 브라우저에서 jurisupport.com 가입 (사건 50건까지 무료)"
-      echo "  2. 가입·로그인 후 [내 계정 → API 토큰] 에서 토큰 발급"
-      echo "     ($JURI_TOKEN_URL)"
-      echo "  3. 토큰을 복사한 뒤 이 터미널로 돌아오세요"
+      echo "  2. 가입·로그인 완료되면 엔터 → 프로필 페이지 자동으로 열립니다"
       echo "  ────────────────────────────────────────────────────────────"
-      read -r -p "준비 완료되면 엔터: " _
+      read -r -p "가입 완료 후 엔터: " _
+      info "프로필 페이지(토큰 발급)를 엽니다..."
+      open_url "$JURI_TOKEN_URL"
+      echo ""
+      echo "  ────────────────────────────────────────────────────────────"
+      echo "  3. 프로필 페이지($JURI_TOKEN_URL)에서 API 토큰 발급"
+      echo "  4. 토큰을 복사한 뒤 이 터미널로 돌아오세요"
+      echo "  ────────────────────────────────────────────────────────────"
+      read -r -p "토큰 복사 완료되면 엔터: " _
     fi
 
     echo ""
