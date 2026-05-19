@@ -222,8 +222,8 @@ fi
 # ============================================================
 step 6 "(선택) legal-books 검색 서버 설치"
 
-read -r -p "지금 설치할까요? [y/N] " ans
-if [[ "$ans" =~ ^[Yy]$ ]]; then
+read -r -p "지금 설치할까요? [Y/n] " ans
+if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
 else
   info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
@@ -234,8 +234,8 @@ fi
 # ============================================================
 step 7 "(선택) case-records 검색 서버 설치"
 
-read -r -p "지금 설치할까요? [y/N] " ans
-if [[ "$ans" =~ ^[Yy]$ ]]; then
+read -r -p "지금 설치할까요? [Y/n] " ans
+if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패. 나중에 다시 시도하세요."
 else
   info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
@@ -246,8 +246,8 @@ fi
 # ============================================================
 step 8 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
-read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [y/N] " ans
-if [[ "$ans" =~ ^[Yy]$ ]]; then
+read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [Y/n] " ans
+if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
   bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. 수동 검색용 lbox-guide 스킬은 사용 가능."
 else
@@ -271,8 +271,8 @@ else
   echo "  ($JURI_MCP_URL 원격 SSE 서버. 첫 사용 시 브라우저로 OAuth 로그인)"
   echo "  미가입 시: https://jurisupport.com 에서 가입 후 등록 가능."
   echo ""
-  read -r -p "지금 등록할까요? [y/N] " ans
-  if [[ "$ans" =~ ^[Yy]$ ]]; then
+  read -r -p "지금 등록할까요? [Y/n] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
     if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" 2>&1 | tail -3; then
       info "✓ JuriSupport MCP 등록 완료"
       info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행"
