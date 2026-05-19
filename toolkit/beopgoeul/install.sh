@@ -22,14 +22,23 @@ case "$OS" in
   *) error "지원하지 않는 OS: $OS (macOS/Linux/Windows Git Bash만 지원)" ;;
 esac
 
-# Python 명령 결정 (Windows: py launcher가 가리키는 python.exe 절대경로 추출)
+# Windows 경로(C:\...)를 Git Bash에서 쓸 수 있는 POSIX(/c/...)로 변환
+to_posix() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -u "$1" 2>/dev/null || echo "$1"
+  else
+    echo "$1"
+  fi
+}
+
+# Python 명령 결정 (Windows: py launcher → cygpath로 POSIX 변환)
 if [[ "$PLATFORM" == "windows" ]]; then
   if command -v py >/dev/null 2>&1 && py -3.12 --version >/dev/null 2>&1; then
-    PY="$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)"
-    info "Python 3.12 절대경로: $PY"
+    PY="$(to_posix "$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
+    info "Python 3.12: $PY"
   elif command -v py >/dev/null 2>&1 && py -3.11 --version >/dev/null 2>&1; then
-    PY="$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)"
-    info "Python 3.11 절대경로: $PY (3.12 권장)"
+    PY="$(to_posix "$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
+    info "Python 3.11: $PY (3.12 권장)"
   else
     PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
     [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
