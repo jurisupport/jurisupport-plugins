@@ -29,6 +29,11 @@ $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# 작업 디렉토리를 사용자 홈으로 고정.
+# (PowerShell 현재 위치가 $env:USERPROFILE\jurisupport-plugins 안에 있으면
+#  나중에 Move-Item/Remove-Item이 "항목이 사용 중" 에러로 실패함)
+Set-Location $env:USERPROFILE
+
 function Write-Info { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor Green }
 function Write-Warn { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor Yellow }
 function Write-Err  { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor Red }
@@ -335,13 +340,33 @@ try {
             Write-Warn "디렉토리는 있는데 git 저장소가 아닙니다: $repoDir"
             $backup = "$repoDir.broken-$(Get-Date -Format 'yyyyMMddHHmmss')"
             Write-Warn "  손상 가능성 → '$backup'으로 백업하고 새로 clone합니다."
+            # Move-Item은 non-terminating error를 내므로 -ErrorAction Stop 강제
             try {
-                Move-Item -Path $repoDir -Destination $backup -Force
-                Write-Info "  ✓ 백업 완료: $backup"
+                Move-Item -Path $repoDir -Destination $backup -Force -ErrorAction Stop
             } catch {
-                Write-Err "  백업 실패. 수동 삭제 필요: Remove-Item -Recurse -Force $repoDir"
+                Write-Err ""
+                Write-Err "  ✗ 백업 실패: $($_.Exception.Message)"
+                Write-Err ""
+                Write-Err "  원인: 다른 프로세스(PowerShell·Git Bash·탐색기 등)가"
+                Write-Err "  $repoDir 안에 들어가 있어 폴더 이동이 막힘."
+                Write-Err ""
+                Write-Err "  해결:"
+                Write-Err "    1) $repoDir 폴더를 사용하는 다른 PowerShell/Git Bash/탐색기 창을 모두 닫기"
+                Write-Err "    2) 새 PowerShell 창에서 다음 명령 실행:"
+                Write-Err ""
+                Write-Err "         cd ~"
+                Write-Err "         Remove-Item -Recurse -Force $repoDir"
+                Write-Err "         irm `"https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1?t=`$(Get-Random)`" | iex"
+                Write-Err ""
                 exit 1
             }
+            # 백업 결과 재확인 (Move 성공해도 디렉토리가 여전히 있으면 부분 실패)
+            if (Test-Path $repoDir) {
+                Write-Err "  ✗ Move 후에도 원본 디렉토리가 남아있음: $repoDir"
+                Write-Err "    위 [해결] 단계대로 수동 정리 후 재실행 필요."
+                exit 1
+            }
+            Write-Info "  ✓ 백업 완료: $backup"
         }
     }
 
