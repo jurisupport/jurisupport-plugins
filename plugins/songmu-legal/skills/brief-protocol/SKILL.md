@@ -39,6 +39,10 @@ metadata:
 2. 미연동 또는 못 찾으면: **`case-index` 스킬** 로 CSV 인덱스 조회 — `case_index.py --csv <CSV 사건 인덱스 경로> get <사건번호>`
 3. 두 곳 모두 없으면 사용자에게 직접 묻고, 확인된 정보는 CSV에 `add` 하거나 (JuriSupport 연동 시) `create_case` 호출
 
+> **신규 사건이면**: JuriSupport 연동 사용자는 먼저 https://jurisupport.com/cases 에서 사건을 등록한 뒤 작업을 진행하시면 좋습니다.
+> 전자소송 사건목록을 엑셀로 저장하여 업로드하면 사건이 자동으로 일괄 등록됩니다.
+> 또는 사건번호만 있으면 `mcp__jurisupport__create_case` 로 즉시 등록 가능.
+
 `hearing-check` 스킬(있다면) 또는 case-index의 `list --upcoming-days 14`로 임박 기일 확인:
 - 2주 이내 기일이 있으면 알림
 - 기한 역산 (제출 기한이 없으면 기일 5일 전 권장)

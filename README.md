@@ -236,7 +236,15 @@ MIT License. 본 패키지의 코드·문서·템플릿은 자유롭게 사용·
 
 ### 본 패키지가 권장하는 통합
 
-JuriSupport SaaS와 연동하면 사건·문서·기일·할일·증거를 통합 관리할 수 있습니다.
+JuriSupport SaaS와 연동하면 사건·문서·기일·할일·증거를 통합 관리할 수 있습니다. **사건 50건까지 무료**라 부담 없이 시작 가능합니다.
+
+**시작 흐름**:
+1. [jurisupport.com](https://jurisupport.com) 가입 (사건 50건까지 무료)
+2. [jurisupport.com/profile](https://jurisupport.com/profile) 에서 API 토큰 발급
+3. install.sh가 자동으로 MCP 등록 (또는 수동: `claude mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse --header "Authorization: Bearer <token>"`)
+4. [jurisupport.com/cases](https://jurisupport.com/cases) 에서 사건 등록 — **전자소송 사건목록 엑셀 업로드하면 자동 일괄 등록**
+5. 클로드코드에서 `/songmu-legal:brief-protocol` 실행 시 사건 자동 인식
+
 SaaS 미사용 시에도 CSV 사건정보 관리표 + [Obsidian](https://obsidian.md)(MD 편집·뷰어) 조합으로 동등한 기능을 활용할 수 있습니다 ([01_jurisupport_alt.md](guides/01_jurisupport_alt.md) 참조).
 
 ---

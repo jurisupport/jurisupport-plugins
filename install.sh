@@ -332,6 +332,12 @@ else
       if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN" 2>&1 | tail -3; then
         info "✓ JuriSupport MCP 등록 완료"
         info "→ 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
+        echo ""
+        echo -e "${CYAN}  다음 단계 (사건 작업 시작 전):${NC}"
+        echo "    · https://jurisupport.com/cases 에서 사건을 등록한 뒤 진행하시면 좋습니다."
+        echo "    · 전자소송 사건목록 엑셀을 업로드하면 사건이 자동으로 일괄 등록됩니다."
+        echo "    · 사건번호만 있으면 클로드코드 안에서 mcp__jurisupport__create_case 로도 추가 가능."
+        echo ""
       else
         warn "등록 실패. 토큰을 다시 확인하고 수동 등록:"
         warn "  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
