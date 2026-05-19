@@ -150,15 +150,17 @@ if [[ "$PLATFORM" == "windows" ]]; then
 fi
 # --only-binary :all: → wheel만 사용 (Windows에 C 컴파일러 없어도 안전)
 # numpy 버전 pin 풀기: Python 3.13+에서도 wheel 있는 최신 사용
+# pydantic은 ocrmypdf 17.4.2+ 와 호환되는 2.12.5+ 범위 사용
+# (이전엔 ==2.9.2로 못박아두어 ocrmypdf와 충돌)
 pip install --progress-bar on --only-binary :all: \
-  fastapi==0.115.0 \
-  uvicorn==0.31.0 \
-  pydantic==2.9.2 \
-  sqlite-utils==3.37 \
-  google-genai==0.3.0 \
-  pypdf==5.0.1 \
+  "fastapi>=0.115,<1" \
+  "uvicorn>=0.31,<1" \
+  "pydantic>=2.12.5,<3" \
+  "sqlite-utils>=3.37" \
+  "google-genai>=0.3" \
+  "pypdf>=5,<6" \
   "numpy>=1.26,<3" \
-  python-dotenv==1.0.1
+  "python-dotenv>=1"
 
 # ============================================================
 # Initialize SQLite DB
