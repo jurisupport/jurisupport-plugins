@@ -493,25 +493,16 @@ Write-Step "마무리"
     → 브라우저가 자동으로 열리며 Claude Pro/Max OAuth 진행.
     → 한 번만 로그인하면 이후 영구 유지.
 
-[2] songmu-legal 플러그인 등록 (1회, ⚠ 반드시 실행):
+  플러그인·JuriSupport MCP 모두 install.sh가 자동 등록.
+  자동 설치가 실패한 경우에만 수동 명령:
 
-    클로드코드(`claude`) 안에서 다음 두 줄을 차례로 입력:
+    [수동 fallback A] 플러그인:
+      claude plugin marketplace add $repoDir
+      claude plugin install songmu-legal@jurisupport-plugins
 
-      /plugin marketplace add $repoDir
-      /plugin install songmu-legal
-
-    → 이 단계 안 하면 /songmu-legal:cold-start-interview 가
-       'Unknown command' 또는 'No commands match'로 뜹니다.
-
-[2-B] JuriSupport MCP 등록 (선택):
-
-    install.sh의 9번 단계에서 'y' 선택했으면 자동 등록됨.
-    안 했으면 PowerShell 또는 Git Bash에서:
-
+    [수동 fallback B] JuriSupport MCP:
       claude mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse
-
-    → 첫 사용 시 브라우저로 OAuth 자동 로그인 (jurisupport.com 계정 필요).
-    → 없어도 본 패키지 모든 기능 사용 가능 (CSV 사건 인덱스로 대체).
+      (첫 사용 시 브라우저로 OAuth 자동, jurisupport.com 계정 필요)
 
 첫 사건 시작:
 

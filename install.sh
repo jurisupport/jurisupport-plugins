@@ -152,10 +152,6 @@ if [[ ! -f "$SONGMU_LOCAL/.claude-plugin/plugin.json" ]]; then
 elif [[ ! -f "$MARKETPLACE_DIR/.claude-plugin/marketplace.json" ]]; then
   warn "marketplace.json 없음: $MARKETPLACE_DIR/.claude-plugin/marketplace.json"
 else
-  # Claude Code v2.x: marketplace add + plugin install 흐름이 정식.
-  # 비대화식 자동 등록은 슬래시 커맨드를 -p 모드가 받지 않거나 무한 대기할
-  # 위험이 있어 안 함. 대신 사용자가 클로드코드 안에서 직접 두 줄 입력.
-
   # Windows에선 경로를 Windows 형식으로 (Claude Code Windows 빌드는 \ 경로 선호)
   if [[ "$PLATFORM" == "windows" ]] && command -v cygpath >/dev/null 2>&1; then
     MARKETPLACE_PATH="$(cygpath -w "$MARKETPLACE_DIR")"
@@ -163,18 +159,29 @@ else
     MARKETPLACE_PATH="$MARKETPLACE_DIR"
   fi
 
-  echo ""
-  echo -e "${YELLOW}┌────────────────────────────────────────────────────────────┐${NC}"
-  echo -e "${YELLOW}│  ⚠ 플러그인 등록은 클로드코드 안에서 직접 입력 필요         │${NC}"
-  echo -e "${YELLOW}│                                                              │${NC}"
-  echo -e "${YELLOW}│  설치 후 'claude' 실행 → 다음 두 줄을 차례로 입력:           │${NC}"
-  echo -e "${YELLOW}│                                                              │${NC}"
-  echo -e "${CYAN}│    /plugin marketplace add $MARKETPLACE_PATH${NC}"
-  echo -e "${CYAN}│    /plugin install songmu-legal${NC}"
-  echo -e "${YELLOW}│                                                              │${NC}"
-  echo -e "${YELLOW}│  이 단계 안 하면 슬래시 커맨드가 'No commands match'로 뜸. │${NC}"
-  echo -e "${YELLOW}└────────────────────────────────────────────────────────────┘${NC}"
-  echo ""
+  # 1) marketplace 등록 (이미 있으면 건너뜀)
+  if claude plugin marketplace list 2>/dev/null | grep -q "jurisupport-plugins"; then
+    info "marketplace 'jurisupport-plugins' 이미 등록됨"
+  else
+    info "marketplace 자동 등록 중: $MARKETPLACE_PATH"
+    if claude plugin marketplace add "$MARKETPLACE_PATH" 2>&1 | tail -3; then
+      info "✓ marketplace 등록 완료"
+    else
+      warn "marketplace 등록 실패. 수동: claude plugin marketplace add $MARKETPLACE_PATH"
+    fi
+  fi
+
+  # 2) songmu-legal 플러그인 설치 (이미 있으면 건너뜀)
+  if claude plugin list 2>/dev/null | grep -q "songmu-legal"; then
+    info "songmu-legal 플러그인 이미 설치됨"
+  else
+    info "songmu-legal 자동 설치 중..."
+    if claude plugin install songmu-legal@jurisupport-plugins 2>&1 | tail -3; then
+      info "✓ songmu-legal 설치 완료"
+    else
+      warn "자동 설치 실패. 수동: claude plugin install songmu-legal@jurisupport-plugins"
+    fi
+  fi
 
   # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
   if [[ ! -f "$SONGMU_LOCAL/CLAUDE.md" ]] && [[ -f "$SONGMU_LOCAL/CLAUDE.md.example" ]]; then
@@ -261,29 +268,54 @@ fi
 # ============================================================
 # 9. Optional: JuriSupport MCP 등록
 # ============================================================
-step 9 "(선택) JuriSupport MCP 등록"
+step 9 "(선택) JuriSupport 가입·MCP 연동"
 
+JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
+
+# 브라우저 자동 열기 함수 (OS별)
+open_url() {
+  case "$PLATFORM" in
+    mac)     open "$1" 2>/dev/null ;;
+    linux)   xdg-open "$1" 2>/dev/null || true ;;
+    windows) cmd.exe /c "start $1" 2>/dev/null || powershell.exe -Command "Start-Process '$1'" 2>/dev/null ;;
+  esac
+}
 
 if claude mcp list 2>&1 | grep -q "^jurisupport:"; then
   info "JuriSupport MCP 이미 등록됨"
+  info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행"
 else
   echo ""
-  echo "  JuriSupport SaaS는 사건·문서·기일·할일·증거 통합 관리 서비스입니다."
-  echo "  ($JURI_MCP_URL 원격 SSE 서버. 첫 사용 시 브라우저로 OAuth 로그인)"
-  echo "  미가입 시: https://jurisupport.com 에서 가입 후 등록 가능."
+  echo "  JuriSupport SaaS — 사건·문서·기일·할일·증거 통합 관리 (한국 변호사 전용)"
+  echo "  · 가입 페이지: $JURI_SIGNUP_URL"
+  echo "  · MCP 엔드포인트: $JURI_MCP_URL (SSE)"
   echo ""
-  read -r -p "지금 등록할까요? [Y/n, 엔터=예] " ans
-  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+  read -r -p "JuriSupport 가입·MCP 연동을 진행할까요? [Y/n, 엔터=예] " ans
+  if [[ "$ans" =~ ^[Nn]$ ]]; then
+    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL"
+    info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
+  else
+    read -r -p "이미 jurisupport.com 계정이 있으신가요? [Y/n, 엔터=예] " has_account
+    if [[ "$has_account" =~ ^[Nn]$ ]]; then
+      info "가입 페이지를 브라우저로 엽니다..."
+      open_url "$JURI_SIGNUP_URL"
+      echo ""
+      echo "  ────────────────────────────────────────────────────────────"
+      echo "  1. 브라우저에서 jurisupport.com 가입 진행"
+      echo "  2. (변호사 인증 등) 가입 완료 후 다시 이 터미널로 돌아오기"
+      echo "  3. 엔터 → MCP 등록 진행, Ctrl+C → 건너뛰기"
+      echo "  ────────────────────────────────────────────────────────────"
+      read -r -p "가입 완료 후 엔터를 누르세요: " _
+    fi
+
+    info "MCP 등록 중..."
     if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" 2>&1 | tail -3; then
       info "✓ JuriSupport MCP 등록 완료"
-      info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행"
+      info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행 (jurisupport.com 로그인)"
     else
       warn "등록 실패. 수동: claude mcp add --transport sse jurisupport $JURI_MCP_URL"
     fi
-  else
-    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL"
-    info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
   fi
 fi
 
@@ -303,18 +335,19 @@ $(printf '\033[0;32m')========================================
   1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
   2. 새 터미널에서 클로드코드 시작:
        claude
-  3. ⚠ 클로드코드 안에서 플러그인 등록 (반드시 실행):
+  3. (JuriSupport 등록한 경우) 첫 도구 호출 시 자동으로 브라우저 OAuth 열림
+  4. 시작 명령:
+       "안녕. 설치된 스킬과 플러그인 보여줘."
+  5. 첫 사건 설정: /songmu-legal:cold-start-interview
+  6. 첫 준비서면: /songmu-legal:brief-protocol
+
+플러그인 자동 설치 안 됐다면 (드물지만) 클로드코드 안에서 수동 실행:
        /plugin marketplace add $MARKETPLACE_PATH
        /plugin install songmu-legal
-  4. (JuriSupport 등록한 경우) 첫 명령에서 자동 OAuth 브라우저 열림
-  5. 시작 명령:
-       "안녕. 설치된 스킬과 플러그인 보여줘."
-  6. 첫 사건 설정: /songmu-legal:cold-start-interview
-  7. 첫 준비서면: /songmu-legal:brief-protocol
 
 전체 가이드: $TOOLKIT_DIR/README.md
 
 ⚠ /songmu-legal:cold-start-interview 가 "Unknown command"로 뜨면
-   3번 단계(plugin marketplace add + plugin install)를 안 한 것입니다.
+   plugin 자동 설치가 실패한 것 — 위 수동 명령 두 줄 실행하세요.
 
 EOF
