@@ -149,6 +149,27 @@ ROOT="$HOME/jurisupport-beopgoeul"
 info "설치 위치: $ROOT"
 mkdir -p "$ROOT/scripts"
 
+# 기존 venv 정리 (재실행 시 Permission denied 방지)
+if [[ -d "$ROOT/.venv" ]]; then
+  info "기존 venv 발견 — 정리 시도"
+  sleep 1
+  if ! rm -rf "$ROOT/.venv" 2>/dev/null; then
+    warn "기존 venv 삭제 실패. Python 프로세스가 잡고 있을 수 있음."
+    case "$PLATFORM" in
+      windows)
+        warn "PowerShell에서 다음 실행 후 재시도:"
+        warn "  Get-Process python,pythonw -ErrorAction SilentlyContinue | Stop-Process -Force"
+        warn "  Remove-Item -Recurse -Force '$ROOT/.venv'"
+        ;;
+      *)
+        warn "수동 실행: pkill -f 'jurisupport-beopgoeul/.venv'; rm -rf '$ROOT/.venv'"
+        ;;
+    esac
+    error "venv 정리 필요."
+  fi
+  info "✓ 기존 venv 정리 완료"
+fi
+
 "$PY" -m venv "$ROOT/.venv"
 # shellcheck disable=SC1091
 source "$ROOT/.venv/$VENV_ACTIVATE"

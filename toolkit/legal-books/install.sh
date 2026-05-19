@@ -126,6 +126,33 @@ info "디렉토리 구조 생성: $ROOT"
 mkdir -p "$ROOT/books" "$ROOT/db" "$ROOT/server" "$ROOT/scripts" "$ROOT/logs"
 
 # ============================================================
+# 기존 서버 중지 + 잠긴 venv 정리 (재실행 시 Permission denied 방지)
+# ============================================================
+if [[ -d "$ROOT/.venv" ]]; then
+  info "기존 venv 발견 — 서버 중지 후 정리 시도"
+  # 1) 서버 중지 (있다면)
+  if [[ "$PLATFORM" == "windows" ]] && [[ -f "$ROOT/scripts/server.ps1" ]]; then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$ROOT/scripts/server.ps1")" stop 2>/dev/null || true
+  elif [[ -f "$ROOT/scripts/server.sh" ]]; then
+    bash "$ROOT/scripts/server.sh" stop 2>/dev/null || true
+  fi
+  sleep 1
+  # 2) venv 삭제
+  if ! rm -rf "$ROOT/.venv" 2>/dev/null; then
+    warn "기존 venv 삭제 실패. Python 프로세스가 잡고 있을 수 있음."
+    if [[ "$PLATFORM" == "windows" ]]; then
+      warn "PowerShell에서 다음 실행 후 재시도:"
+      warn "  Get-Process python,pythonw -ErrorAction SilentlyContinue | Stop-Process -Force"
+      warn "  Remove-Item -Recurse -Force '$ROOT/.venv'"
+    else
+      warn "수동 실행: pkill -f 'legal-books/.venv'; rm -rf '$ROOT/.venv'"
+    fi
+    error "venv 정리 필요."
+  fi
+  info "✓ 기존 venv 정리 완료"
+fi
+
+# ============================================================
 # Python venv + packages
 # ============================================================
 info "Python 가상환경 생성"
