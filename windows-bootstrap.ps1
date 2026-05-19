@@ -333,40 +333,68 @@ $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
     $repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
-    # 기존 디렉토리 점검 — .git이 없거나 손상되면 자동 백업 후 새 clone
+    # 기존 디렉토리 점검 — .git이 없거나 손상되면 in-place 복구 시도
+    # (백업·삭제는 폴더 잠금 시 실패하므로, 폴더 이동 없이 그 자리에서 git 저장소로 복구)
+    $needsInPlaceRecovery = $false
     if (Test-Path $repoDir) {
         $isValidRepo = Test-Path (Join-Path $repoDir '.git')
         if (-not $isValidRepo) {
             Write-Warn "디렉토리는 있는데 git 저장소가 아닙니다: $repoDir"
-            $backup = "$repoDir.broken-$(Get-Date -Format 'yyyyMMddHHmmss')"
-            Write-Warn "  손상 가능성 → '$backup'으로 백업하고 새로 clone합니다."
-            # Move-Item은 non-terminating error를 내므로 -ErrorAction Stop 강제
-            try {
-                Move-Item -Path $repoDir -Destination $backup -Force -ErrorAction Stop
-            } catch {
-                Write-Err ""
-                Write-Err "  ✗ 백업 실패: $($_.Exception.Message)"
-                Write-Err ""
-                Write-Err "  원인: 다른 프로세스(PowerShell·Git Bash·탐색기 등)가"
-                Write-Err "  $repoDir 안에 들어가 있어 폴더 이동이 막힘."
-                Write-Err ""
-                Write-Err "  해결:"
-                Write-Err "    1) $repoDir 폴더를 사용하는 다른 PowerShell/Git Bash/탐색기 창을 모두 닫기"
-                Write-Err "    2) 새 PowerShell 창에서 다음 명령 실행:"
-                Write-Err ""
-                Write-Err "         cd ~"
-                Write-Err "         Remove-Item -Recurse -Force $repoDir"
-                Write-Err "         irm `"https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1?t=`$(Get-Random)`" | iex"
-                Write-Err ""
+            Write-Info "  → 폴더 이동 없이 그 자리에서 git 저장소로 복구합니다 (in-place recovery)."
+            $needsInPlaceRecovery = $true
+        }
+    }
+
+    if ($needsInPlaceRecovery) {
+        # In-place 복구: git init + remote add + fetch + reset --hard
+        # 기존 파일은 reset --hard로 GitHub 상태로 덮어써짐
+        # git의 stderr를 정보 출력으로 처리하기 위해 EAP 임시 변경
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        Push-Location $repoDir
+        try {
+            & git init --quiet 2>&1 | Out-Null
+            & git remote remove origin 2>$null | Out-Null
+            & git remote add origin https://github.com/jurisupport/jurisupport-plugins.git
+            & git config core.autocrlf false
+            Write-Host "[git fetch] origin에서 최신 받는 중..." -ForegroundColor Cyan
+            & git fetch origin --progress 2>&1 | ForEach-Object { Write-Host $_ }
+            if ($LASTEXITCODE -ne 0) {
+                Pop-Location
+                $ErrorActionPreference = $prevEAP
+                Write-Err "git fetch 실패. 네트워크/방화벽 확인 후 재시도."
                 exit 1
             }
-            # 백업 결과 재확인 (Move 성공해도 디렉토리가 여전히 있으면 부분 실패)
-            if (Test-Path $repoDir) {
-                Write-Err "  ✗ Move 후에도 원본 디렉토리가 남아있음: $repoDir"
-                Write-Err "    위 [해결] 단계대로 수동 정리 후 재실행 필요."
-                exit 1
-            }
-            Write-Info "  ✓ 백업 완료: $backup"
+            Write-Host "[git reset --hard] origin/main으로 정규화..." -ForegroundColor Cyan
+            & git reset --hard origin/main 2>&1 | ForEach-Object { Write-Host $_ }
+            & git branch --set-upstream-to=origin/main main 2>$null | Out-Null
+        } finally {
+            Pop-Location
+            $ErrorActionPreference = $prevEAP
+        }
+        Write-Info "✓ in-place 복구 완료: $repoDir"
+    } elseif (Test-Path $repoDir) {
+        # 정상 git 저장소 → pull + line ending 정규화
+        Write-Info "기존 git 저장소 발견: $repoDir"
+        Write-Host "[git config] core.autocrlf=false 강제" -ForegroundColor DarkGray
+        Push-Location $repoDir
+        & git config core.autocrlf false
+        Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
+        & git pull --progress 2>&1 | ForEach-Object { Write-Host $_ }
+        Write-Host "[git checkout] .gitattributes 기준으로 line ending 정상화..." -ForegroundColor DarkGray
+        & git rm --cached -r . --quiet 2>&1 | Out-Null
+        & git reset --hard HEAD 2>&1 | ForEach-Object { Write-Host $_ }
+        Pop-Location
+    } else {
+        # 새 clone
+        Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
+        Write-Host "  (core.autocrlf=false 강제 — .sh 파일 CRLF 손상 방지)" -ForegroundColor DarkGray
+        & git clone --progress -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -eq 0) {
+            Write-Info "✓ Clone 완료: $repoDir"
+        } else {
+            Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+            exit 1
         }
     }
 
