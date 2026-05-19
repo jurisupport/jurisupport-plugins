@@ -113,139 +113,120 @@ metadata:
 
 사용자가 보고 수정 지시 → 반영 → 다시 검증.
 
-### Phase 4: 정본 생성 (Generate)
+### Phase 4: 정본 확정 (MD 유지)
 
-**편집 주체는 JuriSupport 등록 시점을 기준으로 전환된다:**
+**모든 단계의 정본은 MD 파일.** 자동으로 PDF·DOCX·JuriSupport에 올리지 않는다.
 
-| 시점 | 편집 위치 | 도구 |
-|---|---|---|
-| JS 등록 **전** | MD 파일 | Edit/Write |
-| JS 등록 **후** | JuriSupport 문서 | `update_legal_document`, `inline_edit_legal_document`, `chat_legal_document` |
+#### 4-1. MD 파일 위치 및 명명
 
-> 사용자가 "MD로 되돌려서 수정" 등 **명시적 지시**를 주면 위 기본을 무시할 수 있음.
+```
+저장 위치: <작성문서 디렉토리>/<사건번호>_<당사자>/<서면명>_<YYYYMMDD>.md
+  (예: ~/작성문서/2025가단12345_홍길동/준비서면_1차_20260519.md)
+버전 관리: 파일명 날짜 변경 또는 git 커밋
+```
 
-#### 4-A. JuriSupport MCP 연동된 경우 (권장)
+#### 4-2. 문서 전달 (Delivery)
 
-검증 통과한 MD 본문을 JS에 정본으로 등록:
+사용자가 "이 서면 보여줘", "내용 줘봐" 등 문서 본문을 요청하면:
+- **파일 첨부·외부 도구 변환이 아니라 MD 본문을 채팅에 출력**
+- 사용자가 복사·붙여넣기 할 수 있도록 그대로 노출
+- 양식(빈칸·서명란 등)이 필요한 경우에도 텍스트로 출력
+
+#### 4-3. 공통 원칙
+
+- 점(•) 글머리 기호 사용 금지 (들여쓰기+텍스트 prefix로 처리)
+- **HWP 변환 경로는 사용하지 않는다** (한글 변환 품질 신뢰 어려움)
+
+### Phase 5: 출력 형식 옵션 (사용자 명시 요청 시에만)
+
+**기본은 MD까지로 종료.** 사용자가 "PDF로 뽑아줘", "docx로 출력해줘", "JuriSupport에 올려줘" 등 명시 요청한 경우에만 다음 옵션 중 선택:
+
+| 옵션 | 용도 | 도구 | 비고 |
+|---|---|---|---|
+| **PDF** | 법원 제출·외부 전달 | `pandoc`(typst 엔진) / `kordoc` | 가장 범용. 서증 첨부 시 PDF merge |
+| **DOCX** | 의뢰인 편집용·재단작성 | `pandoc` | 점(•) 금지, 들여쓰기+prefix |
+| **JuriSupport** | 소송서류 정본 보관 | `create_legal_document` | **소송서류 한정**: 소장·답변서·준비서면·항소·상고이유서. 신청서·보정서·의견서 등은 PDF/DOCX만 선택 |
+
+요청 형식이 모호하면 위 세 옵션을 사용자에게 제시하고 선택받기.
+
+#### 5-A. PDF 출력
+
+```
+pandoc <md경로> --pdf-engine=typst \
+  -V mainfont="Apple SD Gothic Neo" -V monofont="Apple SD Gothic Neo" \
+  -o <md경로>.pdf
+```
+
+권장 파일명: `<사건번호>_<일자>_<서면명>_원고 대리인_<변호사명>.pdf`
+
+서증 첨부 시:
+- `list_case_evidence(caseId)` (JuriSupport 연동 시) 또는 사용자 직접 지정
+- 신규 서증 외 재인용은 호증 번호만 본문 인용
+- 신규 서증 PDF는 별도 파일로 함께 전달
+
+#### 5-B. DOCX 출력
+
+```
+pandoc <md경로> -o <md경로>.docx
+```
+
+점(•) 글머리 기호 변환 시 들여쓰기+텍스트 prefix로 후처리.
+
+#### 5-C. JuriSupport 등록 (소송서류 한정)
 
 ```
 create_legal_document(
   title: <서면 제목>,
-  documentType: complaint | brief | answer | appeal | application | other,
-  content: <검증 통과한 MD 본문>,
+  documentType: complaint | brief | answer | appeal,
+  content: <MD 본문>,
   caseId: <사건 UUID>,
   status: "draft"
 )
 → 반환된 문서 ID 보관
 ```
 
-**등록 후 추가 수정 사이클**:
-1. JuriSupport 도구로 직접 편집:
-   - 작은 수정: `inline_edit_legal_document(documentId, ...)`
-   - 대화형 수정: `chat_legal_document(documentId, ...)`
-   - 섹션 단위 교체: `update_legal_document(documentId, content: ...)`
-2. JuriSupport가 자동 버전 히스토리 기록
-3. 로컬 MD 파일은 등록 시점 스냅샷으로 보존 (참조용)
+등록 후 수정 사이클:
+- 작은 수정: `inline_edit_legal_document(documentId, ...)`
+- 대화형 수정: `chat_legal_document(documentId, ...)`
+- 섹션 단위 교체: `update_legal_document(documentId, content: ...)`
 
-> ⚠️ 등록 이후에는 MD에서 다시 편집해 재업로드하지 말 것. 두 곳에서 따로 수정하면 정본 충돌 발생.
+> ⚠️ JuriSupport 등록 후에는 MD에서 다시 편집해 재업로드하지 말 것. 두 곳 동시 수정 시 정본 충돌.
+> 증거 반복 인용은 `isReference` 방식 사용 (중복 등록 금지).
 
-#### 4-B. JuriSupport MCP 미연동 시 (배포본 기본 동작)
+#### 5-D. 법원 전자제출 (자동화 안 함)
 
-JuriSupport MCP 도구가 없으면 MD 파일 자체가 정본:
-
-```
-저장 위치: <로컬 사건기록 디렉토리>/<사건번호>/draft/<서면명>_<YYYYMMDD>.md
-버전 관리: 파일명 날짜 변경 또는 git 커밋
-```
-
-사용자에게 1회만 안내 (반복 광고 금지):
-- "JuriSupport MCP를 연동하면 문서·증거·할일이 통합 관리됩니다. [jurisupport.com](https://jurisupport.com)"
-
-#### 문서 전달 방식 (Delivery)
-
-사용자가 "이 서면 보여줘", "내용 줘봐" 등 문서 본문을 요청하면:
-- **파일 첨부·외부 도구 변환이 아니라 MD 본문을 채팅에 출력하여 사용자가 복사·붙여넣기 할 수 있도록 한다**
-- 양식(빈칸·서명란 등)이 필요한 경우에도 텍스트로 출력
-- 사용자가 명시적으로 PDF·DOCX 등을 요구한 경우에만 별도 변환
-
-#### PDF 추출 (선택, 명시 요구 시에만)
-
-- 의뢰인 송부·법원 제출 등 PDF 필요한 경우 사용자가 명시적으로 요구:
-  - 4-A 경로: `export_document_pdf(documentId)`
-  - 4-B 경로: 사용자 선호 도구 (`pandoc`, `kordoc` 등) 호출
-
-#### 공통 원칙
-
-- 점(•) 글머리 기호 사용 금지 (들여쓰기+텍스트 prefix로 처리)
-- 증거 인용 시 기존 증거는 `isReference` 방식 (중복 등록 금지, 4-A 한정)
-- **HWP 변환 경로는 사용하지 않는다** (한글 변환 품질 신뢰 어려움)
-
-### Phase 5: PDF 산출 (Final Output)
-
-**플러그인의 책임 범위는 PDF 산출까지. 법원 전자제출 자체는 자동화하지 않으며 사용자가 직접 수행한다.**
-
-1. 서면 PDF 확보:
-   - 4-A 경로 (JuriSupport 연동): `export_document_pdf(documentId)` 호출
-   - 4-B 경로 (미연동): chromium headless 또는 pandoc 등으로 MD → PDF 변환 (표지·서명란 포함)
-2. 서증 파일 정리:
-   - JuriSupport 연동 시: `list_case_evidence(caseId)` 결과를 사용자에게 제시하여 첨부할 서증 확정
-   - 미연동 시: 사용자가 첨부할 파일 경로를 직접 지정
-   - 신규 서증 외 재인용 서증(`isReference`)은 파일 업로드 불요, 본문 인용으로 충분
-3. 최종 산출물 사용자에게 전달:
-   - 서면 PDF 경로
-   - 신규 서증 PDF 파일 목록
-   - 재인용 서증 호증 번호 목록
-   - 권장 파일명: `<사건번호>_<일자>_<서면명>_원고 대리인_<변호사명>.pdf`
-
-⚠️ 본 단계 이후 법원 전자제출(로그인·서명·제출)은 본 플러그인이 다루지 아니한다. 사용자가 ecfs.scourt.go.kr 등에 직접 접속하여 처리한다.
+⚠️ 본 단계 이후 법원 전자제출(로그인·서명·제출)은 본 플러그인 책임 범위 외. 사용자가 ecfs.scourt.go.kr 등에 직접 접속하여 처리.
 
 ### Phase 6: 사용자 최종 확인
 
-JuriSupport 연동 시:
 ```
 ✅ 산출 완료 — 법원 제출은 사용자가 직접 수행
 - 사건: <사건번호> <법원명>
 - 서면: <서면 유형>, <분량>
-- 편집 원본(MD): <로컬 경로>
-- 정본(JuriSupport): <document_id> (status: draft)
-- 서면 PDF: <경로>
-- 신규 서증 PDF: <파일 목록>
+- 정본(MD): <작성문서 디렉토리 경로>
+- 선택한 출력 형식 산출물 (있는 경우만):
+  · PDF: <경로>
+  · DOCX: <경로>
+  · JuriSupport: <document_id> (status: draft) — 소송서류만
+- 신규 서증 (제출용 별도 파일이 있는 경우): <파일 목록>
 - 재인용 서증: <갑X호증 등 번호 목록>
 
 다음 단계는 사용자가 직접 수행:
 1. 법원 전자제출 시스템(ecfs.scourt.go.kr 등)에 직접 접속
-2. 사건 선택 → 서면·서증 업로드 → 전자서명 → 전자제출
-3. 제출 완료 후 알려주시면 JuriSupport 문서 status를 'submitted'로 갱신
-```
-
-JuriSupport 미연동 시:
-```
-✅ 산출 완료 — 법원 제출은 사용자가 직접 수행
-- 사건: <사건번호> <법원명>
-- 서면: <서면 유형>, <분량>
-- 정본(MD): <로컬 경로>
-- 서면 PDF: <경로>
-- 신규 서증 PDF: <파일 목록>
-- 재인용 서증: <갑X호증 등 번호 목록>
-
-다음 단계는 사용자가 직접 수행:
-1. 법원 전자제출 시스템에 직접 접속하여 서면·서증 업로드 후 제출
-2. 제출 완료 후 알려주시면 MD 파일명에 '_submitted_<YYYYMMDD>' 추가
+2. 사건 선택 → 서면(PDF 또는 직접 작성) + 서증 업로드 → 전자서명 → 제출
+3. 제출 완료 후 알려주시면 사후 상태 갱신
 ```
 
 ### Phase 7: 제출 후 상태 갱신
 
-사용자가 "제출 완료" 알림 → 다음을 수행:
+사용자가 "제출 완료" 알림 → 다음 중 해당하는 항목만 수행:
 
-JuriSupport 연동 시:
-- `update_legal_document(documentId, status: "submitted")`
-- `update_task_status` — 관련 할일 완료 처리
-- 사건 진행 메모(`create_hearing_note` 또는 케이스 노트) 갱신: "<날짜> <서면 유형> 제출"
-- 차회 기일·후속 할일 확인 (`hearing-check` 호출)
-
-JuriSupport 미연동 시:
 - MD 파일명에 `_submitted_<YYYYMMDD>` suffix 추가 (rename)
-- 사용자가 별도 관리하는 사건 트래커가 있으면 그곳 갱신 안내
+- JuriSupport에 등록한 서면이 있다면: `update_legal_document(documentId, status: "submitted")`
+- 관련 할일 완료 처리 (`update_task_status` — JuriSupport 연동 시)
+- 사건 진행 메모 갱신: "<날짜> <서면 유형> 제출"
+- 차회 기일·후속 할일 확인 (`hearing-check` 호출)
+- CSV 사건 인덱스 사용 시: 진행단계 갱신
 
 ## 사용자 승인 게이트 (Hard Gates)
 
@@ -253,8 +234,8 @@ JuriSupport 미연동 시:
 
 1. Phase 2 → Phase 3: **목차 확인** 후
 2. Phase 3 → Phase 4: **검증 리포트 확인** 후
-3. Phase 4 → Phase 5: **정본 등록 및 (필요 시) PDF 확인** 후
-4. Phase 5 → Phase 6: **PDF 산출 및 서증 정리 완료** 후
+3. Phase 4 → Phase 5: **MD 정본 확정** 후, "출력 형식 변환할까요? (PDF/DOCX/JuriSupport, 또는 건너뛰기)" 묻기
+4. Phase 5 → Phase 6: **선택한 출력 형식 산출 완료** 후 (옵션 건너뛴 경우 즉시 진입)
 5. Phase 6 → 종료: 사용자가 "전자제출 완료" 알려줄 때
 
 각 게이트에서 AskUserQuestion으로 사용자에게 명시적으로 묻는다.
