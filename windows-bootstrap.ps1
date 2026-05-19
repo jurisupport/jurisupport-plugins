@@ -328,27 +328,45 @@ $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
     $repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
+    # 기존 디렉토리 점검 — .git이 없거나 손상되면 자동 백업 후 새 clone
     if (Test-Path $repoDir) {
-        Write-Info "기존 디렉토리 발견: $repoDir"
+        $isValidRepo = Test-Path (Join-Path $repoDir '.git')
+        if (-not $isValidRepo) {
+            Write-Warn "디렉토리는 있는데 git 저장소가 아닙니다: $repoDir"
+            $backup = "$repoDir.broken-$(Get-Date -Format 'yyyyMMddHHmmss')"
+            Write-Warn "  손상 가능성 → '$backup'으로 백업하고 새로 clone합니다."
+            try {
+                Move-Item -Path $repoDir -Destination $backup -Force
+                Write-Info "  ✓ 백업 완료: $backup"
+            } catch {
+                Write-Err "  백업 실패. 수동 삭제 필요: Remove-Item -Recurse -Force $repoDir"
+                exit 1
+            }
+        }
+    }
+
+    if (Test-Path $repoDir) {
+        # 정상 git 저장소 → pull + line ending 정규화
+        Write-Info "기존 git 저장소 발견: $repoDir"
         Write-Host "[git config] core.autocrlf=false 강제 (Windows .sh CRLF 손상 방지)" -ForegroundColor DarkGray
         Push-Location $repoDir
         & git config core.autocrlf false
         Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
         & git pull --progress 2>&1 | ForEach-Object { Write-Host $_ }
-        # 기존에 CRLF로 받은 파일이 있으면 LF로 다시 받기
         Write-Host "[git checkout] .gitattributes 기준으로 line ending 정상화..." -ForegroundColor DarkGray
         & git rm --cached -r . --quiet 2>&1 | Out-Null
         & git reset --hard HEAD 2>&1 | ForEach-Object { Write-Host $_ }
         Pop-Location
     } else {
+        # 새 clone
         Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
         Write-Host "  (core.autocrlf=false 강제 — .sh 파일 CRLF 손상 방지)" -ForegroundColor DarkGray
-        # -c core.autocrlf=false: 이 레포만 LF 유지 (전역 설정 안 건드림)
         & git clone --progress -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -eq 0) {
             Write-Info "✓ Clone 완료: $repoDir"
         } else {
             Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+            exit 1
         }
     }
 } finally {
