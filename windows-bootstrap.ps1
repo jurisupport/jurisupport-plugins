@@ -413,14 +413,24 @@ Write-Step "마무리"
 ║   ✓ 설치 완료!                                              ║
 ╚════════════════════════════════════════════════════════════╝
 
-마지막 1단계 — Claude Code 로그인 (1회):
+남은 2단계:
 
-  PowerShell 또는 Git Bash에서:
+[1] Claude Code 로그인 (1회):
 
     claude
 
-  → 브라우저가 자동으로 열리며 Claude Pro/Max OAuth 진행.
-  → 한 번만 로그인하면 이후 영구 유지.
+    → 브라우저가 자동으로 열리며 Claude Pro/Max OAuth 진행.
+    → 한 번만 로그인하면 이후 영구 유지.
+
+[2] songmu-legal 플러그인 등록 (1회, ⚠ 반드시 실행):
+
+    클로드코드(`claude`) 안에서 다음 두 줄을 차례로 입력:
+
+      /plugin marketplace add $repoDir
+      /plugin install songmu-legal
+
+    → 이 단계 안 하면 /songmu-legal:cold-start-interview 가
+       'Unknown command' 또는 'No commands match'로 뜹니다.
 
 첫 사건 시작:
 
@@ -428,9 +438,9 @@ Write-Step "마무리"
     cd `$env:USERPROFILE\사건\2026-001_홍길동_대여금
     claude
 
-  클로드코드 안에서:
-    /songmu-legal:cold-start-interview      (최초 1회: 사무소 플레이북)
-    /songmu-legal:brief-protocol            (준비서면 작성 표준 절차)
+    클로드코드 안에서:
+      /songmu-legal:cold-start-interview   (최초 1회: 사무소 플레이북)
+      /songmu-legal:brief-protocol         (준비서면 작성 표준 절차)
 
 전체 가이드: $repoDir\WINDOWS_NATIVE.md
 GitHub:      https://github.com/jurisupport/jurisupport-plugins

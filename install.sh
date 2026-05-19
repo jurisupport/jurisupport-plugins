@@ -150,9 +150,9 @@ if [[ ! -f "$SONGMU_LOCAL/.claude-plugin/plugin.json" ]]; then
 elif [[ ! -f "$MARKETPLACE_DIR/.claude-plugin/marketplace.json" ]]; then
   warn "marketplace.json 없음: $MARKETPLACE_DIR/.claude-plugin/marketplace.json"
 else
-  # Claude Code v2.x는 marketplace add + plugin install 흐름이 정식.
-  # CLI에서 비대화식으로 호출 시도 → 실패하면 사용자 수동 안내.
-  AUTO_OK=false
+  # Claude Code v2.x: marketplace add + plugin install 흐름이 정식.
+  # 비대화식 자동 등록은 슬래시 커맨드를 -p 모드가 받지 않거나 무한 대기할
+  # 위험이 있어 안 함. 대신 사용자가 클로드코드 안에서 직접 두 줄 입력.
 
   # Windows에선 경로를 Windows 형식으로 (Claude Code Windows 빌드는 \ 경로 선호)
   if [[ "$PLATFORM" == "windows" ]] && command -v cygpath >/dev/null 2>&1; then
@@ -161,22 +161,18 @@ else
     MARKETPLACE_PATH="$MARKETPLACE_DIR"
   fi
 
-  info "marketplace 자동 등록 시도..."
-  if claude -p "/plugin marketplace add $MARKETPLACE_PATH" >/dev/null 2>&1; then
-    if claude -p "/plugin install songmu-legal" >/dev/null 2>&1; then
-      info "✓ songmu-legal 자동 등록·설치 완료"
-      AUTO_OK=true
-    fi
-  fi
-
-  if ! $AUTO_OK; then
-    warn "자동 등록 실패 → 클로드코드 안에서 다음 두 줄을 직접 입력해야 합니다:"
-    echo ""
-    echo -e "${CYAN}  /plugin marketplace add $MARKETPLACE_PATH${NC}"
-    echo -e "${CYAN}  /plugin install songmu-legal${NC}"
-    echo ""
-    warn "이 단계 안 하면 /songmu-legal:cold-start-interview 등 슬래시 커맨드가 'Unknown command'로 뜹니다."
-  fi
+  echo ""
+  echo -e "${YELLOW}┌────────────────────────────────────────────────────────────┐${NC}"
+  echo -e "${YELLOW}│  ⚠ 플러그인 등록은 클로드코드 안에서 직접 입력 필요         │${NC}"
+  echo -e "${YELLOW}│                                                              │${NC}"
+  echo -e "${YELLOW}│  설치 후 'claude' 실행 → 다음 두 줄을 차례로 입력:           │${NC}"
+  echo -e "${YELLOW}│                                                              │${NC}"
+  echo -e "${CYAN}│    /plugin marketplace add $MARKETPLACE_PATH${NC}"
+  echo -e "${CYAN}│    /plugin install songmu-legal${NC}"
+  echo -e "${YELLOW}│                                                              │${NC}"
+  echo -e "${YELLOW}│  이 단계 안 하면 슬래시 커맨드가 'No commands match'로 뜸. │${NC}"
+  echo -e "${YELLOW}└────────────────────────────────────────────────────────────┘${NC}"
+  echo ""
 
   # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
   if [[ ! -f "$SONGMU_LOCAL/CLAUDE.md" ]] && [[ -f "$SONGMU_LOCAL/CLAUDE.md.example" ]]; then
