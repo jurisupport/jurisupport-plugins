@@ -231,6 +231,11 @@ fi
 # ============================================================
 step 6 "(선택) legal-books 검색 서버 설치"
 
+echo ""
+echo "  · 사무소 보유 교과서를 검색·인용하게 해주는 도구입니다."
+echo "  · 지금은 서버·DB 틀만 세움. 책은 설치 후 add_book.sh로 한 권씩 추가."
+echo "  · 보유 책이 없거나 당장 OCR 시간 없으면 건너뛰고 나중에 재설치 가능."
+echo ""
 read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
 if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
@@ -243,6 +248,12 @@ fi
 # ============================================================
 step 7 "(선택) case-records 검색 서버 설치"
 
+echo ""
+echo "  · 사무소 과거 사건 서면·판결문을 검색하게 해주는 도구입니다."
+echo "  · 지금은 서버·DB 틀만 세움. 사건은 설치 후 ingest_case.sh / ingest_all.sh로 인덱싱."
+echo "  · 사건폴더가 정리되어 있으면 일괄 인덱싱(1건 1~3분) 가능."
+echo "  · 당장 인덱싱 시간 없으면 건너뛰고 나중에 재설치 가능."
+echo ""
 read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
 if [[ ! "$ans" =~ ^[Nn]$ ]]; then
   bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패. 나중에 다시 시도하세요."

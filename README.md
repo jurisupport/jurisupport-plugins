@@ -94,8 +94,8 @@ claude
 | **데이터 보호 Hook** | 외부 API 호출 시 의뢰인 정보 자동 감지·차단 | jq |
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 (수동·약관 준수) | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 **자동 검색** (Selenium) | Chrome + Python 3.9+ |
-| **legal-books 스킬 + toolkit** | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 |
-| **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 사용자 과거 사건폴더 |
+| **legal-books 스킬 + toolkit** | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 (책 1권당 5~30분, 점진 추가) |
+| **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 사용자 과거 사건폴더 (사건 1건당 1~3분, 일괄 인덱싱 지원) |
 | **사건정보 관리표 템플릿** | JuriSupport 미사용 시 엑셀/CSV 사건관리 | 없음 |
 
 ---
@@ -148,6 +148,17 @@ claude
 2. **[guides/01_jurisupport_alt.md](guides/01_jurisupport_alt.md)** — JuriSupport 미사용 시 사건정보 관리법 (10분)
 3. **첫 사건 시도** — `/songmu-legal:cold-start-interview` 실행하여 사무소 플레이북 작성
 4. **첫 준비서면 작성** — `/songmu-legal:brief-protocol` 실행
+
+### legal-books · case-records — 처음엔 빈 DB, 점진적으로 채우기
+
+위 두 toolkit은 설치 직후 **검색 서버·DB만 빈 채로 세워**집니다. 본 패키지가 변호사의 보유 서적·과거 사건을 가져올 방법이 없으므로 사용자가 직접 채워야 합니다.
+
+| 도구 | 1건 추가 시간 | 권장 점진 흐름 |
+|---|---|---|
+| legal-books | 책 1권 5~30분 (스캔·OCR) | 1주차 자주 보는 책 3권 → 6개월 핵심본 거의 전부 |
+| case-records | 사건 1건 1~3분 (자동 인덱싱) | 1주차 최근 종결 5~10건 → 6개월 누적 사건 대부분 |
+
+자세한 가이드: [02_book_scanning.md](guides/02_book_scanning.md), [03_case_records.md](guides/03_case_records.md). install.sh가 toolkit 설치 직후 동일한 안내를 출력합니다.
 
 ---
 
