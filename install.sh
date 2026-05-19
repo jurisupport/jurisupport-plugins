@@ -323,13 +323,65 @@ else
       read -r -p "토큰 복사 완료되면 엔터: " _
     fi
 
-    echo ""
-    echo "  토큰을 붙여넣어 주세요 (입력은 화면에 표시되지 않습니다, 보안):"
-    read -r -s -p "  토큰: " JURI_TOKEN
-    echo ""
+    # 토큰 입력 + 검증 (최대 3회 재시도)
+    JURI_TOKEN=""
+    attempt=0
+    while [[ $attempt -lt 3 ]]; do
+      echo ""
+      if [[ $attempt -eq 0 ]]; then
+        echo "  토큰을 붙여넣어 주세요 (입력은 화면에 표시되지 않습니다, 보안):"
+      else
+        echo "  토큰을 다시 입력하세요 (시도 $((attempt+1))/3, 건너뛰려면 Enter):"
+      fi
+      read -r -s -p "  토큰: " JURI_TOKEN
+      echo ""
+
+      if [[ -z "$JURI_TOKEN" ]]; then
+        warn "토큰 미입력 → MCP 등록 건너뜀."
+        break
+      fi
+
+      # jurisupport.com 토큰 검증 (SSE 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
+      info "토큰 검증 중..."
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer $JURI_TOKEN" \
+        -H "Accept: text/event-stream" \
+        --max-time 6 \
+        --connect-timeout 4 \
+        "$JURI_MCP_URL" 2>/dev/null || echo "000")
+
+      case "$HTTP_CODE" in
+        200|204|000)
+          # 000 = curl timeout: SSE 스트림이 정상 응답하면 keep-alive로 잡힘. 일단 진행.
+          if [[ "$HTTP_CODE" == "000" ]]; then
+            info "✓ 토큰 응답 정상 (SSE keep-alive, HTTP 000)"
+          else
+            info "✓ 토큰 검증 성공 (HTTP $HTTP_CODE)"
+          fi
+          break
+          ;;
+        401|403)
+          attempt=$((attempt+1))
+          warn "✗ 토큰 인증 실패 (HTTP $HTTP_CODE)"
+          if [[ $attempt -lt 3 ]]; then
+            warn "  $JURI_TOKEN_URL 에서 토큰을 다시 확인·재발급 후 입력하세요."
+          else
+            warn "  3회 모두 실패. MCP 등록 건너뜀."
+            JURI_TOKEN=""
+          fi
+          ;;
+        404|405)
+          warn "검증 엔드포인트 응답 형식 변경 가능성 (HTTP $HTTP_CODE) — 그대로 등록 진행"
+          break
+          ;;
+        *)
+          warn "검증 응답 모호 (HTTP $HTTP_CODE) — 그대로 등록 진행"
+          break
+          ;;
+      esac
+    done
 
     if [[ -z "$JURI_TOKEN" ]]; then
-      warn "토큰 미입력 → MCP 등록 건너뜀."
       info "나중에 등록:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     else
       info "MCP 등록 중..."
@@ -343,8 +395,7 @@ else
         echo "    · 사건번호만 있으면 클로드코드 안에서 mcp__jurisupport__create_case 로도 추가 가능."
         echo ""
       else
-        warn "등록 실패. 토큰을 다시 확인하고 수동 등록:"
-        warn "  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+        warn "등록 실패. 수동: claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
       fi
       unset JURI_TOKEN  # 셸 환경에서 토큰 흔적 제거
     fi
