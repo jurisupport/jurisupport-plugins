@@ -122,6 +122,42 @@ cp ~/jurisupport-plugins/templates/사건정보_입력가이드.md ~/사건/_입
 
 ---
 
+## MD 파일 다루기 — Obsidian 권장 (선택)
+
+JuriSupport 미사용 시 모든 작업물이 사건폴더 안 `.md` 파일로 누적됩니다. 일반 텍스트 편집기로도 충분하지만, **다수의 사건·서면을 시각적으로 탐색·검색·연결**하기엔 [**Obsidian**](https://obsidian.md)이 가장 자연스러운 도구입니다.
+
+### Obsidian이 좋은 이유
+
+- 무료, 로컬 파일 기반 (사건자료가 외부 서버로 안 나감 — 비밀유지의무 부합)
+- `~/사건/` 폴더를 통째로 vault로 열면 모든 사건·서면이 한눈에
+- 전체 텍스트 검색 + 사건 간 `[[wiki링크]]`로 관계 그래프
+- 백링크: "이 판결을 인용한 우리 서면들" 자동 추적
+- 사건 메모(`_사건메모.md`)에서 관련 갑호증·참고판례 `[[링크]]`만 걸어두면 클릭 한 번에 이동
+- macOS/Windows/Linux 모두 동일 환경
+
+### 권장 설정 (5분)
+
+1. **다운로드·설치**: https://obsidian.md
+2. **Vault 열기**: "Open folder as vault" → `~/사건/` 선택
+3. **권장 플러그인** (Settings → Community plugins)
+   - **Templater** — 사건·서면 템플릿 자동 채우기
+   - **Dataview** — `_사건정보관리표.csv` 또는 frontmatter 기반 쿼리 뷰
+   - **File Tree Alternative** — 사건폴더 트리 보기 개선
+4. **그래프 뷰**: 좌측 사이드바 → 그래프 아이콘 → 사건·서면 관계망 시각화
+
+### 클로드코드와 함께 쓰기
+
+- 같은 폴더(`~/사건/`)를 클로드코드가 읽고 쓰고, Obsidian이 같이 봅니다.
+- 클로드가 만든 서면을 Obsidian에서 즉시 확인 → 편집 → 클로드에게 "이 부분 다시" 같은 피드백
+- Obsidian Sync(유료) 또는 OneDrive·iCloud로 vault 폴더 자체 동기화하면 PC·노트북·태블릿에서 같은 사건 자료 접근
+
+### 주의
+
+- Obsidian은 **편집·뷰어 도구일 뿐**, 본 패키지나 클로드코드 동작에 필수 아님
+- 사건 자료를 외부 클라우드(Obsidian Publish 등)에 절대 게시 금지 — 비밀유지의무 위반
+
+---
+
 ## 마이그레이션 (CSV → JuriSupport)
 
 나중에 JuriSupport로 옮기고 싶다면:

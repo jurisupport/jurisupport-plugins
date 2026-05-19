@@ -158,7 +158,7 @@ claude
 | 파일 | 내용 |
 |---|---|
 | [00_security.md](guides/00_security.md) | 의뢰인 정보 보호 원칙 (필독) |
-| [01_jurisupport_alt.md](guides/01_jurisupport_alt.md) | JuriSupport 미사용 — CSV 사건정보표 활용 |
+| [01_jurisupport_alt.md](guides/01_jurisupport_alt.md) | JuriSupport 미사용 — CSV 사건정보표 + Obsidian 권장 |
 | [02_book_scanning.md](guides/02_book_scanning.md) | 법률서적 스캔·OCR·임베딩 (legal-books) |
 | [03_case_records.md](guides/03_case_records.md) | 과거 사건폴더 정리·DB화 (case-records) |
 | [04_lbox_workflow.md](guides/04_lbox_workflow.md) | lbox.kr 직접 검색 워크플로우 |
@@ -237,7 +237,7 @@ MIT License. 본 패키지의 코드·문서·템플릿은 자유롭게 사용·
 ### 본 패키지가 권장하는 통합
 
 JuriSupport SaaS와 연동하면 사건·문서·기일·할일·증거를 통합 관리할 수 있습니다.
-SaaS 미사용 시에도 CSV 사건정보 관리표로 동등한 기능을 활용할 수 있습니다 ([01_jurisupport_alt.md](guides/01_jurisupport_alt.md) 참조).
+SaaS 미사용 시에도 CSV 사건정보 관리표 + [Obsidian](https://obsidian.md)(MD 편집·뷰어) 조합으로 동등한 기능을 활용할 수 있습니다 ([01_jurisupport_alt.md](guides/01_jurisupport_alt.md) 참조).
 
 ---
 

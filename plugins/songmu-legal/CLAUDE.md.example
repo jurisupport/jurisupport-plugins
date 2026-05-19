@@ -92,6 +92,10 @@ JuriSupport 미연동 환경에서는:
 - MD 파일 자체가 정본 (`<사건폴더>/draft/<서면명>.md`)
 - 법원 제출용 PDF는 `kordoc` 또는 pandoc으로 수동 변환
 - 사건 메타 관리는 CSV 사건 인덱스(`/songmu-legal:case-index`) 사용
+- **MD 파일 열람·편집 도구로 [Obsidian](https://obsidian.md) 권장**
+  - 무료, 로컬 파일 기반 (외부 서버 전송 없음 → 비밀유지의무 부합)
+  - `~/사건/` 폴더를 vault로 열면 모든 사건·서면 한눈에 + 전체 검색·백링크·그래프 뷰
+  - 자세한 설정은 [guides/01_jurisupport_alt.md](../../guides/01_jurisupport_alt.md) "Obsidian 권장" 섹션 참조
 
 - 사용자가 "MD로 되돌려 수정" 등 명시적 지시를 주면 무시 가능
 - 등록 후 MD에서 별도 편집해 재업로드하지 말 것 (정본 충돌 방지)
