@@ -141,25 +141,41 @@ fi
 step 3 "songmu-legal 플러그인 등록"
 
 SONGMU_LOCAL="$TOOLKIT_DIR/plugins/songmu-legal"
-SONGMU_DST="$HOME/.claude/plugins/cache/jurisupport-plugins/songmu-legal"
+MARKETPLACE_DIR="$TOOLKIT_DIR"   # marketplace.json이 있는 레포 루트
 
 if [[ ! -f "$SONGMU_LOCAL/.claude-plugin/plugin.json" ]]; then
   warn "songmu-legal 플러그인 없음: $SONGMU_LOCAL"
   echo "  전체 리포를 받으셨나요? 다음 실행:"
   echo "    git clone https://github.com/jurisupport/jurisupport-plugins.git"
+elif [[ ! -f "$MARKETPLACE_DIR/.claude-plugin/marketplace.json" ]]; then
+  warn "marketplace.json 없음: $MARKETPLACE_DIR/.claude-plugin/marketplace.json"
 else
-  mkdir -p "$(dirname "$SONGMU_DST")"
-  if [[ -L "$SONGMU_DST" || -e "$SONGMU_DST" ]]; then
-    info "songmu-legal 이미 등록됨"
+  # Claude Code v2.x는 marketplace add + plugin install 흐름이 정식.
+  # CLI에서 비대화식으로 호출 시도 → 실패하면 사용자 수동 안내.
+  AUTO_OK=false
+
+  # Windows에선 경로를 Windows 형식으로 (Claude Code Windows 빌드는 \ 경로 선호)
+  if [[ "$PLATFORM" == "windows" ]] && command -v cygpath >/dev/null 2>&1; then
+    MARKETPLACE_PATH="$(cygpath -w "$MARKETPLACE_DIR")"
   else
-    if [[ "$PLATFORM" == "windows" ]]; then
-      # Windows: 심볼릭 링크는 권한 필요 → cp -R로 복사 (업데이트 시 재실행 필요)
-      cp -R "$SONGMU_LOCAL" "$SONGMU_DST"
-      info "songmu-legal 복사 완료 (Windows: 심볼릭 링크 대신 복사 — 업데이트 시 install.sh 재실행)"
-    else
-      ln -s "$SONGMU_LOCAL" "$SONGMU_DST"
-      info "songmu-legal 등록 완료"
+    MARKETPLACE_PATH="$MARKETPLACE_DIR"
+  fi
+
+  info "marketplace 자동 등록 시도..."
+  if claude -p "/plugin marketplace add $MARKETPLACE_PATH" >/dev/null 2>&1; then
+    if claude -p "/plugin install songmu-legal" >/dev/null 2>&1; then
+      info "✓ songmu-legal 자동 등록·설치 완료"
+      AUTO_OK=true
     fi
+  fi
+
+  if ! $AUTO_OK; then
+    warn "자동 등록 실패 → 클로드코드 안에서 다음 두 줄을 직접 입력해야 합니다:"
+    echo ""
+    echo -e "${CYAN}  /plugin marketplace add $MARKETPLACE_PATH${NC}"
+    echo -e "${CYAN}  /plugin install songmu-legal${NC}"
+    echo ""
+    warn "이 단계 안 하면 /songmu-legal:cold-start-interview 등 슬래시 커맨드가 'Unknown command'로 뜹니다."
   fi
 
   # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
@@ -247,6 +263,9 @@ fi
 # ============================================================
 # Done
 # ============================================================
+# MARKETPLACE_PATH 미정의 시 fallback
+MARKETPLACE_PATH="${MARKETPLACE_PATH:-$TOOLKIT_DIR}"
+
 cat <<EOF
 
 $(printf '\033[0;32m')========================================
@@ -257,11 +276,18 @@ $(printf '\033[0;32m')========================================
   1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
   2. 새 터미널에서 클로드코드 시작:
        claude
-  3. 시작 명령:
+  3. 클로드코드 안에서 플러그인 등록 (자동 등록 실패한 경우만):
+       /plugin marketplace add $MARKETPLACE_PATH
+       /plugin install songmu-legal
+       → 이미 자동 등록됐으면 "이미 설치됨" 또는 무반응
+  4. 시작 명령:
        "안녕. 설치된 스킬과 플러그인 보여줘."
-  4. 첫 사건 설정: /songmu-legal:cold-start-interview
-  5. 첫 준비서면: /songmu-legal:brief-protocol
+  5. 첫 사건 설정: /songmu-legal:cold-start-interview
+  6. 첫 준비서면: /songmu-legal:brief-protocol
 
 전체 가이드: $TOOLKIT_DIR/README.md
+
+⚠ /songmu-legal:cold-start-interview 가 "Unknown command"로 뜨면
+   3번 단계(plugin marketplace add + plugin install)를 안 한 것입니다.
 
 EOF
