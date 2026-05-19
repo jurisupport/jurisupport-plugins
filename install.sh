@@ -299,6 +299,10 @@ else
     info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
   else
+    echo ""
+    echo "  💡 토큰은 $JURI_TOKEN_URL 에서 발급받을 수 있습니다."
+    echo "     (가입 후 위 페이지 접속 → API 토큰 생성)"
+    echo ""
     read -r -p "이미 jurisupport.com 계정 + 토큰이 있으신가요? [Y/n, 엔터=예] " has_token
     if [[ "$has_token" =~ ^[Nn]$ ]]; then
       info "가입 페이지를 브라우저로 엽니다..."
