@@ -450,6 +450,16 @@ Write-Step "마무리"
     → 이 단계 안 하면 /songmu-legal:cold-start-interview 가
        'Unknown command' 또는 'No commands match'로 뜹니다.
 
+[2-B] JuriSupport MCP 등록 (선택):
+
+    install.sh의 9번 단계에서 'y' 선택했으면 자동 등록됨.
+    안 했으면 PowerShell 또는 Git Bash에서:
+
+      claude mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse
+
+    → 첫 사용 시 브라우저로 OAuth 자동 로그인 (jurisupport.com 계정 필요).
+    → 없어도 본 패키지 모든 기능 사용 가능 (CSV 사건 인덱스로 대체).
+
 첫 사건 시작:
 
     mkdir `$env:USERPROFILE\사건\2026-001_홍길동_대여금

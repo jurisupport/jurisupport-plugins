@@ -12,7 +12,7 @@
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
-TOTAL_STEPS=8
+TOTAL_STEPS=9
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
@@ -257,6 +257,35 @@ else
 fi
 
 # ============================================================
+# 9. Optional: JuriSupport MCP 등록
+# ============================================================
+step 9 "(선택) JuriSupport MCP 등록"
+
+JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
+
+if claude mcp list 2>&1 | grep -q "^jurisupport:"; then
+  info "JuriSupport MCP 이미 등록됨"
+else
+  echo ""
+  echo "  JuriSupport SaaS는 사건·문서·기일·할일·증거 통합 관리 서비스입니다."
+  echo "  ($JURI_MCP_URL 원격 SSE 서버. 첫 사용 시 브라우저로 OAuth 로그인)"
+  echo "  미가입 시: https://jurisupport.com 에서 가입 후 등록 가능."
+  echo ""
+  read -r -p "지금 등록할까요? [y/N] " ans
+  if [[ "$ans" =~ ^[Yy]$ ]]; then
+    if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" 2>&1 | tail -3; then
+      info "✓ JuriSupport MCP 등록 완료"
+      info "→ 첫 사용 시 'claude' 안에서 자동으로 브라우저 OAuth 진행"
+    else
+      warn "등록 실패. 수동: claude mcp add --transport sse jurisupport $JURI_MCP_URL"
+    fi
+  else
+    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL"
+    info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
+  fi
+fi
+
+# ============================================================
 # Done
 # ============================================================
 # MARKETPLACE_PATH 미정의 시 fallback
@@ -272,14 +301,14 @@ $(printf '\033[0;32m')========================================
   1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
   2. 새 터미널에서 클로드코드 시작:
        claude
-  3. 클로드코드 안에서 플러그인 등록 (자동 등록 실패한 경우만):
+  3. ⚠ 클로드코드 안에서 플러그인 등록 (반드시 실행):
        /plugin marketplace add $MARKETPLACE_PATH
        /plugin install songmu-legal
-       → 이미 자동 등록됐으면 "이미 설치됨" 또는 무반응
-  4. 시작 명령:
+  4. (JuriSupport 등록한 경우) 첫 명령에서 자동 OAuth 브라우저 열림
+  5. 시작 명령:
        "안녕. 설치된 스킬과 플러그인 보여줘."
-  5. 첫 사건 설정: /songmu-legal:cold-start-interview
-  6. 첫 준비서면: /songmu-legal:brief-protocol
+  6. 첫 사건 설정: /songmu-legal:cold-start-interview
+  7. 첫 준비서면: /songmu-legal:brief-protocol
 
 전체 가이드: $TOOLKIT_DIR/README.md
 
