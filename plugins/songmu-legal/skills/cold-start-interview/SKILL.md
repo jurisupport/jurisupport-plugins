@@ -52,7 +52,7 @@ metadata:
 
 ### Step 1: 사무소 정보
 
-다음 질문을 순서대로 묻는다 (텔레그램 채널이면 텔레그램 reply로, 그 외에는 AskUserQuestion 사용).
+다음 질문을 순서대로 묻는다 (AskUserQuestion 사용).
 
 1. **사무소명**
 2. **담당 변호사 이름·이메일** (이미 메모리에 있으면 확인만)
@@ -114,12 +114,7 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
 
 - 이메일·서면 제출 시 "발송 직전 재확인" 필수? (기본 ON)
 
-### Step 8: 텔레그램 워크플로우
-
-- 의뢰인 채널로 텔레그램 사용? (메모리 기반 자동 감지)
-- 텔레그램 대화 중 터미널 질문 금지 (기본 ON)
-
-### Step 9: 안전 가드
+### Step 8: 안전 가드
 
 기본 Hard Stop 목록 제시, 추가 항목 있는지 확인:
 - 법원 전자제출
@@ -128,7 +123,7 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
 - 사건 status 변경
 - 파일 삭제
 
-### Step 10: CLAUDE.md (로컬 인스턴스) 갱신
+### Step 9: CLAUDE.md (로컬 인스턴스) 갱신
 
 수집한 답변으로 **`CLAUDE.md`** (사용자 인스턴스, .gitignore됨) 섹션을 채운다. Edit 도구로 각 섹션을 수정.
 
@@ -142,14 +137,14 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
 - `<클라우드 사건폴더 경로>` → 입력 (예: `onedrive:진행중사건/`)
 - `<CSV 사건 인덱스 경로>` → 입력 (예: `onedrive:진행중사건/_index.csv`) 또는 "사용 안함"
 
-### Step 11: 메모리 동기화
+### Step 10: 메모리 동기화
 
 CLAUDE.md에 새로 들어간 규칙 중 **다른 플러그인에도 적용될 만한 것**은 글로벌 메모리(`~/.claude/projects/-Users-<your-username>/memory/`)에도 저장 여부 확인:
 - 의뢰인 호칭 → `project_client_*`
 - 인용 정책 → `feedback_*`
 - 파일 포맷 → `feedback_*`
 
-### Step 12: 완료 메시지
+### Step 11: 완료 메시지
 
 ```
 ✅ 송무 플러그인 설정 완료
