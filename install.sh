@@ -128,7 +128,7 @@ if ! grep -q "pretool_data_protection.sh" "$SETTINGS"; then
   TMP=$(mktemp)
   jq --arg cmd "$HOOK_CMD" '
     .hooks.PreToolUse = (.hooks.PreToolUse // []) + [{
-      "matcher": "WebFetch|WebSearch|mcp__google-workspace__gmail_send.*|mcp__google-workspace__chat_.*|mcp__claude_ai_Gmail__.*|mcp__plugin_telegram_telegram__reply",
+      "matcher": "WebFetch|WebSearch|mcp__google-workspace__gmail_send.*|mcp__google-workspace__chat_.*|mcp__claude_ai_Gmail__.*|mcp__claude_ai_Google_Drive__search_files|mcp__plugin_telegram_telegram__reply",
       "hooks": [{"type": "command", "command": $cmd}]
     }]
   ' "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS"
