@@ -8,7 +8,7 @@
 #
 # 자동 설치 항목:
 #   1. Homebrew (없으면)
-#   2. jq, git, python3, node
+#   2. jq, git, python3, node, rclone
 #   3. Claude Code (npm install -g)
 #   4. jurisupport-plugins git clone + install.sh
 #
@@ -55,7 +55,7 @@ cat <<'BANNER'
 ║                                                                ║
 ║   진행 단계:                                                   ║
 ║     1. Homebrew (없으면 자동)                                  ║
-║     2. jq · git · python · node                                ║
+║     2. jq · git · python · node · rclone                       ║
 ║     3. Claude Code (npm install -g)                            ║
 ║     4. jurisupport-plugins git clone + install.sh              ║
 ║                                                                ║
@@ -157,6 +157,7 @@ install_pkg "jq"      "jq"          "jq"
 install_pkg "git"     "git"         "git"
 install_pkg "python3" "python@3.11" "python3"
 install_pkg "node"    "node"        "nodejs"
+install_pkg "rclone"  "rclone"      "rclone"
 
 # Ubuntu/Debian은 python3-venv 별도 패키지
 if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
