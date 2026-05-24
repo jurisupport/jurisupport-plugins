@@ -11,6 +11,10 @@
 
 set -euo pipefail
 
+TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/dry-run.sh
+source "$TOOLKIT_DIR/lib/dry-run.sh" "$@"
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 TOTAL_STEPS=9
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
@@ -53,7 +57,11 @@ cat <<'BANNER'
 ╚════════════════════════════════════════════════════════════════╝
 
 BANNER
-read -r -p "" _
+if is_dry_run; then
+  info "──── DRY-RUN 모드: 실제 변경 없이 설치 계획만 출력합니다 ────"
+else
+  read -r -p "" _
+fi
 
 OS="$(uname -s)"
 case "$OS" in
@@ -63,7 +71,6 @@ case "$OS" in
   *) error "지원하지 않는 OS: $OS. macOS/Linux/Windows(Git Bash)만 지원합니다." ;;
 esac
 
-TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 info "패키지 경로: $TOOLKIT_DIR"
 info "플랫폼: $PLATFORM"
 
@@ -72,11 +79,17 @@ info "플랫폼: $PLATFORM"
 # ============================================================
 step 1 "필수 도구 확인"
 
-command -v claude >/dev/null || error "클로드코드(CLI) 미설치. 설치: https://docs.claude.com/claude-code"
-command -v git >/dev/null || error "git 필요. (먼저 git 설치 후 재실행)"
+if is_dry_run; then
+  info "필수 도구 확인 예정: claude, git, jq"
+else
+  command -v claude >/dev/null || error "클로드코드(CLI) 미설치. 설치: https://docs.claude.com/claude-code"
+  command -v git >/dev/null || error "git 필요. (먼저 git 설치 후 재실행)"
+fi
 
 # jq is required for hook registration — try auto-install
-if ! command -v jq >/dev/null 2>&1; then
+if is_dry_run; then
+  : # jq check skipped in dry-run
+elif ! command -v jq >/dev/null 2>&1; then
   warn "jq 미설치 (데이터 보호 Hook에 필요)"
   case "$PLATFORM" in
     mac)
@@ -107,11 +120,13 @@ fi
 step 2 "데이터 보호 Hook 설치"
 
 HOOK_SRC="$TOOLKIT_DIR/hooks/pretool_data_protection.sh"
-chmod +x "$HOOK_SRC"
+run_or_plan chmod +x "$HOOK_SRC"
 
 SETTINGS="$HOME/.claude/settings.json"
-mkdir -p "$(dirname "$SETTINGS")"
-[[ -f "$SETTINGS" ]] || echo '{}' > "$SETTINGS"
+run_or_plan mkdir -p "$(dirname "$SETTINGS")"
+if ! is_dry_run; then
+  [[ -f "$SETTINGS" ]] || echo '{}' > "$SETTINGS"
+fi
 
 # Compose hook command (Windows needs Git Bash absolute path)
 if [[ "$PLATFORM" == "windows" ]]; then
@@ -124,7 +139,9 @@ else
 fi
 
 # Add hook entry if not present
-if ! grep -q "pretool_data_protection.sh" "$SETTINGS"; then
+if is_dry_run; then
+  info_or_plan "Hook 등록: pretool_data_protection → $SETTINGS"
+elif ! grep -q "pretool_data_protection.sh" "$SETTINGS"; then
   TMP=$(mktemp)
   jq --arg cmd "$HOOK_CMD" '
     .hooks.PreToolUse = (.hooks.PreToolUse // []) + [{
@@ -159,35 +176,41 @@ else
     MARKETPLACE_PATH="$MARKETPLACE_DIR"
   fi
 
-  # 1) marketplace 등록 (이미 있으면 건너뜀)
-  if claude plugin marketplace list 2>/dev/null | grep -q "jurisupport-plugins"; then
-    info "marketplace 'jurisupport-plugins' 이미 등록됨"
+  if is_dry_run; then
+    info_or_plan "marketplace 등록: $MARKETPLACE_PATH"
+    info_or_plan "songmu-legal 플러그인 설치"
+    info_or_plan "CLAUDE.md 템플릿 복사"
   else
-    info "marketplace 자동 등록 중: $MARKETPLACE_PATH"
-    if claude plugin marketplace add "$MARKETPLACE_PATH" 2>&1 | tail -3; then
-      info "✓ marketplace 등록 완료"
+    # 1) marketplace 등록 (이미 있으면 건너뜀)
+    if claude plugin marketplace list 2>/dev/null | grep -q "jurisupport-plugins"; then
+      info "marketplace 'jurisupport-plugins' 이미 등록됨"
     else
-      warn "marketplace 등록 실패. 수동: claude plugin marketplace add $MARKETPLACE_PATH"
+      info "marketplace 자동 등록 중: $MARKETPLACE_PATH"
+      if claude plugin marketplace add "$MARKETPLACE_PATH" 2>&1 | tail -3; then
+        info "✓ marketplace 등록 완료"
+      else
+        warn "marketplace 등록 실패. 수동: claude plugin marketplace add $MARKETPLACE_PATH"
+      fi
     fi
-  fi
 
-  # 2) songmu-legal 플러그인 설치 (이미 있으면 건너뜀)
-  if claude plugin list 2>/dev/null | grep -q "songmu-legal"; then
-    info "songmu-legal 플러그인 이미 설치됨"
-  else
-    info "songmu-legal 자동 설치 중..."
-    if claude plugin install songmu-legal@jurisupport-plugins 2>&1 | tail -3; then
-      info "✓ songmu-legal 설치 완료"
+    # 2) songmu-legal 플러그인 설치 (이미 있으면 건너뜀)
+    if claude plugin list 2>/dev/null | grep -q "songmu-legal"; then
+      info "songmu-legal 플러그인 이미 설치됨"
     else
-      warn "자동 설치 실패. 수동: claude plugin install songmu-legal@jurisupport-plugins"
+      info "songmu-legal 자동 설치 중..."
+      if claude plugin install songmu-legal@jurisupport-plugins 2>&1 | tail -3; then
+        info "✓ songmu-legal 설치 완료"
+      else
+        warn "자동 설치 실패. 수동: claude plugin install songmu-legal@jurisupport-plugins"
+      fi
     fi
-  fi
 
-  # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
-  if [[ ! -f "$SONGMU_LOCAL/CLAUDE.md" ]] && [[ -f "$SONGMU_LOCAL/CLAUDE.md.example" ]]; then
-    cp "$SONGMU_LOCAL/CLAUDE.md.example" "$SONGMU_LOCAL/CLAUDE.md"
-    info "템플릿에서 CLAUDE.md 생성: $SONGMU_LOCAL/CLAUDE.md"
-    info "→ 클로드코드에서 /songmu-legal:cold-start-interview 실행하여 채우세요"
+    # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
+    if [[ ! -f "$SONGMU_LOCAL/CLAUDE.md" ]] && [[ -f "$SONGMU_LOCAL/CLAUDE.md.example" ]]; then
+      cp "$SONGMU_LOCAL/CLAUDE.md.example" "$SONGMU_LOCAL/CLAUDE.md"
+      info "템플릿에서 CLAUDE.md 생성: $SONGMU_LOCAL/CLAUDE.md"
+      info "→ 클로드코드에서 /songmu-legal:cold-start-interview 실행하여 채우세요"
+    fi
   fi
 fi
 
@@ -197,13 +220,13 @@ fi
 step 4 "가이드 스킬 설치"
 
 SKILLS_DST="$HOME/.claude/skills"
-mkdir -p "$SKILLS_DST"
+run_or_plan mkdir -p "$SKILLS_DST"
 
 # Always-on: lbox-guide (manual, no automation)
 for SKILL in lbox-guide; do
-  mkdir -p "$SKILLS_DST/$SKILL"
-  cp "$TOOLKIT_DIR/skills/$SKILL/SKILL.md" "$SKILLS_DST/$SKILL/SKILL.md"
-  info "스킬 설치 완료: $SKILL"
+  run_or_plan mkdir -p "$SKILLS_DST/$SKILL"
+  run_or_plan cp "$TOOLKIT_DIR/skills/$SKILL/SKILL.md" "$SKILLS_DST/$SKILL/SKILL.md"
+  info_or_plan "스킬 설치: $SKILL"
 done
 # beopgoeul-search is installed conditionally below (Step 8)
 
@@ -213,14 +236,18 @@ done
 step 5 "사건정보 관리표 템플릿 설정"
 
 if [[ ! -d "$HOME/사건" ]]; then
-  read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? [Y/n, 엔터=예] " ans
-  if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기. 나중에 실행: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
+  if is_dry_run; then
+    info_or_plan "~/사건 디렉토리 생성 + CSV 템플릿 복사"
   else
-    mkdir -p "$HOME/사건"
-    cp "$TOOLKIT_DIR/templates/사건정보_관리표.csv" "$HOME/사건/_사건정보관리표.csv"
-    cp "$TOOLKIT_DIR/templates/사건정보_입력가이드.md" "$HOME/사건/_입력가이드.md"
-    info "템플릿을 ~/사건/ 에 복사 완료"
+    read -r -p "~/사건 디렉토리 생성하고 CSV 템플릿 복사? [Y/n, 엔터=예] " ans
+    if [[ "$ans" =~ ^[Nn]$ ]]; then
+      info "건너뛰기. 나중에 실행: mkdir -p ~/사건 && cp $TOOLKIT_DIR/templates/사건정보_관리표.csv ~/사건/"
+    else
+      mkdir -p "$HOME/사건"
+      cp "$TOOLKIT_DIR/templates/사건정보_관리표.csv" "$HOME/사건/_사건정보관리표.csv"
+      cp "$TOOLKIT_DIR/templates/사건정보_입력가이드.md" "$HOME/사건/_입력가이드.md"
+      info "템플릿을 ~/사건/ 에 복사 완료"
+    fi
   fi
 else
   info "~/사건 이미 존재. 템플릿은 $TOOLKIT_DIR/templates/ 에 있음"
@@ -231,16 +258,20 @@ fi
 # ============================================================
 step 6 "(선택) legal-books 검색 서버 설치"
 
-echo ""
-echo "  · 사무소 보유 교과서를 검색·인용하게 해주는 도구입니다."
-echo "  · 지금은 서버·DB 틀만 세움. 책은 설치 후 add_book.sh로 한 권씩 추가."
-echo "  · 보유 책이 없거나 당장 OCR 시간 없으면 건너뛰고 나중에 재설치 가능."
-echo ""
-read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
-if [[ ! "$ans" =~ ^[Nn]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
+if is_dry_run; then
+  info_or_plan "legal-books 검색 서버 설치"
 else
-  info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
+  echo ""
+  echo "  · 사무소 보유 교과서를 검색·인용하게 해주는 도구입니다."
+  echo "  · 지금은 서버·DB 틀만 세움. 책은 설치 후 add_book.sh로 한 권씩 추가."
+  echo "  · 보유 책이 없거나 당장 OCR 시간 없으면 건너뛰고 나중에 재설치 가능."
+  echo ""
+  read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+    bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
+  else
+    info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
+  fi
 fi
 
 # ============================================================
@@ -248,17 +279,21 @@ fi
 # ============================================================
 step 7 "(선택) case-records 검색 서버 설치"
 
-echo ""
-echo "  · 사무소 과거 사건 서면·판결문을 검색하게 해주는 도구입니다."
-echo "  · 지금은 서버·DB 틀만 세움. 사건은 설치 후 ingest_case.sh / ingest_all.sh로 인덱싱."
-echo "  · 사건폴더가 정리되어 있으면 일괄 인덱싱(1건 1~3분) 가능."
-echo "  · 당장 인덱싱 시간 없으면 건너뛰고 나중에 재설치 가능."
-echo ""
-read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
-if [[ ! "$ans" =~ ^[Nn]$ ]]; then
-  bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패. 나중에 다시 시도하세요."
+if is_dry_run; then
+  info_or_plan "case-records 검색 서버 설치"
 else
-  info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
+  echo ""
+  echo "  · 사무소 과거 사건 서면·판결문을 검색하게 해주는 도구입니다."
+  echo "  · 지금은 서버·DB 틀만 세움. 사건은 설치 후 ingest_case.sh / ingest_all.sh로 인덱싱."
+  echo "  · 사건폴더가 정리되어 있으면 일괄 인덱싱(1건 1~3분) 가능."
+  echo "  · 당장 인덱싱 시간 없으면 건너뛰고 나중에 재설치 가능."
+  echo ""
+  read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+    bash "$TOOLKIT_DIR/toolkit/case-records/install.sh" || warn "case-records 설치 실패. 나중에 다시 시도하세요."
+  else
+    info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/case-records/install.sh"
+  fi
 fi
 
 # ============================================================
@@ -266,14 +301,18 @@ fi
 # ============================================================
 step 8 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
-read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [Y/n, 엔터=예] " ans
-if [[ ! "$ans" =~ ^[Nn]$ ]]; then
-  # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
-  bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. 수동 검색용 lbox-guide 스킬은 사용 가능."
+if is_dry_run; then
+  info_or_plan "법고을 자동 검색 toolkit 설치"
 else
-  info "건너뛰기. beopgoeul-search 스킬은 비활성화됩니다."
-  info "대신 lbox-guide 스킬(수동 검색)을 사용할 수 있습니다."
-  info "나중에 설치: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
+  read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [Y/n, 엔터=예] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+    # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
+    bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. 수동 검색용 lbox-guide 스킬은 사용 가능."
+  else
+    info "건너뛰기. beopgoeul-search 스킬은 비활성화됩니다."
+    info "대신 lbox-guide 스킬(수동 검색)을 사용할 수 있습니다."
+    info "나중에 설치: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
+  fi
 fi
 
 # ============================================================
@@ -294,7 +333,9 @@ open_url() {
   esac
 }
 
-if claude mcp list 2>&1 | grep -q "^jurisupport:"; then
+if is_dry_run; then
+  info_or_plan "JuriSupport MCP 등록 (가입·토큰 발급·MCP add)"
+elif claude mcp list 2>&1 | grep -q "^jurisupport:"; then
   info "JuriSupport MCP 이미 등록됨"
 else
   echo ""
@@ -422,7 +463,7 @@ MARKETPLACE_PATH="${MARKETPLACE_PATH:-$TOOLKIT_DIR}"
 cat <<EOF
 
 $(printf '\033[0;32m')========================================
-✓ 설치 완료
+$(if is_dry_run; then printf '✓ DRY-RUN 완료 (실제 변경 없음)'; else printf '✓ 설치 완료'; fi)
 ========================================$(printf '\033[0m')
 
 다음 단계:

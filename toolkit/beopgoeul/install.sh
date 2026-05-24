@@ -10,6 +10,10 @@
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+
+TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$TOOLKIT_DIR/../../lib/dry-run.sh" "$@"
+
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
@@ -53,7 +57,7 @@ fi
 # ============================================================
 # Check Chrome installed (Selenium needs it)
 # ============================================================
-info "Chrome 확인 중..."
+info_or_plan "Chrome 확인 중..."
 if [[ "$PLATFORM" == "windows" ]]; then
   # Windows: Chrome은 windows-bootstrap.ps1이 winget으로 설치했음. 레지스트리/기본 경로 확인
   CHROME_PATHS=(
@@ -67,12 +71,16 @@ if [[ "$PLATFORM" == "windows" ]]; then
   done
   if [[ -z "$CHROME_FOUND" ]]; then
     warn "Chrome을 찾지 못했습니다."
-    error "PowerShell에서 'winget install Google.Chrome' 실행 후 다시 시도하세요."
+    if ! is_dry_run; then
+      error "PowerShell에서 'winget install Google.Chrome' 실행 후 다시 시도하세요."
+    fi
   fi
-  info "Chrome 발견: $CHROME_FOUND"
+  info_or_plan "Chrome 발견: ${CHROME_FOUND:-미확인}"
 elif [[ "$PLATFORM" == "mac" ]]; then
   if [[ ! -d "/Applications/Google Chrome.app" ]]; then
-    if command -v brew >/dev/null 2>&1; then
+    if is_dry_run; then
+      info_or_plan "Chrome 자동 설치: brew install --cask google-chrome"
+    elif command -v brew >/dev/null 2>&1; then
       info "Chrome 자동 설치 중 (Homebrew cask)..."
       brew install --cask google-chrome 2>&1 | tail -3
       if [[ -d "/Applications/Google Chrome.app" ]]; then
@@ -90,30 +98,34 @@ elif [[ "$PLATFORM" == "mac" ]]; then
   fi
 else
   if ! command -v google-chrome >/dev/null && ! command -v chromium >/dev/null; then
-    info "Chrome 자동 설치 중 (apt + Google 저장소)..."
-    # Google 서명키 + 저장소
-    if [[ ! -f /etc/apt/trusted.gpg.d/google.gpg ]]; then
-      wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google.gpg
-    fi
-    if [[ ! -f /etc/apt/sources.list.d/google.list ]]; then
-      echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google.list >/dev/null
-    fi
-    sudo apt-get update -q
-    sudo apt-get install -y google-chrome-stable
-    if command -v google-chrome >/dev/null; then
-      info "✓ Chrome 설치 완료: $(google-chrome --version 2>&1 | head -1)"
+    if is_dry_run; then
+      info_or_plan "Chrome 자동 설치: sudo apt-get install google-chrome-stable"
     else
-      warn "google-chrome-stable 설치 실패 → chromium-browser 시도..."
-      sudo apt-get install -y chromium-browser 2>&1 | tail -3
-      if command -v chromium-browser >/dev/null || command -v chromium >/dev/null; then
-        info "✓ Chromium 설치 완료"
+      info "Chrome 자동 설치 중 (apt + Google 저장소)..."
+      # Google 서명키 + 저장소
+      if [[ ! -f /etc/apt/trusted.gpg.d/google.gpg ]]; then
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google.gpg
+      fi
+      if [[ ! -f /etc/apt/sources.list.d/google.list ]]; then
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google.list >/dev/null
+      fi
+      sudo apt-get update -q
+      sudo apt-get install -y google-chrome-stable
+      if command -v google-chrome >/dev/null; then
+        info "✓ Chrome 설치 완료: $(google-chrome --version 2>&1 | head -1)"
       else
-        error "Chrome/Chromium 설치 실패. 수동 설치 후 다시 실행하세요."
+        warn "google-chrome-stable 설치 실패 → chromium-browser 시도..."
+        sudo apt-get install -y chromium-browser 2>&1 | tail -3
+        if command -v chromium-browser >/dev/null || command -v chromium >/dev/null; then
+          info "✓ Chromium 설치 완료"
+        else
+          error "Chrome/Chromium 설치 실패. 수동 설치 후 다시 실행하세요."
+        fi
       fi
     fi
   fi
 fi
-info "✓ Chrome 확인됨"
+info_or_plan "Chrome 확인됨"
 
 # ============================================================
 # Python venv 패키지 확인 (Ubuntu/Debian은 python3-venv 별도 필요)
@@ -121,14 +133,18 @@ info "✓ Chrome 확인됨"
 if [[ "$PLATFORM" == "linux" ]]; then
   # python3-venv가 없으면 venv 생성 실패. 자동 설치.
   if ! "$PY" -c "import ensurepip" 2>/dev/null; then
-    info "python3-venv 자동 설치 중..."
-    PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
-    sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
-      sudo apt-get install -y python3-venv 2>&1 | tail -3
-    if ! "$PY" -c "import ensurepip" 2>/dev/null; then
-      error "python3-venv 설치 실패. 수동 설치 후 다시 실행: sudo apt install python3-venv"
+    if is_dry_run; then
+      info_or_plan "python3-venv 자동 설치"
+    else
+      info "python3-venv 자동 설치 중..."
+      PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+      sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
+        sudo apt-get install -y python3-venv 2>&1 | tail -3
+      if ! "$PY" -c "import ensurepip" 2>/dev/null; then
+        error "python3-venv 설치 실패. 수동 설치 후 다시 실행: sudo apt install python3-venv"
+      fi
+      info "✓ python3-venv 설치 완료"
     fi
-    info "✓ python3-venv 설치 완료"
   fi
 fi
 
@@ -146,44 +162,57 @@ fi
 # Install
 # ============================================================
 ROOT="$HOME/jurisupport-beopgoeul"
-info "설치 위치: $ROOT"
-mkdir -p "$ROOT/scripts"
+info_or_plan "설치 위치: $ROOT"
+run_or_plan mkdir -p "$ROOT/scripts"
 
 # 기존 venv 정리 (재실행 시 Permission denied 방지)
 if [[ -d "$ROOT/.venv" ]]; then
-  info "기존 venv 발견 — 정리 시도"
-  sleep 1
-  if ! rm -rf "$ROOT/.venv" 2>/dev/null; then
-    warn "기존 venv 삭제 실패. Python 프로세스가 잡고 있을 수 있음."
-    case "$PLATFORM" in
-      windows)
-        warn "PowerShell에서 다음 실행 후 재시도:"
-        warn "  Get-Process python,pythonw -ErrorAction SilentlyContinue | Stop-Process -Force"
-        warn "  Remove-Item -Recurse -Force '$ROOT/.venv'"
-        ;;
-      *)
-        warn "수동 실행: pkill -f 'jurisupport-beopgoeul/.venv'; rm -rf '$ROOT/.venv'"
-        ;;
-    esac
-    error "venv 정리 필요."
+  info_or_plan "기존 venv 발견 — 정리 시도"
+  if is_dry_run; then
+    info_or_plan "기존 venv 삭제"
+  else
+    sleep 1
+    if ! rm -rf "$ROOT/.venv" 2>/dev/null; then
+      warn "기존 venv 삭제 실패. Python 프로세스가 잡고 있을 수 있음."
+      case "$PLATFORM" in
+        windows)
+          warn "PowerShell에서 다음 실행 후 재시도:"
+          warn "  Get-Process python,pythonw -ErrorAction SilentlyContinue | Stop-Process -Force"
+          warn "  Remove-Item -Recurse -Force '$ROOT/.venv'"
+          ;;
+        *)
+          warn "수동 실행: pkill -f 'jurisupport-beopgoeul/.venv'; rm -rf '$ROOT/.venv'"
+          ;;
+      esac
+      error "venv 정리 필요."
+    fi
+    info "✓ 기존 venv 정리 완료"
   fi
-  info "✓ 기존 venv 정리 완료"
 fi
 
-"$PY" -m venv "$ROOT/.venv"
-# shellcheck disable=SC1091
-source "$ROOT/.venv/$VENV_ACTIVATE"
-info "venv Python 버전: $(python --version 2>&1)"
-python -m pip install --progress-bar on --upgrade pip
-pip install --progress-bar on --only-binary :all: selenium==4.25.0
-info "Selenium 설치 완료"
+info_or_plan "Python 가상환경 생성"
+if is_dry_run; then
+  info_or_plan "venv 생성: $ROOT/.venv"
+  info_or_plan "pip install: selenium==4.25.0"
+else
+  "$PY" -m venv "$ROOT/.venv"
+  # shellcheck disable=SC1091
+  source "$ROOT/.venv/$VENV_ACTIVATE"
+  info "venv Python 버전: $(python --version 2>&1)"
+  python -m pip install --progress-bar on --upgrade pip
+  pip install --progress-bar on --only-binary :all: selenium==4.25.0
+  info "Selenium 설치 완료"
+fi
 
 # Copy search script
-TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$TOOLKIT_DIR/scripts/search.py" "$ROOT/scripts/search.py"
+info_or_plan "검색 스크립트 복사 + 래퍼 생성"
+run_or_plan cp "$TOOLKIT_DIR/scripts/search.py" "$ROOT/scripts/search.py"
 
 # Create wrapper sh for easy CLI use (OS-aware activate path + python command)
-cat > "$ROOT/scripts/search.sh" <<WRAP
+if is_dry_run; then
+  info_or_plan "search.sh 래퍼 생성: $ROOT/scripts/search.sh"
+else
+  cat > "$ROOT/scripts/search.sh" <<WRAP
 #!/usr/bin/env bash
 # Wrapper: activate venv and run search.py
 ROOT="\$HOME/jurisupport-beopgoeul"
@@ -191,38 +220,48 @@ ROOT="\$HOME/jurisupport-beopgoeul"
 source "\$ROOT/.venv/$VENV_ACTIVATE"
 exec python "\$ROOT/scripts/search.py" "\$@"
 WRAP
-chmod +x "$ROOT/scripts/search.sh"
+  chmod +x "$ROOT/scripts/search.sh"
+fi
 
 # Windows: PowerShell wrapper도 함께 생성 (Git Bash 미사용 시)
 if [[ "$PLATFORM" == "windows" ]]; then
-  cat > "$ROOT/scripts/search.ps1" <<'PS1'
+  if is_dry_run; then
+    info_or_plan "search.ps1 래퍼 생성: $ROOT/scripts/search.ps1"
+  else
+    cat > "$ROOT/scripts/search.ps1" <<'PS1'
 # search.ps1 — PowerShell wrapper
 $ROOT = Join-Path $env:USERPROFILE 'jurisupport-beopgoeul'
 & "$ROOT\.venv\Scripts\python.exe" "$ROOT\scripts\search.py" @args
 PS1
+  fi
 fi
 
 # ============================================================
 # Install Claude Code skill (replaces beopgoeul-guide)
 # ============================================================
+info_or_plan "클로드코드 스킬 설치 중"
 SKILL_DST="$HOME/.claude/skills/beopgoeul-search"
-mkdir -p "$SKILL_DST"
-cp "$TOOLKIT_DIR/../../skills/beopgoeul-search/SKILL.md" "$SKILL_DST/SKILL.md"
+run_or_plan mkdir -p "$SKILL_DST"
+run_or_plan cp "$TOOLKIT_DIR/../../skills/beopgoeul-search/SKILL.md" "$SKILL_DST/SKILL.md"
 
 # Remove old beopgoeul-guide if exists (replaced by beopgoeul-search)
 if [[ -d "$HOME/.claude/skills/beopgoeul-guide" ]]; then
-  rm -rf "$HOME/.claude/skills/beopgoeul-guide"
-  info "옛 beopgoeul-guide 스킬 제거 (beopgoeul-search로 교체됨)"
+  run_or_plan rm -rf "$HOME/.claude/skills/beopgoeul-guide"
+  info_or_plan "옛 beopgoeul-guide 스킬 제거 (beopgoeul-search로 교체됨)"
 fi
 
 # ============================================================
 # Smoke test
 # ============================================================
-info "작동 확인 중..."
-if "$ROOT/scripts/search.sh" "민법 제162조" --max 1 >/dev/null 2>&1; then
-  info "✓ 작동 확인 완료"
+info_or_plan "작동 확인 중..."
+if is_dry_run; then
+  info_or_plan "smoke test: $ROOT/scripts/search.sh '민법 제162조' --max 1"
 else
-  warn "작동 확인 실패. 수동 시도: $ROOT/scripts/search.sh '키워드'"
+  if "$ROOT/scripts/search.sh" "민법 제162조" --max 1 >/dev/null 2>&1; then
+    info "✓ 작동 확인 완료"
+  else
+    warn "작동 확인 실패. 수동 시도: $ROOT/scripts/search.sh '키워드'"
+  fi
 fi
 
 echo ""
