@@ -21,7 +21,19 @@
 #   - Gemini API 키 발급 (선택, https://aistudio.google.com/apikey)
 
 set -euo pipefail
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/dry-run.sh" "$@"
+
+# lib/dry-run.sh 로드: bash <(curl ...) 실행 시 BASH_SOURCE가 /dev/fd/... 이므로
+# 로컬 파일이 없으면 GitHub에서 직접 가져온다.
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+_DRYRUN_LIB="$_SCRIPT_DIR/lib/dry-run.sh"
+_DRYRUN_TMP=""
+if [[ ! -f "$_DRYRUN_LIB" ]]; then
+  _DRYRUN_TMP="$(mktemp)"
+  _DRYRUN_LIB="$_DRYRUN_TMP"
+  curl -fsSL "https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/lib/dry-run.sh" \
+    > "$_DRYRUN_LIB" || { echo "ERROR: lib/dry-run.sh 다운로드 실패" >&2; exit 1; }
+fi
+source "$_DRYRUN_LIB" "$@"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[bootstrap]${NC} $*"; }
@@ -71,6 +83,7 @@ step "1. 관리자 권한 인증 (1회만, 이후 자동 갱신)"
 
 if is_dry_run; then
   info_or_plan "sudo 인증 건너뜀"
+  [[ -n "$_DRYRUN_TMP" ]] && trap "rm -f '$_DRYRUN_TMP'" EXIT
 else
   echo ""
   echo "  Homebrew 및 시스템 패키지 설치를 위해 비밀번호 1회 입력이 필요합니다."
@@ -88,7 +101,7 @@ else
       kill -0 "$$" 2>/dev/null || exit
     done ) &
   SUDO_KEEPALIVE_PID=$!
-  trap "kill $SUDO_KEEPALIVE_PID 2>/dev/null || true" EXIT
+  trap "kill $SUDO_KEEPALIVE_PID 2>/dev/null || true; [[ -n \"\$_DRYRUN_TMP\" ]] && rm -f \"\$_DRYRUN_TMP\"" EXIT
 fi
 
 # ============================================================
