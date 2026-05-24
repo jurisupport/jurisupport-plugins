@@ -51,6 +51,7 @@
 └── scripts/
     ├── ingest_case.sh                    ← 사건 1건 인덱싱
     ├── ingest_all.sh                     ← 사건폴더 일괄 인덱싱
+    ├── search_case_records.py            ← 토큰 포함 검색 helper
     └── reindex.sh                        ← 전체 재인덱싱
 ```
 
@@ -65,7 +66,7 @@ cd ~/jurisupport-plugins/toolkit/case-records
 ./install.sh
 ```
 
-내부적으로 legal-books toolkit과 거의 동일한 구조 (Python venv, SQLite, Gemini 임베딩). Gemini API 키는 legal-books가 이미 등록했다면 그대로 재사용.
+내부적으로 legal-books toolkit과 거의 동일한 구조 (Python venv, SQLite, 선택적 Gemini 임베딩). 검색 API는 설치 시 생성되는 `~/.jurisupport/case-records.token` 로컬 bearer token이 있어야 `/search` 결과를 반환합니다. 일반 사용은 helper 스크립트가 토큰을 자동으로 읽으므로 직접 입력할 필요가 없습니다.
 
 ---
 
@@ -167,11 +168,30 @@ cd ~/jurisupport-plugins/toolkit/case-records
 
 ---
 
+## 직접 검색 테스트
+
+```bash
+~/case-records/scripts/search_case_records.py "보증금 반환" --top-k 3
+```
+
+직접 HTTP 호출이 필요한 경우:
+
+```bash
+TOKEN="$(cat ~/.jurisupport/case-records.token)"
+curl -s -X POST http://localhost:8767/search \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"보증금 반환","top_k":3}'
+```
+
+---
+
 ## 데이터 보호
 
 - 기본 인덱싱은 사건기록 본문을 로컬 SQLite DB와 FTS 인덱스에만 저장합니다.
 - `--allow-external-embedding`을 명시하면 사건 본문 청크가 Gemini 임베딩 API로 전송됩니다.
 - 검색 서버는 기본적으로 FTS 검색을 수행합니다. 외부 query 임베딩을 허용하려면 서버 환경변수 `CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING=1`을 별도로 설정해야 합니다.
+- `/search` API는 설치 시 생성되는 로컬 bearer token 없이는 결과를 반환하지 않습니다. `search_case_records.py` helper를 쓰면 토큰 입력 없이 검색할 수 있습니다.
 - 데이터 보호 Hook은 보조 안전장치입니다. 외부 도구로 사건자료를 보내기 전에는 사용자가 직접 전송 범위를 확인해야 합니다.
 
 ---
@@ -196,4 +216,5 @@ cd ~/jurisupport-plugins/toolkit/case-records
 - 자동 설치: [toolkit/case-records/install.sh](../toolkit/case-records/install.sh)
 - 사건 추가: [toolkit/case-records/scripts/ingest_case.sh](../toolkit/case-records/scripts/ingest_case.sh)
 - 일괄 인덱싱: [toolkit/case-records/scripts/ingest_all.sh](../toolkit/case-records/scripts/ingest_all.sh)
+- 검색 helper: [toolkit/case-records/scripts/search_case_records.py](../toolkit/case-records/scripts/search_case_records.py)
 - 스킬 정의: [skills/case-records/SKILL.md](../skills/case-records/SKILL.md)

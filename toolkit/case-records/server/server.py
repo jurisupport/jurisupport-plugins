@@ -3,14 +3,16 @@
 
 import os, sqlite3
 from pathlib import Path
+import secrets as secrets_lib
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 ROOT = Path(os.path.expanduser("~/case-records"))
 DB_PATH = ROOT / "db" / "cases_fts.db"
 SECRETS = Path(os.path.expanduser("~/.jurisupport/secrets.env"))
+TOKEN_PATH = Path(os.path.expanduser("~/.jurisupport/case-records.token"))
 load_dotenv(SECRETS)
 
 FTS_W = 0.30
@@ -24,6 +26,28 @@ def db():
 
 def external_embedding_enabled() -> bool:
     return os.environ.get("CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING", "").lower() in TRUE_VALUES
+
+
+def configured_api_token() -> str:
+    env_token = os.environ.get("CASE_RECORDS_API_TOKEN", "").strip()
+    if env_token:
+        return env_token
+    try:
+        return TOKEN_PATH.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def require_api_token(authorization: str | None = Header(default=None)) -> None:
+    expected = configured_api_token()
+    if not expected:
+        raise HTTPException(500, "case-records API token not configured")
+    prefix = "Bearer "
+    if not authorization or not authorization.startswith(prefix):
+        raise HTTPException(401, "missing case-records bearer token")
+    provided = authorization[len(prefix):].strip()
+    if not secrets_lib.compare_digest(provided, expected):
+        raise HTTPException(403, "invalid case-records bearer token")
 
 
 def embed(q: str) -> np.ndarray:
@@ -60,7 +84,7 @@ def health():
 
 
 @app.post("/search")
-def search(req: Req):
+def search(req: Req, _: None = Depends(require_api_token)):
     if not req.query.strip(): raise HTTPException(400, "empty")
     c = db()
 

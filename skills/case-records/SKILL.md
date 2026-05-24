@@ -36,9 +36,7 @@ curl -s http://localhost:8767/health
 ## 검색 API
 
 ```bash
-curl -s -X POST http://localhost:8767/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "검색어", "top_k": 5, "filters": {"doc_type": "준비서면"}}'
+~/case-records/scripts/search_case_records.py "검색어" --top-k 5 --doc-type 준비서면
 ```
 
 응답:
@@ -73,6 +71,7 @@ curl -s -X POST http://localhost:8767/search \
 
 - 기본 인덱싱은 사건기록 본문을 외부 임베딩 API로 보내지 않는다.
 - `--allow-external-embedding` 또는 `CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING=1`이 설정된 환경에서는 사건 본문 또는 검색 쿼리가 Gemini API로 전송될 수 있으므로, 사용 전 사무소 정책과 의뢰인 비밀유지 기준을 확인한다.
+- `/search` API는 `~/.jurisupport/case-records.token`의 로컬 bearer token이 있어야 응답한다. 스킬은 `search_case_records.py` helper를 사용해 토큰을 자동으로 읽는다.
 
 ## 사건이 없을 때
 
@@ -84,5 +83,6 @@ curl -s -X POST http://localhost:8767/search \
 
 - 사건 1건 추가: `~/case-records/scripts/ingest_case.sh`
 - 사건폴더 일괄 인덱싱: `~/case-records/scripts/ingest_all.sh --root ~/사건`
+- 검색 helper: `~/case-records/scripts/search_case_records.py "검색어" --top-k 5`
 - 서버 관리: `~/case-records/scripts/server.sh {start|stop|restart|status}`
 - 가이드: `~/jurisupport-plugins/guides/03_case_records.md`

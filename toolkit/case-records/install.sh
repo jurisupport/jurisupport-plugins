@@ -171,6 +171,26 @@ else
   info_or_plan "기존 Gemini API 키 발견: $SECRETS (명시 옵션 사용 시에만 case-records 임베딩에 사용)"
 fi
 
+TOKEN_FILE="$HOME/.jurisupport/case-records.token"
+info_or_plan "case-records 로컬 API 토큰 준비: $TOKEN_FILE"
+run_or_plan mkdir -p "$HOME/.jurisupport"
+run_or_plan chmod 700 "$HOME/.jurisupport"
+if is_dry_run; then
+  info_or_plan "토큰이 없으면 256-bit 랜덤 토큰 생성 후 chmod 600"
+else
+  if [[ ! -f "$TOKEN_FILE" ]]; then
+    umask 077
+    "$PY" - <<'PY' > "$TOKEN_FILE"
+import secrets
+print(secrets.token_urlsafe(32))
+PY
+    info "case-records 로컬 API 토큰 생성 완료"
+  else
+    info "기존 case-records 로컬 API 토큰 재사용"
+  fi
+  chmod 600 "$TOKEN_FILE"
+fi
+
 info_or_plan "서버·스크립트 복사 중"
 run_or_plan cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
 run_shell_or_plan "cp '$TOOLKIT_DIR/scripts/'*.sh '$TOOLKIT_DIR/scripts/'*.py '$ROOT/scripts/'"
@@ -178,7 +198,7 @@ run_shell_or_plan "cp '$TOOLKIT_DIR/scripts/'*.sh '$TOOLKIT_DIR/scripts/'*.py '$
 if [[ "$PLATFORM" == "windows" ]] && ls "$TOOLKIT_DIR/scripts/"*.ps1 >/dev/null 2>&1; then
   run_shell_or_plan "cp '$TOOLKIT_DIR/scripts/'*.ps1 '$ROOT/scripts/'"
 fi
-run_shell_or_plan "chmod +x '$ROOT/scripts/'*.sh 2>/dev/null || true"
+run_shell_or_plan "chmod +x '$ROOT/scripts/'*.sh '$ROOT/scripts/'*.py 2>/dev/null || true"
 
 # Install skill
 info_or_plan "클로드코드 스킬 설치 중"
@@ -265,7 +285,12 @@ cat <<EOF
     분야 위주"로 시작.
 
 검색 테스트:
+   ~/case-records/scripts/search_case_records.py "보증금" --top-k 3
+
+   직접 HTTP 호출이 필요한 경우:
+   TOKEN=\$(cat ~/.jurisupport/case-records.token)
    curl -X POST http://localhost:8767/search \\
+     -H "Authorization: Bearer \$TOKEN" \\
      -H 'Content-Type: application/json' \\
      -d '{"query":"보증금","top_k":3}'
 
