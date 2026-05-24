@@ -395,20 +395,22 @@ else
 
       # jurisupport.com 토큰 검증 (SSE 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
       info "토큰 검증 중..."
-      CURL_CONFIG="$(mktemp)"
-      chmod 600 "$CURL_CONFIG"
-      {
-        printf 'silent\n'
-        printf 'output = "/dev/null"\n'
-        printf 'write-out = "%%{http_code}"\n'
-        printf 'max-time = 6\n'
-        printf 'connect-timeout = 4\n'
-        printf 'header = "Authorization: Bearer %s"\n' "$JURI_TOKEN"
-        printf 'header = "Accept: text/event-stream"\n'
-        printf 'url = "%s"\n' "$JURI_MCP_URL"
-      } > "$CURL_CONFIG"
-      HTTP_CODE=$(curl --config "$CURL_CONFIG" 2>/dev/null || echo "000")
-      rm -f "$CURL_CONFIG"
+      HTTP_CODE=$(
+        CURL_CONFIG="$(mktemp)"
+        chmod 600 "$CURL_CONFIG"
+        trap 'rm -f "$CURL_CONFIG"' EXIT
+        {
+          printf 'silent\n'
+          printf 'output = "/dev/null"\n'
+          printf 'write-out = "%%{http_code}"\n'
+          printf 'max-time = 6\n'
+          printf 'connect-timeout = 4\n'
+          printf 'header = "Authorization: Bearer %s"\n' "$JURI_TOKEN"
+          printf 'header = "Accept: text/event-stream"\n'
+          printf 'url = "%s"\n' "$JURI_MCP_URL"
+        } > "$CURL_CONFIG"
+        curl --config "$CURL_CONFIG" 2>/dev/null || echo "000"
+      )
 
       case "$HTTP_CODE" in
         200|204|000)

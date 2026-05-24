@@ -8,11 +8,13 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 
 TOKEN_PATH = Path(os.path.expanduser("~/.jurisupport/case-records.token"))
+LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
 def read_token() -> str:
@@ -43,6 +45,14 @@ def main() -> int:
     if not token:
         print(
             "case-records API token not found. Re-run toolkit/case-records/install.sh.",
+            file=sys.stderr,
+        )
+        return 2
+
+    parsed_url = urllib.parse.urlparse(args.url)
+    if parsed_url.scheme != "http" or parsed_url.hostname not in LOOPBACK_HOSTS:
+        print(
+            "refusing to send case-records token to a non-loopback URL",
             file=sys.stderr,
         )
         return 2
