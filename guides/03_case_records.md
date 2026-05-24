@@ -83,12 +83,13 @@ cd ~/jurisupport-plugins/toolkit/case-records
 ```
 
 스크립트가 자동으로:
-1. 사건폴더의 모든 PDF·DOCX·HWP·MD 파일 탐색
-2. kordoc 또는 자체 변환기로 텍스트 추출
+1. 사건폴더의 PDF·DOCX·MD·TXT 파일 탐색 (HWP/HWPX는 현재 자동 추출하지 않고 건너뜀)
+2. 자체 변환기로 텍스트 추출
 3. 파일명 메타파싱 (사건번호·문서종류·일자·당사자 추출)
 4. 청크 분할 (1500자, 300자 오버랩)
-5. Gemini 임베딩
-6. DB 삽입
+5. DB 삽입 + FTS 인덱스 생성
+
+기본값은 사건 본문을 외부 임베딩 API로 보내지 않습니다. 의미 기반 검색을 위해 Gemini 임베딩을 사용하려면 `--allow-external-embedding` 옵션을 명시해야 하며, 이 경우 사건기록 본문 청크가 Gemini API로 전송됩니다.
 
 ### 사건폴더 전체 일괄
 
@@ -115,7 +116,7 @@ cd ~/jurisupport-plugins/toolkit/case-records
 
 → 이 형식이면 자동으로 사건번호·문서종류·일자가 메타로 추출됨.
 
-다른 형식이면 `--meta-from-filename none` 옵션으로 끄고 사용자가 직접 메타 입력.
+다른 형식이면 자동 메타 추출이 제한됩니다. 현재 `--meta-from-filename none` 옵션은 제공하지 않습니다.
 
 ---
 
@@ -168,9 +169,10 @@ cd ~/jurisupport-plugins/toolkit/case-records
 
 ## 데이터 보호
 
-- 사건기록은 **모두 로컬 저장** (외부 전송 없음)
-- 검색 시 **쿼리만 Gemini 임베딩 변환** (사건 본문은 전송 X)
-- 본 패키지의 **데이터 보호 Hook** 활성화 → 외부 도구로 사건자료 유출 시도 자동 차단
+- 기본 인덱싱은 사건기록 본문을 로컬 SQLite DB와 FTS 인덱스에만 저장합니다.
+- `--allow-external-embedding`을 명시하면 사건 본문 청크가 Gemini 임베딩 API로 전송됩니다.
+- 검색 서버는 기본적으로 FTS 검색을 수행합니다. 외부 query 임베딩을 허용하려면 서버 환경변수 `CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING=1`을 별도로 설정해야 합니다.
+- 데이터 보호 Hook은 보조 안전장치입니다. 외부 도구로 사건자료를 보내기 전에는 사용자가 직접 전송 범위를 확인해야 합니다.
 
 ---
 

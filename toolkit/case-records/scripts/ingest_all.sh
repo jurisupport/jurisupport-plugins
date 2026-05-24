@@ -5,9 +5,11 @@
 set -euo pipefail
 
 ROOT_DIR=""
+ALLOW_EXTERNAL_EMBEDDING=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --root) ROOT_DIR="$2"; shift 2 ;;
+    --allow-external-embedding) ALLOW_EXTERNAL_EMBEDDING=1; shift ;;
     *) echo "Unknown: $1" >&2; exit 1 ;;
   esac
 done
@@ -52,8 +54,13 @@ for CDIR in "$ROOT_DIR"/*/; do
   fi
 
   echo "[ingest] $CASE_ID — $CASE_NAME"
+  EXTRA_ARGS=()
+  if [[ "$ALLOW_EXTERNAL_EMBEDDING" == "1" ]]; then
+    EXTRA_ARGS+=(--allow-external-embedding)
+  fi
   "$SCRIPT_DIR/ingest_case.sh" \
     --case-dir "$CDIR" \
     --case-id "$CASE_ID" \
-    --case-name "$CASE_NAME" || echo "[warn] failed: $CASE_ID"
+    --case-name "$CASE_NAME" \
+    "${EXTRA_ARGS[@]}" || echo "[warn] failed: $CASE_ID"
 done

@@ -27,7 +27,7 @@ sudo apt install jq    # Linux
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "WebFetch|WebSearch|mcp__google-workspace__gmail_send.*|mcp__google-workspace__chat_.*|mcp__claude_ai_Gmail__.*|mcp__plugin_telegram_telegram__reply",
+        "matcher": "WebFetch|WebSearch|mcp__google-workspace__gmail_send.*|mcp__google-workspace__chat_.*|mcp__claude_ai_Gmail__.*|mcp__claude_ai_Google_Drive__search_files|mcp__plugin_telegram_telegram__reply",
         "hooks": [
           {
             "type": "command",
@@ -62,6 +62,6 @@ sudo apt install jq    # Linux
 ## 트러블슈팅
 
 - **Hook이 작동하지 않음**: `~/.claude/settings.json` 문법 오류 확인 (`jq . ~/.claude/settings.json`로 검증)
-- **jq 오류**: `brew install jq` 또는 `apt install jq`
+- **jq 오류**: `brew install jq` 또는 `apt install jq` (jq가 없으면 외부 전송 후보 호출은 차단됩니다)
 - **권한 오류**: `chmod +x ...pretool_data_protection.sh`
-- **Hook 우회 필요 시 (테스트용)**: settings.json에서 해당 hook 항목을 일시 주석 처리하거나, `LAWPID_HOOK_BYPASS=1` 환경변수 — *현재 미구현, 필요 시 추가 예정*
+- **Hook 우회 필요 시 (테스트용)**: settings.json에서 해당 hook 항목을 일시 주석 처리하세요.

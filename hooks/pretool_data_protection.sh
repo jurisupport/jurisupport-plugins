@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Data Protection PreToolUse Hook
 #
-# Detects attempts to send Korean PII (RRN, case numbers, phone) or upload
-# case-file contents to external services. Blocks or warns the user.
+# Detects attempts to send Korean PII (RRN, case numbers, phone) to
+# registered external services. Blocks high-risk calls.
 #
 # Install: see hooks/INSTALL.md (registers in ~/.claude/settings.json under
 # hooks.PreToolUse). Make this file executable: chmod +x pretool_data_protection.sh
@@ -15,11 +15,17 @@ INPUT="$(cat)"
 # Parse fields with jq (required)
 if ! command -v jq >/dev/null 2>&1; then
   echo "data-protection hook: jq is required but not installed. Run: brew install jq" >&2
-  exit 0   # do not block; just warn
+  exit 2
 fi
 
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
-TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // {} | tostring')
+if ! TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""'); then
+  echo "data-protection hook: invalid JSON input; blocking external tool call" >&2
+  exit 2
+fi
+if ! TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // {} | tostring'); then
+  echo "data-protection hook: invalid tool_input; blocking external tool call" >&2
+  exit 2
+fi
 
 # Combine all tool input fields into one searchable string
 HAYSTACK="$TOOL_INPUT"
@@ -42,31 +48,23 @@ PATTERN_PHONE='01[0-9][- ]?[0-9]{3,4}[- ]?[0-9]{4}'
 # Tool classification
 # ============================================================
 
-# Tools that send data to external services
-EXTERNAL_TOOLS=(
-  "WebFetch"
-  "WebSearch"
-  "mcp__google-workspace__gmail_send"
-  "mcp__google-workspace__gmail_sendDraft"
-  "mcp__google-workspace__chat_sendMessage"
-  "mcp__google-workspace__chat_sendDm"
-  "mcp__claude_ai_Gmail__create_draft"
-  "mcp__plugin_telegram_telegram__reply"
-)
-
-is_external_tool=false
-for t in "${EXTERNAL_TOOLS[@]}"; do
-  if [[ "$TOOL_NAME" == "$t" ]]; then
-    is_external_tool=true
-    break
-  fi
-done
+is_external_tool() {
+  case "$TOOL_NAME" in
+    WebFetch|WebSearch) return 0 ;;
+    mcp__google-workspace__gmail_send*) return 0 ;;
+    mcp__google-workspace__chat_*) return 0 ;;
+    mcp__claude_ai_Gmail__*) return 0 ;;
+    mcp__claude_ai_Google_Drive__search_files) return 0 ;;
+    mcp__plugin_telegram_telegram__reply) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 # ============================================================
 # Decision
 # ============================================================
 
-if ! $is_external_tool; then
+if ! is_external_tool; then
   # Local tool — no check
   exit 0
 fi

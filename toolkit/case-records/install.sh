@@ -161,25 +161,14 @@ print("DB 초기화 완료")
 PY
 fi
 
-# Reuse Gemini key from legal-books if exists
+# Reuse Gemini key from legal-books if exists. case-records defaults to local FTS;
+# Gemini is only needed when the user opts into external embeddings.
 SECRETS="$HOME/.jurisupport/secrets.env"
 if [[ ! -f "$SECRETS" ]] || ! grep -q "GEMINI_API_KEY" "$SECRETS"; then
-  run_or_plan mkdir -p "$(dirname "$SECRETS")"
-  run_or_plan chmod 700 "$(dirname "$SECRETS")"
-  if is_dry_run; then
-    info_or_plan "Gemini API 키 입력 프롬프트 (interactive read)"
-  else
-    echo ""
-    echo "Gemini API 키 미등록 (임베딩에 사용)."
-    echo "무료 키 발급: https://aistudio.google.com/apikey"
-    read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY
-    if [[ -n "${GEMINI_KEY:-}" ]]; then
-      echo "GEMINI_API_KEY=${GEMINI_KEY}" >> "$SECRETS"
-      chmod 600 "$SECRETS"
-    fi
-  fi
+  warn "Gemini API 키 미등록 — 기본 case-records는 로컬 FTS만 사용하므로 계속 진행합니다."
+  warn "의미 기반 검색을 명시적으로 허용하려면 나중에 $SECRETS 에 GEMINI_API_KEY=xxx 를 추가하세요."
 else
-  info_or_plan "기존 Gemini API 키 재사용: $SECRETS"
+  info_or_plan "기존 Gemini API 키 발견: $SECRETS (명시 옵션 사용 시에만 case-records 임베딩에 사용)"
 fi
 
 info_or_plan "서버·스크립트 복사 중"
@@ -237,8 +226,17 @@ cat <<EOF
       --case-name "홍○○ 대여금" \\
       --status 종결 --result 전부승소
 
-  내부 처리: 사건폴더 안 PDF·DOCX·HWP 모두 텍스트 추출 → 청크 분할 →
-            Gemini 임베딩 → SQLite FTS5 인덱스
+  내부 처리: 사건폴더 안 PDF·DOCX·MD·TXT 텍스트 추출 → 청크 분할 →
+            SQLite FTS5 인덱스
+
+  ⚠ 기본값은 사건 본문을 외부 임베딩 API로 보내지 않습니다.
+    의미 기반 검색을 위해 Gemini 임베딩을 쓰려면 명시적으로:
+
+    ~/case-records/scripts/ingest_case.sh \\
+      --case-dir ~/사건/2018가단11111_홍○○_대여금 \\
+      --case-id 2018가단11111 \\
+      --case-name "홍○○ 대여금" \\
+      --allow-external-embedding
 
 ────────────────────────────────────────────────────────────
 대량 인덱싱 (사무소 누적 사건 한 번에)
@@ -277,7 +275,7 @@ cat <<EOF
 자세한 가이드 (폴더 명명·메타 입력·재인덱싱):
    ~/jurisupport-plugins/guides/03_case_records.md
 
-⚠ 의뢰인 정보: 본 DB는 로컬 SQLite만 사용. 외부 전송 없음. 다만 임베딩
-   생성 시 Gemini API에 청크 텍스트가 전송되므로 Gemini 계정의 학습 동의
-   설정이 OFF인지 확인 필수.
+⚠ 의뢰인 정보: 기본 DB는 로컬 SQLite FTS만 사용합니다. `--allow-external-embedding`
+   또는 `CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING=1`을 사용하면 사건 본문 또는
+   검색 쿼리가 Gemini API로 전송될 수 있으므로 사무소 정책을 먼저 확인하세요.
 EOF

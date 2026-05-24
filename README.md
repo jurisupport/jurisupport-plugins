@@ -13,7 +13,7 @@
 
 ## 한 줄 요약
 
-사건폴더를 던지면 **사실관계 정리 → 쟁점 추출 → 법령·판례 검증 → 준비서면 초안·완성본까지** 자동 작성합니다. 모든 단계에 변호사 책임 검증을 거치며, 의뢰인 정보는 본 패키지의 데이터 보호 Hook이 외부 유출을 자동 차단합니다.
+사건폴더를 던지면 **사실관계 정리 → 쟁점 추출 → 법령·판례 검증 → 준비서면 초안·완성본까지** 자동 작성합니다. 모든 단계에 변호사 책임 검증을 거치며, 데이터 보호 Hook은 알려진 외부 도구와 한국형 식별정보 패턴을 탐지하는 보조 안전장치로 작동합니다.
 
 ---
 
@@ -36,6 +36,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plug
 
 위 한 줄이 **Homebrew → jq·git·python·node → Claude Code → 본 패키지 git clone**까지 자동으로 설치합니다 (약 5~10분).
 
+보안이 엄격한 사무소 환경에서는 한 줄 설치 전에 스크립트를 내려받아 검토하거나, 릴리스 태그를 고정해 수동 설치하는 방식을 권장합니다.
+
 bootstrap 완료 후:
 ```bash
 claude                            # 새 터미널에서 OAuth 로그인 1회
@@ -49,6 +51,8 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 ```
 
 이 한 줄이 **모든 의존성(Git/Node/Python/Chrome/Tesseract/qpdf/Ghostscript) + Claude Code + 본 레포 + install.sh까지** 자동으로 끝냅니다 (약 15분).
+
+PowerShell 한 줄 설치도 빠른 시작용입니다. 조직 보안 정책이 엄격하면 스크립트 내용을 먼저 검토한 뒤 실행하세요.
 
 사용자가 답할 것: UAC 팝업 "예", install.sh 단계별 `[Y/n]`, (선택) Gemini API 키.
 
@@ -95,7 +99,7 @@ claude
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 (수동·약관 준수) | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 **자동 검색** (Selenium) | Chrome + Python 3.9+ |
 | **legal-books 스킬 + toolkit** | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 (책 1권당 5~30분, 점진 추가) |
-| **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 사용자 과거 사건폴더 (사건 1건당 1~3분, 일괄 인덱싱 지원) |
+| **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 기본 FTS 인덱싱. Gemini 임베딩은 명시 동의 시만 사용 |
 | **사건정보 관리표 템플릿** | JuriSupport 미사용 시 엑셀/CSV 사건관리 | 없음 |
 
 ---

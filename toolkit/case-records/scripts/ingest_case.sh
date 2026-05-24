@@ -9,7 +9,7 @@ case "$(uname -s)" in
   *)                    VENV="$ROOT/.venv/bin/activate"; PY=python3 ;;
 esac
 
-CASE_DIR=""; CASE_ID=""; CASE_NAME=""; STATUS=""; RESULT=""; COURT=""
+CASE_DIR=""; CASE_ID=""; CASE_NAME=""; STATUS=""; RESULT=""; COURT=""; ALLOW_EXTERNAL_EMBEDDING=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --case-dir)   CASE_DIR="$2"; shift 2 ;;
@@ -18,6 +18,7 @@ while [[ $# -gt 0 ]]; do
     --status)     STATUS="$2"; shift 2 ;;
     --result)     RESULT="$2"; shift 2 ;;
     --court)      COURT="$2"; shift 2 ;;
+    --allow-external-embedding) ALLOW_EXTERNAL_EMBEDDING=1; shift ;;
     *) echo "Unknown: $1" >&2; exit 1 ;;
   esac
 done
@@ -34,10 +35,15 @@ CASE_DIR="${CASE_DIR/#\~/$HOME}"
 
 # shellcheck disable=SC1090
 source "$VENV"
+EXTRA_ARGS=()
+if [[ "$ALLOW_EXTERNAL_EMBEDDING" == "1" ]]; then
+  EXTRA_ARGS+=(--allow-external-embedding)
+fi
 "$PY" "$ROOT/scripts/ingest_case.py" \
   --case-dir "$CASE_DIR" \
   --case-id "$CASE_ID" \
   --case-name "$CASE_NAME" \
   --status "${STATUS:-진행중}" \
   --result "${RESULT:-}" \
-  --court "${COURT:-}"
+  --court "${COURT:-}" \
+  "${EXTRA_ARGS[@]}"

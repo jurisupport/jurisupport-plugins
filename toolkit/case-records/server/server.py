@@ -5,7 +5,7 @@ import os, sqlite3
 from pathlib import Path
 import numpy as np
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 ROOT = Path(os.path.expanduser("~/case-records"))
@@ -15,10 +15,15 @@ load_dotenv(SECRETS)
 
 FTS_W = 0.30
 COS_W = 0.70
+TRUE_VALUES = {"1", "true", "yes", "y", "on"}
 
 
 def db():
     c = sqlite3.connect(DB_PATH); c.row_factory = sqlite3.Row; return c
+
+
+def external_embedding_enabled() -> bool:
+    return os.environ.get("CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING", "").lower() in TRUE_VALUES
 
 
 def embed(q: str) -> np.ndarray:
@@ -39,9 +44,9 @@ app = FastAPI(title="case-records search")
 
 
 class Req(BaseModel):
-    query: str
-    top_k: int = 5
-    filters: dict = {}
+    query: str = Field(..., min_length=1, max_length=500)
+    top_k: int = Field(default=5, ge=1, le=20)
+    filters: dict = Field(default_factory=dict)
 
 
 @app.get("/health")
@@ -72,18 +77,21 @@ def search(req: Req):
         mx = max(abs(r["s"]) for r in fts) or 1.0
         for r in fts: fts_m[r["chunk_id"]] = 1.0 - abs(r["s"]) / mx
 
-    # Cosine
-    qe = embed(req.query)
-    rows = c.execute(
-        "SELECT chunk_id, doc_id, case_id, chunk_text, embedding FROM chunks WHERE embedding IS NOT NULL"
-    ).fetchall()
-    cos_s = []
-    for r in rows:
-        e = np.frombuffer(r["embedding"], dtype=np.float32)
-        cos_s.append((r["chunk_id"], cos(qe, e), r))
-    cos_s.sort(key=lambda x: x[1], reverse=True)
-    top = cos_s[:100]
-    cos_m = {cid: s for cid, s, _ in top}
+    # Cosine is opt-in because it sends the search query to Gemini.
+    cos_m = {}
+    top = []
+    if external_embedding_enabled():
+        qe = embed(req.query)
+        rows = c.execute(
+            "SELECT chunk_id, doc_id, case_id, chunk_text, embedding FROM chunks WHERE embedding IS NOT NULL"
+        ).fetchall()
+        cos_s = []
+        for r in rows:
+            e = np.frombuffer(r["embedding"], dtype=np.float32)
+            cos_s.append((r["chunk_id"], cos(qe, e), r))
+        cos_s.sort(key=lambda x: x[1], reverse=True)
+        top = cos_s[:100]
+        cos_m = {cid: s for cid, s, _ in top}
 
     chunk_map = {r["chunk_id"]: r for _, _, r in top}
     missing = (set(fts_m) | set(cos_m)) - set(chunk_map)

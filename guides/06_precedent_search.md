@@ -79,7 +79,7 @@ bash ~/jurisupport-plugins/toolkit/beopgoeul/install.sh
 >
 > lbox.kr 로그인 → 검색 → PDF 다운로드 → `06_참고판례/`에 저장 → 알려주세요.
 
-⚠️ 위 단계에서 **클로드는 절대 lbox.kr에 WebFetch·WebSearch·Bash로 접근하지 않습니다.** 데이터 보호 Hook이 차단합니다.
+⚠️ 위 단계에서 **클로드는 절대 lbox.kr에 WebFetch·WebSearch·Bash로 접근하지 않습니다.** 현재 데이터 보호 Hook은 WebFetch/WebSearch의 lbox.kr 접근을 차단하며, Bash/curl/playwright 접근은 스킬 정책상 금지합니다.
 
 ---
 
@@ -89,7 +89,7 @@ bash ~/jurisupport-plugins/toolkit/beopgoeul/install.sh
 |---|---|
 | "lbox에서 찾아서 가져와줘" | 거절 + 키워드 안내 + 사용자 직접 검색 안내 |
 | "이 lbox URL 가져와줘" | Hook이 차단 |
-| "lbox 자동 로그인해서 검색해줘" | Hook이 Bash·playwright 사용 시도도 차단 (Bash 도구 확장 시) |
+| "lbox 자동 로그인해서 검색해줘" | 거절. Bash·playwright 자동화도 스킬 정책상 금지 |
 
 ---
 

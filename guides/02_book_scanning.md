@@ -196,11 +196,12 @@ ls ~/.claude/skills/legal-books/SKILL.md
 
 ## 데이터 보호
 
-- 책 PDF·청크는 **모두 로컬 저장** (외부 전송 없음)
-- 검색 시 **쿼리만 Gemini API로 임베딩 변환** (책 본문은 전송 X)
-- Gemini 학습 옵트인 OFF (기본)
+- 책 PDF·추출 텍스트·청크 파일·SQLite DB는 로컬 `~/legal-books/`에 저장됩니다.
+- 책 추가/인덱싱 단계에서는 책 본문 청크가 Gemini 임베딩 API로 전송됩니다.
+- 검색 단계에서는 검색 쿼리만 Gemini API로 임베딩 변환됩니다.
+- Gemini 학습 옵트인 OFF 여부를 확인하세요.
 
-→ 그래도 우려되면: Gemini API 대신 로컬 임베딩 모델 (sentence-transformers) 사용 옵션 — `install.sh` 실행 시 선택 가능.
+저작권·계약상 외부 API 전송이 곤란한 서적은 이 toolkit에 추가하지 마세요. 로컬 임베딩 모델 선택지는 아직 기본 설치 흐름에 구현되어 있지 않습니다.
 
 ---
 

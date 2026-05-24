@@ -28,6 +28,7 @@ load_dotenv(SECRETS)
 
 CHUNK_SIZE = 1500
 CHUNK_OVERLAP = 300
+TRUE_VALUES = {"1", "true", "yes", "y", "on"}
 
 # Filename pattern: {case#}_{idx}_{YYYY.MM.DD}_{doctype}_..._{author}.pdf
 FILENAME_RE = re.compile(
@@ -104,7 +105,16 @@ def main():
     ap.add_argument("--status", default="진행중")
     ap.add_argument("--result", default="")
     ap.add_argument("--court", default="")
+    ap.add_argument(
+        "--allow-external-embedding",
+        action="store_true",
+        help="Send case text chunks to Gemini for semantic embeddings.",
+    )
     args = ap.parse_args()
+    allow_external_embedding = (
+        args.allow_external_embedding
+        or os.environ.get("CASE_RECORDS_ALLOW_EXTERNAL_EMBEDDING", "").lower() in TRUE_VALUES
+    )
 
     con = sqlite3.connect(DB_PATH)
     con.execute(
@@ -159,11 +169,17 @@ def main():
         con.commit(); con.close()
         return
 
-    print(f"  [ingest] {len(all_chunks)} chunks → embedding")
-    embs = embed_batch([c["chunk_text"] for c in all_chunks])
+    if allow_external_embedding:
+        print("  [privacy] External embedding enabled: sending case text chunks to Gemini.")
+        print(f"  [ingest] {len(all_chunks)} chunks → embedding")
+        embs = embed_batch([c["chunk_text"] for c in all_chunks])
+    else:
+        print("  [privacy] External embedding disabled: storing local FTS index only.")
+        print("  [privacy] Use --allow-external-embedding only after confirming client-data policy.")
+        embs = [None] * len(all_chunks)
 
     for c, e in zip(all_chunks, embs):
-        blob = np.array(e, dtype=np.float32).tobytes()
+        blob = np.array(e, dtype=np.float32).tobytes() if e is not None else None
         con.execute(
             "INSERT OR REPLACE INTO chunks (chunk_id, doc_id, case_id, chunk_text, embedding) VALUES (?,?,?,?,?)",
             (c["chunk_id"], c["doc_id"], c["case_id"], c["chunk_text"], blob),

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 ROOT = Path(os.path.expanduser("~/legal-books"))
@@ -60,8 +60,8 @@ app = FastAPI(title="legal-books search")
 
 
 class SearchReq(BaseModel):
-    query: str
-    top_k: int = 5
+    query: str = Field(..., min_length=1, max_length=500)
+    top_k: int = Field(default=5, ge=1, le=20)
 
 
 @app.get("/health")

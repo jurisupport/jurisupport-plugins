@@ -1,7 +1,30 @@
-# 사용자 비밀 (Gemini API 키 등)
+# 사용자 비밀 (Gemini API 키, 인증서, 토큰 등)
+**/CLAUDE.md
+!**/CLAUDE.md.example
 **/secrets.env
+**/secrets.*
 **/.env
-**/.env.local
+**/.env.*
+!**/.env.example
+!**/.env.template
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+credentials.json
+**/credentials.json
+service-account*.json
+**/service-account*.json
+auth.json
+**/auth.json
+token.json
+**/token.json
+.netrc
+**/.netrc
+*.local
+*.local.*
 
 # 사용자 로컬 데이터 (legal-books·case-records DB 본체는 ~/legal-books/, ~/case-records/에 따로 생성)
 toolkit/legal-books/db/
@@ -29,5 +52,11 @@ Thumbs.db
 *.log
 logs/
 
+# OMX runtime traces/state (plans and reports remain visible)
+.omx/logs/
+.omx/state/
+.omx/metrics.json
+.omx/notepad.md
+.omx/project-memory.json
+
 # submodule으로 가져올 자료 — 사용자 노트북에서만 채워짐
-plugins/songmu-legal/CLAUDE.md
