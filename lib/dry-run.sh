@@ -16,7 +16,7 @@ for _arg in "$@"; do
     *) _DRYRUN_REMAINING_ARGS+=("$_arg") ;;
   esac
 done
-set -- "${_DRYRUN_REMAINING_ARGS[@]}"
+set -- ${_DRYRUN_REMAINING_ARGS[@]+"${_DRYRUN_REMAINING_ARGS[@]}"}
 
 DRY_RUN="${DRY_RUN:-${JURISUPPORT_DRY_RUN:-0}}"
 if [[ "$_DRYRUN_PLAN_MODE" -eq 1 ]]; then
