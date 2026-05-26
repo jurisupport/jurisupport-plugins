@@ -25,6 +25,25 @@
 
 $ErrorActionPreference = 'Stop'
 
+# 미처리 예외 시 창이 바로 닫히지 않도록 trap
+trap {
+    Write-Host ""
+    Write-Host "[오류] 예상치 못한 에러가 발생했습니다:" -ForegroundColor Red
+    Write-Host "  $_" -ForegroundColor Red
+    Write-Host ""
+    Read-Host "Enter를 누르면 창이 닫힙니다"
+}
+
+function Exit-WithPause {
+    param([int]$Code = 1)
+    Write-Host ""
+    if ($Code -ne 0) {
+        Write-Host "오류로 중단되었습니다. 위 메시지를 확인하세요." -ForegroundColor Red
+    }
+    Read-Host "Enter를 누르면 창이 닫힙니다"
+    exit $Code
+}
+
 # UTF-8 콘솔 출력
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -81,7 +100,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
   설치 후 본 스크립트를 다시 실행하세요.
 
 "@
-    exit 1
+    Exit-WithPause 1
 }
 Write-Info "winget 확인됨: $(winget --version)"
 
@@ -205,7 +224,7 @@ if ($failedRequired.Count -gt 0) {
     Write-Err "다음 필수 패키지 설치 실패: $($failedRequired -join ', ')"
     Write-Err "수동 설치 후 본 스크립트를 다시 실행하세요."
     Write-Err "수동 검색: winget search <키워드>"
-    exit 1
+    Exit-WithPause 1
 }
 if ($failedOptional.Count -gt 0) {
     Write-Warn "선택 패키지 미설치: $($failedOptional -join ', ')"
@@ -286,7 +305,7 @@ Write-Step "3. Claude Code (npm install -g)"
 
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     Write-Err "npm을 찾을 수 없습니다. 새 PowerShell 창에서 다시 실행해 주세요 (PATH 갱신 필요)."
-    exit 1
+    Exit-WithPause 1
 }
 
 Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm 패키지 확인" -PercentComplete 10
@@ -363,7 +382,7 @@ try {
                 Pop-Location
                 $ErrorActionPreference = $prevEAP
                 Write-Err "git fetch 실패. 네트워크/방화벽 확인 후 재시도."
-                exit 1
+                Exit-WithPause 1
             }
             Write-Host "[git reset --hard] origin/main으로 정규화..." -ForegroundColor Cyan
             & git reset --hard origin/main 2>&1 | ForEach-Object { Write-Host $_ }
@@ -394,7 +413,7 @@ try {
             Write-Info "✓ Clone 완료: $repoDir"
         } else {
             Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
-            exit 1
+            Exit-WithPause 1
         }
     }
 
@@ -419,7 +438,7 @@ try {
             Write-Info "✓ Clone 완료: $repoDir"
         } else {
             Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
-            exit 1
+            Exit-WithPause 1
         }
     }
 } finally {
@@ -521,3 +540,5 @@ GitHub:      https://github.com/jurisupport/jurisupport-plugins
 문의:        admin@jurisupport.com
 
 "@ | Write-Host -ForegroundColor Green
+
+Read-Host "Enter를 누르면 창이 닫힙니다"
