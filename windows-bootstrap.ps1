@@ -58,6 +58,77 @@ function Write-Warn { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor
 function Write-Err  { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor Red }
 function Write-Step { param($msg) Write-Host "`n--- $msg ---" -ForegroundColor Cyan }
 
+function Add-PathEntryOnce {
+    param([AllowNull()][string]$PathEntry)
+
+    if (-not $PathEntry -or -not (Test-Path $PathEntry)) { return }
+
+    $separator = [IO.Path]::PathSeparator
+    $entries = @($env:Path -split [regex]::Escape($separator) | Where-Object { $_ })
+    $alreadyPresent = $entries | Where-Object { $_ -ieq $PathEntry } | Select-Object -First 1
+    if (-not $alreadyPresent) {
+        if ($env:Path) {
+            $env:Path = "$PathEntry$separator$env:Path"
+        } else {
+            $env:Path = $PathEntry
+        }
+    }
+}
+
+function Get-WingetCandidatePaths {
+    $paths = @()
+    $localAppDataCandidates = @(
+        [Environment]::GetFolderPath('LocalApplicationData'),
+        $env:LOCALAPPDATA
+    ) | Where-Object { $_ } | Select-Object -Unique
+
+    if ($env:USERPROFILE) {
+        $localAppDataCandidates += Join-Path $env:USERPROFILE 'AppData\Local'
+    }
+
+    foreach ($basePath in ($localAppDataCandidates | Where-Object { $_ } | Select-Object -Unique)) {
+        $paths += Join-Path $basePath 'Microsoft\WindowsApps\winget.exe'
+    }
+
+    try {
+        $appInstaller = Get-AppxPackage -Name Microsoft.DesktopAppInstaller -ErrorAction SilentlyContinue |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+        if ($appInstaller -and $appInstaller.InstallLocation) {
+            $paths += Join-Path $appInstaller.InstallLocation 'winget.exe'
+        }
+    } catch {
+        # Get-AppxPackage is not always available in PowerShell 7 or restricted shells.
+    }
+
+    return $paths | Where-Object { $_ } | Select-Object -Unique
+}
+
+function Resolve-WingetCommand {
+    $cmd = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if (-not $cmd) {
+        $cmd = Get-Command winget -ErrorAction SilentlyContinue
+    }
+    if ($cmd -and $cmd.Source) { return $cmd.Source }
+
+    foreach ($candidate in Get-WingetCandidatePaths) {
+        if (-not (Test-Path $candidate)) { continue }
+
+        $candidateDir = Split-Path -Parent $candidate
+        Add-PathEntryOnce $candidateDir
+
+        $cmd = Get-Command winget.exe -ErrorAction SilentlyContinue
+        if (-not $cmd) {
+            $cmd = Get-Command winget -ErrorAction SilentlyContinue
+        }
+        if ($cmd -and $cmd.Source) { return $cmd.Source }
+
+        return $candidate
+    }
+
+    return $null
+}
+
 # ============================================================
 # 0. Banner
 # ============================================================
@@ -89,7 +160,8 @@ function Write-Step { param($msg) Write-Host "`n--- $msg ---" -ForegroundColor C
 # ============================================================
 Write-Step "1. winget 점검"
 
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+$WingetCommand = Resolve-WingetCommand
+if (-not $WingetCommand) {
     Write-Err "winget이 설치되어 있지 않습니다."
     Write-Host @"
 
@@ -97,24 +169,42 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
   https://apps.microsoft.com/detail/9NBLGGH4NNS1
 
   Windows 11은 기본 탑재되어 있으나 미설치 시 위 링크에서 설치 가능합니다.
+  이미 설치되어 있는데도 이 메시지가 보이면 Windows 설정 → 앱 → 고급 앱 설정 →
+  앱 실행 별칭에서 "Windows Package Manager Client" 또는 "winget"을 켠 뒤
+  새 PowerShell 창에서 다시 실행하세요.
+
   설치 후 본 스크립트를 다시 실행하세요.
 
 "@
     Exit-WithPause 1
 }
-Write-Info "winget 확인됨: $(winget --version)"
+
+Set-Alias -Name winget -Value $WingetCommand -Scope Script -Force
+$wingetVersion = & $WingetCommand --version 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Err "winget 실행 파일은 찾았지만 정상 실행에 실패했습니다: $WingetCommand"
+    Write-Host ($wingetVersion | Out-String).TrimEnd() -ForegroundColor Red
+    Write-Host @"
+
+  Microsoft Store에서 "App Installer"를 업데이트한 뒤 새 PowerShell 창에서 다시 실행하세요:
+  https://apps.microsoft.com/detail/9NBLGGH4NNS1
+
+"@
+    Exit-WithPause 1
+}
+Write-Info "winget 확인됨: $wingetVersion ($WingetCommand)"
 
 # winget 사용 약관 사전 동의 (자동 설치 흐름에서 프롬프트 회피)
-winget settings --enable LocalManifestFiles 2>$null | Out-Null
+& $WingetCommand settings --enable LocalManifestFiles 2>$null | Out-Null
 
 # 소스(winget, msstore) agreement 사전 동의 — 안 하면 첫 패키지 설치 시 추가 프롬프트로 멈춤
 Write-Info "winget 소스 약관 사전 동의 + 업데이트 중..."
-& winget source update --accept-source-agreements 2>&1 | Out-Null
-& winget list --accept-source-agreements 2>&1 | Out-Null  # source agreement 트리거
+& $WingetCommand source update --accept-source-agreements 2>&1 | Out-Null
+& $WingetCommand list --accept-source-agreements 2>&1 | Out-Null  # source agreement 트리거
 
 # 첫 패키지 dry-run 검증 — 멈춤 진단용
 Write-Info "winget 동작 검증 (Git.Git 패키지 정보 조회)..."
-$probe = & winget show --id Git.Git --exact 2>&1
+$probe = & $WingetCommand show --id Git.Git --exact 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Warn "winget show가 실패했습니다. 네트워크 또는 winget 카탈로그 문제."
     Write-Warn "수동 점검: winget search Git.Git"
@@ -175,7 +265,7 @@ foreach ($pkg in $packages) {
     # 이미 설치된 ID가 있는지 먼저 확인
     $alreadyInstalled = $false
     foreach ($id in $pkg.Ids) {
-        $hit = & winget list --id $id --exact 2>$null | Select-String $id
+        $hit = & $WingetCommand list --id $id --exact 2>$null | Select-String $id
         if ($hit) {
             Write-Host "  ✓ 이미 설치됨: $id" -ForegroundColor DarkGray
             $alreadyInstalled = $true
@@ -188,14 +278,14 @@ foreach ($pkg in $packages) {
     $installedOk = $false
     foreach ($id in $pkg.Ids) {
         # 카탈로그에 ID가 있는지 먼저 확인 (없으면 건너뜀)
-        $probe = & winget show --id $id --exact 2>&1
+        $probe = & $WingetCommand show --id $id --exact 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  · ID 후보 없음(카탈로그): $id" -ForegroundColor DarkYellow
             continue
         }
 
         Write-Host "  → winget install $id (UAC 팝업이 뜨면 '예' 클릭)" -ForegroundColor DarkGray
-        & winget install --id $id --exact --silent `
+        & $WingetCommand install --id $id --exact --silent `
             --accept-package-agreements --accept-source-agreements
 
         if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq -1978335189) {
