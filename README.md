@@ -56,6 +56,15 @@ PowerShell 한 줄 설치도 빠른 시작용입니다. 조직 보안 정책이 
 
 사용자가 답할 것: UAC 팝업 "예", install.sh 단계별 `[Y/n]`, (선택) Gemini API 키.
 
+제3자 PC 설치를 지원해야 하면 진단 리포트 옵션을 켠 뒤 실행하세요. 실패 시 설치 로그·Windows 버전·winget/Git/Node/npm/Python/Claude Code 상태를 ZIP으로 묶고, 업로드 엔드포인트로 전송을 시도합니다.
+
+```powershell
+$env:JURISUPPORT_SUPPORT_REPORT = "1"
+irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 | iex
+```
+
+자세한 포함 정보와 엔드포인트 계약: [SUPPORT_REPORTS.md](SUPPORT_REPORTS.md)
+
 WSL2를 선호하시면 [WINDOWS_WSL.md](WINDOWS_WSL.md) (W2 옵션) 참조 — 회사 보안프로그램이 매우 강한 경우만 권장.
 
 ### 사전 준비
@@ -189,6 +198,7 @@ claude
 | [PUBLISH.md](PUBLISH.md) | (관리자용) GitHub 배포 절차 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 기여 가이드 |
 | [SECURITY.md](SECURITY.md) | 보안 정책 |
+| [SUPPORT_REPORTS.md](SUPPORT_REPORTS.md) | Windows 설치 실패 진단 ZIP·업로드 엔드포인트 계약 |
 | [LICENSE](LICENSE) | MIT + 한국어 면책 |
 | [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) | 강의 청중 사전 설치 가이드 (Mac/Linux) |
 | [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) | 윈도우 네이티브 설치 가이드 (W1 권장) |

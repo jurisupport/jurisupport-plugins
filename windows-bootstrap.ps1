@@ -23,22 +23,348 @@
 #   - 본 패키지 install.sh는 Git Bash에서 별도 실행
 #   - Claude Pro/Max OAuth (claude 실행 시)
 
+param(
+    # Set via downloaded script:
+    #   $env:JURISUPPORT_SUPPORT_REPORT="1"; irm .../windows-bootstrap.ps1 | iex
+    [switch]$SupportReport,
+    [string]$SupportEmail = "",
+    [string]$SupportUploadUrl = ""
+)
+
 $ErrorActionPreference = 'Stop'
+
+$SupportReportRequested = $SupportReport.IsPresent -or ($env:JURISUPPORT_SUPPORT_REPORT -match '^(1|true|yes|y)$')
+if (-not $SupportEmail) {
+    $SupportEmail = if ($env:JURISUPPORT_SUPPORT_EMAIL) { $env:JURISUPPORT_SUPPORT_EMAIL } else { 'admin@jurisupport.com' }
+}
+if (-not $SupportUploadUrl) {
+    $SupportUploadUrl = if ($env:JURISUPPORT_SUPPORT_UPLOAD_URL) { $env:JURISUPPORT_SUPPORT_UPLOAD_URL } else { 'https://api.jurisupport.com/support/install-report' }
+}
+$SupportUploadDisabled = ($SupportUploadUrl -match '^(0|false|no|none|off|disabled)$')
+$SupportSessionId = Get-Date -Format 'yyyyMMdd-HHmmss'
+$SupportRoot = Join-Path $env:TEMP "jurisupport-install-$SupportSessionId"
+$SupportTranscript = Join-Path $SupportRoot 'bootstrap-transcript.log'
+$SupportBundleCreated = $false
+$SupportTranscriptStarted = $false
+$BootstrapHadErrors = $false
+
+function Redact-SupportText {
+    param([AllowNull()][string]$Text)
+    if ($null -eq $Text) { return '' }
+
+    $result = $Text
+    $knownPaths = @($env:USERPROFILE, $env:TEMP, $env:TMP, $env:APPDATA, $env:LOCALAPPDATA) |
+        Where-Object { $_ } |
+        Sort-Object Length -Descending
+    foreach ($path in $knownPaths) {
+        $label = switch ($path) {
+            $env:USERPROFILE { '%USERPROFILE%'; break }
+            $env:TEMP { '%TEMP%'; break }
+            $env:TMP { '%TMP%'; break }
+            $env:APPDATA { '%APPDATA%'; break }
+            $env:LOCALAPPDATA { '%LOCALAPPDATA%'; break }
+            default { '%LOCALPATH%' }
+        }
+        $result = $result -replace [regex]::Escape($path), $label
+    }
+
+    $result = $result -replace '(?i)(Authorization:\s*Bearer\s+)[A-Za-z0-9._~+/\-]+=*', '$1[REDACTED]'
+    $result = $result -replace '(?i)(--header\s+"?Authorization:\s*Bearer\s+)[^"`r`n]+', '$1[REDACTED]'
+    $result = $result -replace '(?i)(token\s*[:=]\s*)[^`r`n ]+', '$1[REDACTED]'
+    $result = $result -replace '(?i)(api[_-]?key\s*[:=]\s*)[^`r`n ]+', '$1[REDACTED]'
+    $result = $result -replace '(?i)(password\s*[:=]\s*)[^`r`n ]+', '$1[REDACTED]'
+    return $result
+}
+
+function Write-SupportSection {
+    param([string]$Path, [string]$Title)
+    Add-Content -Path $Path -Encoding UTF8 -Value ""
+    Add-Content -Path $Path -Encoding UTF8 -Value "=== $Title ==="
+}
+
+function Add-SupportLine {
+    param([string]$Path, [string]$Value)
+    Add-Content -Path $Path -Encoding UTF8 -Value (Redact-SupportText $Value)
+}
+
+function Invoke-SupportCapture {
+    param(
+        [string]$Path,
+        [string]$Title,
+        [scriptblock]$ScriptBlock
+    )
+
+    Write-SupportSection -Path $Path -Title $Title
+    try {
+        $output = & $ScriptBlock 2>&1 | Out-String -Width 240
+        Add-SupportLine -Path $Path -Value $output.TrimEnd()
+    } catch {
+        Add-SupportLine -Path $Path -Value "capture failed: $($_.Exception.Message)"
+    }
+}
+
+function Test-ContainsNonAscii {
+    param([AllowNull()][string]$Value)
+    return ($Value -match '[^\x00-\x7F]')
+}
+
+function Open-SupportMail {
+    param([string]$ZipPath, [string]$Reason)
+
+    if (-not $SupportReportRequested) { return }
+
+    $subject = "jurisupport Windows 설치 진단 로그 - $SupportSessionId"
+    $body = @"
+안녕하세요.
+
+Windows 네이티브 설치 진단 번들을 전달드립니다.
+
+실패/요청 사유: $Reason
+첨부할 파일: $ZipPath
+
+이 메일 창에 위 ZIP 파일을 첨부해서 보내주세요.
+"@
+    try {
+        Start-Process explorer.exe "/select,`"$ZipPath`"" | Out-Null
+    } catch {
+        Write-Host "[support] ZIP 위치 열기 실패: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+
+    try {
+        $uri = "mailto:$SupportEmail?subject=$([uri]::EscapeDataString($subject))&body=$([uri]::EscapeDataString($body))"
+        Start-Process $uri | Out-Null
+    } catch {
+        Write-Host "[support] 메일 작성 창 열기 실패: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+function Upload-SupportBundle {
+    param([string]$ZipPath, [string]$Reason)
+
+    if (-not $SupportReportRequested) { return $false }
+    if (-not $SupportUploadUrl -or $SupportUploadDisabled) { return $false }
+
+    try {
+        $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+        if (-not $curl) {
+            Write-Host "[support] curl.exe 없음 → 자동 업로드 건너뜀" -ForegroundColor Yellow
+            return $false
+        }
+        Write-Host "[support] 진단 ZIP 업로드 시도: $SupportUploadUrl" -ForegroundColor Cyan
+        & $curl.Source -sS -f -X POST `
+            -H "X-JuriSupport-Report-Version: 1" `
+            -F "reason=$Reason" `
+            -F "session_id=$SupportSessionId" `
+            -F "source=windows-bootstrap" `
+            -F "file=@$ZipPath" `
+            $SupportUploadUrl | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[support] 업로드 완료" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "[support] 업로드 실패(exit $LASTEXITCODE). ZIP 파일을 직접 전달하세요: $ZipPath" -ForegroundColor Yellow
+            return $false
+        }
+    } catch {
+        Write-Host "[support] 업로드 실패: $($_.Exception.Message)" -ForegroundColor Yellow
+        return $false
+    }
+}
+
+function New-SupportBundle {
+    param(
+        [string]$Reason = "unknown",
+        [object]$ErrorRecord = $null
+    )
+
+    if (-not $SupportReportRequested) { return $null }
+    if ($script:SupportBundleCreated) { return $script:SupportBundlePath }
+    $script:SupportBundleCreated = $true
+
+    try {
+        New-Item -ItemType Directory -Force -Path $SupportRoot | Out-Null
+
+        if ($script:SupportTranscriptStarted) {
+            try {
+                Stop-Transcript | Out-Null
+            } catch {
+                # Ignore transcript stop failures; continue with whatever was captured.
+            }
+            $script:SupportTranscriptStarted = $false
+        }
+
+        $envPath = Join-Path $SupportRoot 'environment.txt'
+        Add-SupportLine -Path $envPath -Value "jurisupport Windows native install diagnostics"
+        Add-SupportLine -Path $envPath -Value "created_at: $(Get-Date -Format o)"
+        Add-SupportLine -Path $envPath -Value "reason: $Reason"
+        Add-SupportLine -Path $envPath -Value "support_report_requested: $SupportReportRequested"
+        Add-SupportLine -Path $envPath -Value "support_email: $SupportEmail"
+        Add-SupportLine -Path $envPath -Value "support_upload_url: $SupportUploadUrl"
+        Add-SupportLine -Path $envPath -Value "support_upload_disabled: $SupportUploadDisabled"
+
+        if ($ErrorRecord) {
+            Write-SupportSection -Path $envPath -Title 'error'
+            Add-SupportLine -Path $envPath -Value ($ErrorRecord | Out-String -Width 240)
+        }
+
+        Write-SupportSection -Path $envPath -Title 'privacy'
+        Add-SupportLine -Path $envPath -Value 'This bundle excludes ~/.claude/settings.json, local case files, secrets.env, and full environment variables. Known token-like values and user-local paths are redacted.'
+        Add-SupportLine -Path $envPath -Value "user_name_contains_non_ascii: $(Test-ContainsNonAscii $env:USERNAME)"
+        Add-SupportLine -Path $envPath -Value "user_profile_contains_non_ascii: $(Test-ContainsNonAscii $env:USERPROFILE)"
+
+        Write-SupportSection -Path $envPath -Title 'powershell'
+        Add-SupportLine -Path $envPath -Value "ps_version: $($PSVersionTable.PSVersion)"
+        Add-SupportLine -Path $envPath -Value "ps_edition: $($PSVersionTable.PSEdition)"
+        Add-SupportLine -Path $envPath -Value "host: $($Host.Name)"
+        Invoke-SupportCapture -Path $envPath -Title 'execution policy' -ScriptBlock { Get-ExecutionPolicy -List }
+
+        Write-SupportSection -Path $envPath -Title 'windows'
+        try {
+            $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+            Add-SupportLine -Path $envPath -Value "caption: $($os.Caption)"
+            Add-SupportLine -Path $envPath -Value "version: $($os.Version)"
+            Add-SupportLine -Path $envPath -Value "build_number: $($os.BuildNumber)"
+            Add-SupportLine -Path $envPath -Value "os_architecture: $($os.OSArchitecture)"
+            Add-SupportLine -Path $envPath -Value "install_date: $($os.InstallDate)"
+        } catch {
+            Add-SupportLine -Path $envPath -Value "win32_os_capture_failed: $($_.Exception.Message)"
+        }
+        try {
+            $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+            Add-SupportLine -Path $envPath -Value "manufacturer: $($cs.Manufacturer)"
+            Add-SupportLine -Path $envPath -Value "model: $($cs.Model)"
+            Add-SupportLine -Path $envPath -Value "system_type: $($cs.SystemType)"
+            Add-SupportLine -Path $envPath -Value "total_physical_memory_gb: $([math]::Round($cs.TotalPhysicalMemory / 1GB, 2))"
+        } catch {
+            Add-SupportLine -Path $envPath -Value "computer_system_capture_failed: $($_.Exception.Message)"
+        }
+        try {
+            $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+            Add-SupportLine -Path $envPath -Value "is_admin: $($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
+        } catch {
+            Add-SupportLine -Path $envPath -Value "is_admin_capture_failed: $($_.Exception.Message)"
+        }
+        Invoke-SupportCapture -Path $envPath -Title 'culture' -ScriptBlock { Get-Culture; Get-UICulture }
+        Invoke-SupportCapture -Path $envPath -Title 'codepage' -ScriptBlock { chcp }
+
+        Write-SupportSection -Path $envPath -Title 'paths'
+        Add-SupportLine -Path $envPath -Value "userprofile: $env:USERPROFILE"
+        Add-SupportLine -Path $envPath -Value "temp: $env:TEMP"
+        Add-SupportLine -Path $envPath -Value "path_current: $env:Path"
+        Add-SupportLine -Path $envPath -Value "path_machine: $([System.Environment]::GetEnvironmentVariable('Path','Machine'))"
+        Add-SupportLine -Path $envPath -Value "path_user: $([System.Environment]::GetEnvironmentVariable('Path','User'))"
+
+        foreach ($cmd in @('winget','git','bash','node','npm','python','py','jq','claude','curl.exe')) {
+            Invoke-SupportCapture -Path $envPath -Title "command: $cmd" -ScriptBlock {
+                $c = Get-Command $cmd -ErrorAction SilentlyContinue
+                if ($c) { $c | Select-Object Name, Source, Version } else { "$cmd not found" }
+            }
+        }
+        Write-SupportSection -Path $envPath -Title 'git bash candidates'
+        foreach ($candidate in @(
+            (Join-Path $env:ProgramFiles 'Git\bin\bash.exe'),
+            (Join-Path ${env:ProgramFiles(x86)} 'Git\bin\bash.exe')
+        )) {
+            Add-SupportLine -Path $envPath -Value "$candidate exists: $(Test-Path $candidate)"
+        }
+
+        Invoke-SupportCapture -Path $envPath -Title 'versions' -ScriptBlock {
+            $commands = @(
+                'winget --version',
+                'git --version',
+                'bash --version',
+                'node --version',
+                'npm --version',
+                'python --version',
+                'py --version',
+                'jq --version',
+                'claude --version'
+            )
+            foreach ($command in $commands) {
+                "`n> $command"
+                try {
+                    Invoke-Expression $command
+                } catch {
+                    "failed: $($_.Exception.Message)"
+                }
+            }
+        }
+
+        Invoke-SupportCapture -Path $envPath -Title 'winget sources' -ScriptBlock { winget source list }
+        foreach ($id in @('Git.Git','OpenJS.NodeJS.LTS','Python.Python.3.12','Google.Chrome','jqlang.jq','UB-Mannheim.TesseractOCR','QPDF.QPDF')) {
+            Invoke-SupportCapture -Path $envPath -Title "winget package: $id" -ScriptBlock { winget list --id $id --exact }
+        }
+        Invoke-SupportCapture -Path $envPath -Title 'npm config' -ScriptBlock {
+            "prefix=$(npm config get prefix)"
+            "cache=$(npm config get cache)"
+            npm list -g --depth=0 @anthropic-ai/claude-code
+        }
+
+        $repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
+        Write-SupportSection -Path $envPath -Title 'jurisupport repo'
+        Add-SupportLine -Path $envPath -Value "repo_dir_exists: $(Test-Path $repoDir)"
+        Add-SupportLine -Path $envPath -Value "install_sh_exists: $(Test-Path (Join-Path $repoDir 'install.sh'))"
+        Add-SupportLine -Path $envPath -Value "git_dir_exists: $(Test-Path (Join-Path $repoDir '.git'))"
+        if (Test-Path (Join-Path $repoDir '.git')) {
+            Invoke-SupportCapture -Path $envPath -Title 'repo git head' -ScriptBlock { git -C $repoDir rev-parse --short HEAD }
+            Invoke-SupportCapture -Path $envPath -Title 'repo git status' -ScriptBlock { git -C $repoDir status --short }
+        }
+
+        if (Test-Path $SupportTranscript) {
+            $redactedTranscript = Join-Path $SupportRoot 'bootstrap-transcript.redacted.log'
+            $transcriptText = Get-Content -Path $SupportTranscript -Raw -ErrorAction SilentlyContinue
+            Set-Content -Path $redactedTranscript -Encoding UTF8 -Value (Redact-SupportText $transcriptText)
+            Remove-Item $SupportTranscript -Force -ErrorAction SilentlyContinue
+        }
+
+        $readme = Join-Path $SupportRoot 'README.txt'
+        Set-Content -Path $readme -Encoding UTF8 -Value @"
+JuriSupport Windows native install diagnostics
+
+Reason: $Reason
+
+Please attach this ZIP when contacting support.
+The bundle is designed not to include case files, ~/.claude/settings.json, secrets.env, or full environment variables.
+It may include package versions, Windows version, PATH entries with user-local paths redacted, and install transcript output with token-like values redacted.
+"@
+
+        $desktop = [Environment]::GetFolderPath('Desktop')
+        if (-not $desktop -or -not (Test-Path $desktop)) { $desktop = $env:TEMP }
+        $zipPath = Join-Path $desktop "jurisupport-install-report-$SupportSessionId.zip"
+        Compress-Archive -Path (Join-Path $SupportRoot '*') -DestinationPath $zipPath -Force
+        $script:SupportBundlePath = $zipPath
+
+        Write-Host ""
+        Write-Host "[support] 진단 ZIP 생성 완료: $zipPath" -ForegroundColor Green
+        Write-Host "[support] 사건자료, ~/.claude/settings.json, secrets.env는 포함하지 않았습니다." -ForegroundColor DarkGray
+        $uploaded = Upload-SupportBundle -ZipPath $zipPath -Reason $Reason
+        if (-not $uploaded) {
+            Open-SupportMail -ZipPath $zipPath -Reason $Reason
+        }
+        return $zipPath
+    } catch {
+        Write-Host "[support] 진단 ZIP 생성 실패: $($_.Exception.Message)" -ForegroundColor Yellow
+        return $null
+    }
+}
 
 # 미처리 예외 시 창이 바로 닫히지 않도록 trap
 trap {
     Write-Host ""
     Write-Host "[오류] 예상치 못한 에러가 발생했습니다:" -ForegroundColor Red
     Write-Host "  $_" -ForegroundColor Red
+    New-SupportBundle -Reason "unhandled-error" -ErrorRecord $_ | Out-Null
     Write-Host ""
     Read-Host "Enter를 누르면 창이 닫힙니다"
+    exit 1
 }
 
 function Exit-WithPause {
-    param([int]$Code = 1)
+    param([int]$Code = 1, [string]$Reason = "bootstrap-exit")
     Write-Host ""
     if ($Code -ne 0) {
         Write-Host "오류로 중단되었습니다. 위 메시지를 확인하세요." -ForegroundColor Red
+        New-SupportBundle -Reason $Reason | Out-Null
     }
     Read-Host "Enter를 누르면 창이 닫힙니다"
     exit $Code
@@ -52,6 +378,16 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 # (PowerShell 현재 위치가 $env:USERPROFILE\jurisupport-plugins 안에 있으면
 #  나중에 Move-Item/Remove-Item이 "항목이 사용 중" 에러로 실패함)
 Set-Location $env:USERPROFILE
+
+if ($SupportReportRequested) {
+    New-Item -ItemType Directory -Force -Path $SupportRoot | Out-Null
+    try {
+        Start-Transcript -Path $SupportTranscript -Force | Out-Null
+        $SupportTranscriptStarted = $true
+    } catch {
+        Write-Host "[support] transcript 시작 실패: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
 
 function Write-Info { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor Green }
 function Write-Warn { param($msg) Write-Host "[bootstrap] $msg" -ForegroundColor Yellow }
@@ -226,7 +562,7 @@ if (-not $WingetCommand) {
   설치 후 본 스크립트를 다시 실행하세요.
 
 "@
-    Exit-WithPause 1
+    Exit-WithPause 1 "winget-not-found"
 }
 
 Set-Alias -Name winget -Value $WingetCommand -Scope Script -Force
@@ -240,7 +576,7 @@ if ($LASTEXITCODE -ne 0) {
   https://apps.microsoft.com/detail/9NBLGGH4NNS1
 
 "@
-    Exit-WithPause 1
+    Exit-WithPause 1 "winget-version-failed"
 }
 Write-Info "winget 확인됨: $wingetVersion ($WingetCommand)"
 
@@ -603,8 +939,12 @@ Write-Step "Step 5/5: install.sh 자동 실행 (Git Bash)"
 if (-not (Test-Path $gitBash)) {
     Write-Err "Git Bash를 찾지 못해 install.sh를 자동 실행하지 못합니다."
     Write-Err "수동: 시작 메뉴 → Git Bash → cd ~/jurisupport-plugins && ./install.sh"
+    $BootstrapHadErrors = $true
+    New-SupportBundle -Reason "git-bash-not-found" | Out-Null
 } elseif (-not (Test-Path "$repoDir\install.sh")) {
     Write-Err "install.sh를 찾지 못함: $repoDir\install.sh"
+    $BootstrapHadErrors = $true
+    New-SupportBundle -Reason "install-sh-not-found" | Out-Null
 } else {
     @"
 
@@ -638,6 +978,8 @@ if (-not (Test-Path $gitBash)) {
     } else {
         Write-Warn "install.sh 비정상 종료 (exit $installExit). 수동 재실행 가능:"
         Write-Warn "  Git Bash → cd ~/jurisupport-plugins && ./install.sh"
+        $BootstrapHadErrors = $true
+        New-SupportBundle -Reason "install-sh-failed" | Out-Null
     }
 }
 
@@ -646,11 +988,18 @@ if (-not (Test-Path $gitBash)) {
 # ============================================================
 Write-Step "마무리"
 
+$completionStatus = if ($BootstrapHadErrors) {
+    "⚠ 설치가 일부 완료되지 않았습니다."
+} else {
+    "✓ 설치 완료!"
+}
+$completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
+
 @"
 
-╔════════════════════════════════════════════════════════════╗
-║   ✓ 설치 완료!                                              ║
-╚════════════════════════════════════════════════════════════╝
+============================================================
+  $completionStatus
+============================================================
 
 남은 2단계:
 
@@ -688,6 +1037,16 @@ Write-Step "마무리"
 GitHub:      https://github.com/jurisupport/jurisupport-plugins
 문의:        admin@jurisupport.com
 
-"@ | Write-Host -ForegroundColor Green
+"@ | Write-Host -ForegroundColor $completionColor
+
+if ($SupportReportRequested -and $SupportTranscriptStarted -and -not $SupportBundleCreated) {
+    try {
+        Stop-Transcript | Out-Null
+        $SupportTranscriptStarted = $false
+        Remove-Item $SupportRoot -Recurse -Force -ErrorAction SilentlyContinue
+    } catch {
+        Write-Host "[support] 성공 경로 transcript 정리 실패: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
 
 Read-Host "Enter를 누르면 창이 닫힙니다"

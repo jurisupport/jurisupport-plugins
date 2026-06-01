@@ -50,6 +50,19 @@ Set-ExecutionPolicy Bypass -Scope Process -Force
 iwr https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 -UseBasicParsing | iex
 ```
 
+### 제3자 설치 지원 — 실패 로그 자동 리포트
+
+다른 사용자 PC에서 설치를 도와야 하면 진단 리포트 옵션을 켜고 실행하세요.
+
+```powershell
+$env:JURISUPPORT_SUPPORT_REPORT = "1"
+irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 | iex
+```
+
+실패 시 Desktop에 `jurisupport-install-report-YYYYMMDD-HHMMSS.zip`이 생성되고, 기본 업로드 엔드포인트(`https://api.jurisupport.com/support/install-report`)로 전송을 시도합니다. 업로드가 실패하면 ZIP 위치와 메일 작성 창을 열어 수동 전달할 수 있게 합니다.
+
+포함되는 정보: Windows 버전, PowerShell 실행 정책, winget/Git/Node/npm/Python/jq/Claude Code 상태, PATH, 관련 패키지 목록, bootstrap 로그. 사건자료, `~/.claude/settings.json`, `secrets.env`는 포함하지 않습니다. 자세한 엔드포인트 계약: [SUPPORT_REPORTS.md](SUPPORT_REPORTS.md).
+
 이 한 줄이 자동으로 5단계 전부 진행:
 
 | Step | 내용 | 사용자 응답 |
@@ -177,6 +190,15 @@ claude
 | winget이 설치돼 있는데 "설치되어 있지 않습니다" 표시 | 앱 실행 별칭이 꺼져 있거나 현재 PowerShell 창의 PATH가 오래됨 | Windows 설정 → 앱 → 고급 앱 설정 → 앱 실행 별칭에서 `Windows Package Manager Client`/`winget`을 켠 뒤 새 PowerShell 창에서 재실행 |
 | `npm install -g` 권한 오류 | npm 글로벌 prefix가 보호된 경로 | PowerShell **관리자 권한**으로 재시도 또는 `npm config set prefix "$env:LOCALAPPDATA\npm"` 후 재시도 |
 | `claude --version` "명령을 찾을 수 없음" | PATH가 갱신되지 않음 | 새 PowerShell 창을 열어주세요 |
+
+### 진단 리포트 단계
+
+| 증상 | 해결 |
+|---|---|
+| 업로드 실패 | Desktop의 `jurisupport-install-report-*.zip`을 이메일 또는 메신저로 전달 |
+| 메일 창이 열리지 않음 | ZIP 파일 경로가 화면에 출력됨. 해당 파일을 직접 첨부 |
+| 사내 보안망에서 업로드 차단 | `$env:JURISUPPORT_SUPPORT_UPLOAD_URL = "off"`로 업로드를 끄고 ZIP만 생성 |
+| 지원 받을 이메일 변경 | `$env:JURISUPPORT_SUPPORT_EMAIL = "support@example.com"` 설정 후 실행 |
 
 ### install.sh 단계 (Git Bash)
 
