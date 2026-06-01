@@ -166,6 +166,7 @@ claude
 | 증상 | 원인 | 해결 |
 |---|---|---|
 | **1/8 단계에서 멈춤** (Git for Windows) | UAC 팝업이 다른 모니터·작업 표시줄 뒤에 가려짐 | 작업 표시줄에서 노란 방패 아이콘 클릭 → "예". 또는 `Alt+Tab`으로 창 전환 |
+| Node.js 등 `winget install` 중 화면 변화 없이 멈춘 듯함 | UAC 승인 창이 뜬 게 아니라 작업 표시줄 방패 아이콘으로만 대기 중 | 하단 작업 표시줄의 방패 아이콘을 클릭해 UAC 창을 열고 "예" 선택. 새 스크립트는 20초 이상 대기 시 이 안내를 반복 표시 |
 | 1/8에서 멈춤, UAC 없음 | winget 첫 호출 시 source agreement 동의 대기 | 새 버전(d59fcb4+)에서 사전 동의 자동 처리. `irm "...?t=$(Get-Random)" \| iex`로 캐시 우회 |
 | `입력 조건과 일치하는 패키지를 찾을 수 없습니다` (exit -1978335212) | winget 카탈로그 ID가 변경되었거나 오기 | 새 버전에서 fallback ID 자동 시도. 직접 확인은 `winget search <키워드>` |
 | Ghostscript / qpdf 설치 실패 | winget 카탈로그에 ID 없을 수 있음 (라이선스 별 갈래) | **선택 패키지라 진행 OK**. OCRmyPDF 책 스캔 사용 시만 영향. 수동 설치: [Ghostscript](https://ghostscript.com/releases/gsdnld.html), [qpdf](https://github.com/qpdf/qpdf/releases) |

@@ -129,6 +129,40 @@ function Resolve-WingetCommand {
     return $null
 }
 
+function Invoke-WingetInstallWithReminder {
+    param(
+        [string]$WingetCommand,
+        [string]$PackageId
+    )
+
+    $arguments = @(
+        'install',
+        '--id', $PackageId,
+        '--exact',
+        '--silent',
+        '--accept-package-agreements',
+        '--accept-source-agreements'
+    )
+
+    $process = Start-Process -FilePath $WingetCommand -ArgumentList $arguments -NoNewWindow -PassThru
+    $nextReminder = (Get-Date).AddSeconds(20)
+
+    while (-not $process.HasExited) {
+        $now = Get-Date
+        if ($now -ge $nextReminder) {
+            Write-Warn "설치가 아직 진행 중입니다. 화면 아래 작업 표시줄의 방패 아이콘/UAC 창이 깜빡이면 열어서 '예'를 클릭하세요."
+            Write-Warn "UAC 창이 PowerShell 뒤에 가려질 수 있습니다. Alt+Tab으로 숨은 창도 확인하세요."
+            $nextReminder = $now.AddSeconds(45)
+        }
+
+        Start-Sleep -Seconds 2
+        $process.Refresh()
+    }
+
+    $process.WaitForExit()
+    return $process.ExitCode
+}
+
 # ============================================================
 # 0. Banner
 # ============================================================
@@ -285,16 +319,16 @@ foreach ($pkg in $packages) {
         }
 
         Write-Host "  → winget install $id (UAC 팝업이 뜨면 '예' 클릭)" -ForegroundColor DarkGray
-        & $WingetCommand install --id $id --exact --silent `
-            --accept-package-agreements --accept-source-agreements
+        Write-Host "    설치가 멈춘 듯하면 하단 작업 표시줄의 방패 아이콘을 열어 UAC에서 '예'를 누르세요." -ForegroundColor Yellow
+        $installExitCode = Invoke-WingetInstallWithReminder -WingetCommand $WingetCommand -PackageId $id
 
-        if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq -1978335189) {
+        if ($installExitCode -eq 0 -or $installExitCode -eq -1978335189) {
             # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (이미 최신)
             Write-Host "  ✓ 설치 완료: $id" -ForegroundColor Green
             $installedOk = $true
             break
         } else {
-            Write-Host "  · 설치 실패: $id (exit $LASTEXITCODE) — 다음 후보 시도" -ForegroundColor DarkYellow
+            Write-Host "  · 설치 실패: $id (exit $installExitCode) — 다음 후보 시도" -ForegroundColor DarkYellow
         }
     }
 
