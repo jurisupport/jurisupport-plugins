@@ -163,6 +163,22 @@ function Invoke-WingetInstallWithReminder {
     return $process.ExitCode
 }
 
+function Resolve-ExternalCommand {
+    param([string[]]$Names)
+
+    foreach ($name in $Names) {
+        $cmd = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($cmd -and $cmd.Source) { return $cmd.Source }
+    }
+
+    foreach ($name in $Names) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($cmd -and $cmd.Source -and $cmd.CommandType -ne 'ExternalScript') { return $cmd.Source }
+    }
+
+    return $null
+}
+
 # ============================================================
 # 0. Banner
 # ============================================================
@@ -427,10 +443,12 @@ if (Test-Path $gitBash) {
 # ============================================================
 Write-Step "3. Claude Code (npm install -g)"
 
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+$NpmCommand = Resolve-ExternalCommand -Names @('npm.cmd', 'npm.exe', 'npm')
+if (-not $NpmCommand) {
     Write-Err "npm을 찾을 수 없습니다. 새 PowerShell 창에서 다시 실행해 주세요 (PATH 갱신 필요)."
     Exit-WithPause 1
 }
+Write-Info "npm 실행 파일: $NpmCommand"
 
 Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm 패키지 확인" -PercentComplete 10
 
@@ -440,7 +458,7 @@ Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm 패키지 �
 $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
-    $claudeInstalled = npm list -g --depth=0 2>$null | Select-String '@anthropic-ai/claude-code'
+    $claudeInstalled = & $NpmCommand list -g --depth=0 2>$null | Select-String '@anthropic-ai/claude-code'
     if ($claudeInstalled) {
         Write-Info "Claude Code 이미 설치됨"
     } else {
@@ -449,13 +467,20 @@ try {
         Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm install -g" -PercentComplete 40
 
         # stderr를 stdout으로 합쳐서 PowerShell RemoteException 회피
-        & npm install -g @anthropic-ai/claude-code --loglevel http 2>&1 | ForEach-Object { Write-Host $_ }
+        & $NpmCommand install -g @anthropic-ai/claude-code --loglevel http 2>&1 | ForEach-Object { Write-Host $_ }
+        $npmInstallExitCode = $LASTEXITCODE
 
-        if ($LASTEXITCODE -eq 0) {
-            $ver = & claude --version 2>$null
-            Write-Info "✓ Claude Code 설치 완료: $ver"
+        if ($npmInstallExitCode -eq 0) {
+            $ClaudeCommand = Resolve-ExternalCommand -Names @('claude.cmd', 'claude.exe', 'claude')
+            if ($ClaudeCommand) {
+                $ver = & $ClaudeCommand --version 2>$null
+                Write-Info "✓ Claude Code 설치 완료: $ver"
+            } else {
+                Write-Info "✓ Claude Code 설치 완료"
+                Write-Warn "claude 명령은 새 PowerShell/Git Bash 창에서 확인해 주세요 (PATH 갱신 필요 가능)."
+            }
         } else {
-            Write-Err "Claude Code 설치 실패 (exit $LASTEXITCODE)"
+            Write-Err "Claude Code 설치 실패 (exit $npmInstallExitCode)"
             Write-Err "수동 실행: 새 PowerShell(관리자)에서  npm install -g @anthropic-ai/claude-code"
         }
     }

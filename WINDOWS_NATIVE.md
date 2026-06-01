@@ -171,6 +171,7 @@ claude
 | `입력 조건과 일치하는 패키지를 찾을 수 없습니다` (exit -1978335212) | winget 카탈로그 ID가 변경되었거나 오기 | 새 버전에서 fallback ID 자동 시도. 직접 확인은 `winget search <키워드>` |
 | Ghostscript / qpdf 설치 실패 | winget 카탈로그에 ID 없을 수 있음 (라이선스 별 갈래) | **선택 패키지라 진행 OK**. OCRmyPDF 책 스캔 사용 시만 영향. 수동 설치: [Ghostscript](https://ghostscript.com/releases/gsdnld.html), [qpdf](https://github.com/qpdf/qpdf/releases) |
 | `npm notice ...`가 빨갛게 RemoteException으로 표시 | npm 정보 메시지가 stderr로 출력 → PowerShell이 에러로 오인 | **정상 동작**. 새 버전에서 화면 표시 정상화. `claude --version`이 잘 나오면 설치 성공 |
+| `npm.ps1 파일을 로드할 수 없습니다` / ExecutionPolicy 오류 | PowerShell이 `npm.cmd` 대신 `npm.ps1`을 먼저 실행함 | 최신 스크립트는 `npm.cmd`를 우선 사용. 캐시 우회 명령으로 재실행: `irm "...?t=$(Get-Random)" \| iex` |
 | `irm \| iex`가 ExecutionPolicy로 막힘 | 회사 보안 정책 | `Set-ExecutionPolicy Bypass -Scope Process -Force` 먼저 |
 | winget 명령 없음 | Windows 10 구버전, App Installer 미설치, 또는 WindowsApps 앱 실행 별칭이 현재 PowerShell PATH에서 빠짐 | 최신 스크립트는 WindowsApps/앱 설치 위치를 자동 탐색. 계속 실패하면 Microsoft Store에서 "App Installer" 업데이트 또는 https://apps.microsoft.com/detail/9NBLGGH4NNS1 |
 | winget이 설치돼 있는데 "설치되어 있지 않습니다" 표시 | 앱 실행 별칭이 꺼져 있거나 현재 PowerShell 창의 PATH가 오래됨 | Windows 설정 → 앱 → 고급 앱 설정 → 앱 실행 별칭에서 `Windows Package Manager Client`/`winget`을 켠 뒤 새 PowerShell 창에서 재실행 |
