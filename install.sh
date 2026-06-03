@@ -4,10 +4,13 @@
 # Installs:
 #   1. Data protection hook
 #   2. songmu-legal plugin (from git submodule or repo)
-#   3. lbox-guide, beopgoeul-guide skills
-#   4. Case info CSV template
-#   5. (Optional) legal-books server + skill
-#   6. (Optional) case-records server + skill
+#   3. korean-law MCP plugin (public law/precedent verification)
+#   4. lbox-guide and beopgoeul-search skills
+#   5. Case info CSV template
+#   6. (Optional) legal-books server + skill
+#   7. (Optional) case-records server + skill
+#   8. (Optional) beopgoeul-search toolkit
+#   9. (Recommended) JuriSupport MCP registration
 
 set -euo pipefail
 
@@ -16,7 +19,7 @@ TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TOOLKIT_DIR/lib/dry-run.sh" "$@"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
-TOTAL_STEPS=9
+TOTAL_STEPS=10
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
 error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
@@ -189,7 +192,7 @@ else
       if claude plugin marketplace add "$MARKETPLACE_PATH" 2>&1 | tail -3; then
         info "✓ marketplace 등록 완료"
       else
-        warn "marketplace 등록 실패. 수동: claude plugin marketplace add $MARKETPLACE_PATH"
+        warn "marketplace 등록 실패. 수동: claude plugin marketplace add \"$MARKETPLACE_PATH\""
       fi
     fi
 
@@ -215,25 +218,68 @@ else
 fi
 
 # ============================================================
-# 4. Skills (lbox-guide always; beopgoeul-search if toolkit installed later)
+# 4. korean-law MCP plugin
 # ============================================================
-step 4 "가이드 스킬 설치"
+step 4 "korean-law MCP 플러그인 설치 (법령·판례 1차 검증)"
 
-SKILLS_DST="$HOME/.claude/skills"
-run_or_plan mkdir -p "$SKILLS_DST"
+KOREAN_LAW_MARKETPLACE_SOURCE="chrisryugj/korean-law-mcp"
+KOREAN_LAW_MARKETPLACE_NAME="korean-law-marketplace"
+KOREAN_LAW_PLUGIN_REF="korean-law@$KOREAN_LAW_MARKETPLACE_NAME"
 
-# Always-on: lbox-guide (manual, no automation)
-for SKILL in lbox-guide; do
-  run_or_plan mkdir -p "$SKILLS_DST/$SKILL"
-  run_or_plan cp "$TOOLKIT_DIR/skills/$SKILL/SKILL.md" "$SKILLS_DST/$SKILL/SKILL.md"
-  info_or_plan "스킬 설치: $SKILL"
+if is_dry_run; then
+  info_or_plan "korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
+  info_or_plan "korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF"
+else
+  if claude plugin marketplace list 2>/dev/null | grep -q "$KOREAN_LAW_MARKETPLACE_NAME"; then
+    info "marketplace '$KOREAN_LAW_MARKETPLACE_NAME' 이미 등록됨"
+  else
+    info "korean-law marketplace 자동 등록 중: $KOREAN_LAW_MARKETPLACE_SOURCE"
+    if claude plugin marketplace add "$KOREAN_LAW_MARKETPLACE_SOURCE" 2>&1 | tail -3; then
+      info "✓ korean-law marketplace 등록 완료"
+    else
+      warn "korean-law marketplace 등록 실패. 수동: claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
+    fi
+  fi
+
+  if claude plugin list 2>/dev/null | grep -q "korean-law@"; then
+    info "korean-law 플러그인 이미 설치됨"
+  else
+    info "korean-law 자동 설치 중..."
+    info "설치 중 법제처 Open API 키 입력 프롬프트가 나오면 발급받은 OC 값을 입력하세요."
+    info "발급 방법: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
+    if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
+      info "✓ korean-law 설치 완료"
+      info "→ 법령·판례 검증 시 korean-law MCP 도구 사용 가능"
+    else
+      warn "korean-law 자동 설치 실패. 수동: claude plugin install $KOREAN_LAW_PLUGIN_REF"
+    fi
+  fi
+fi
+
+# ============================================================
+# 5. Skills (always-on guides; beopgoeul toolkit installs later)
+# ============================================================
+step 5 "가이드 스킬 설치"
+
+# Always-on: lbox-guide and beopgoeul-search appear immediately.
+# beopgoeul-search tells the user how to enable the optional Selenium toolkit if missing.
+for SKILLS_ROOT in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
+  run_or_plan mkdir -p "$SKILLS_ROOT"
+  for SKILL in lbox-guide beopgoeul-search; do
+    run_or_plan mkdir -p "$SKILLS_ROOT/$SKILL"
+    run_or_plan cp "$TOOLKIT_DIR/skills/$SKILL/SKILL.md" "$SKILLS_ROOT/$SKILL/SKILL.md"
+    info_or_plan "스킬 설치: $SKILL ($SKILLS_ROOT)"
+  done
 done
-# beopgoeul-search is installed conditionally below (Step 8)
+run_or_plan mkdir -p "$HOME/.claude/commands"
+run_or_plan cp "$TOOLKIT_DIR/skills/beopgoeul-search/SKILL.md" "$HOME/.claude/commands/beopgoeul-search.md"
+info_or_plan "명령 설치: beopgoeul-search"
+# Step 9 installs the runnable Selenium toolkit for beopgoeul-search.
 
 # ============================================================
-# 5. CSV template
+# 6. CSV template
 # ============================================================
-step 5 "사건정보 관리표 템플릿 설정"
+step 6 "사건정보 관리표 템플릿 설정"
 
 if [[ ! -d "$HOME/사건" ]]; then
   if is_dry_run; then
@@ -254,9 +300,9 @@ else
 fi
 
 # ============================================================
-# 6. Optional: legal-books toolkit
+# 7. Optional: legal-books toolkit
 # ============================================================
-step 6 "(선택) legal-books 검색 서버 설치"
+step 7 "(선택) legal-books 검색 서버 설치"
 
 if is_dry_run; then
   info_or_plan "legal-books 검색 서버 설치"
@@ -275,9 +321,9 @@ else
 fi
 
 # ============================================================
-# 7. Optional: case-records toolkit
+# 8. Optional: case-records toolkit
 # ============================================================
-step 7 "(선택) case-records 검색 서버 설치"
+step 8 "(선택) case-records 검색 서버 설치"
 
 if is_dry_run; then
   info_or_plan "case-records 검색 서버 설치"
@@ -297,9 +343,9 @@ else
 fi
 
 # ============================================================
-# 8. Optional: beopgoeul (법고을) auto-search toolkit
+# 9. Optional: beopgoeul (법고을) auto-search toolkit
 # ============================================================
-step 8 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
+step 9 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
 if is_dry_run; then
   info_or_plan "법고을 자동 검색 toolkit 설치"
@@ -307,18 +353,18 @@ else
   read -r -p "지금 설치할까요? (Chrome도 자동 설치됨) [Y/n, 엔터=예] " ans
   if [[ ! "$ans" =~ ^[Nn]$ ]]; then
     # || warn — Chrome 미설치 등 실패해도 main install.sh는 종료되지 않음
-    bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. 수동 검색용 lbox-guide 스킬은 사용 가능."
+    bash "$TOOLKIT_DIR/toolkit/beopgoeul/install.sh" || warn "법고을 toolkit 설치 실패. beopgoeul-search 스킬은 설치됐지만 자동 검색은 나중에 재시도해야 합니다."
   else
-    info "건너뛰기. beopgoeul-search 스킬은 비활성화됩니다."
-    info "대신 lbox-guide 스킬(수동 검색)을 사용할 수 있습니다."
+    info "건너뛰기. beopgoeul-search 스킬은 설치되어 있지만 자동 검색 toolkit은 비활성화됩니다."
+    info "대신 lbox-guide 스킬을 사용할 수 있습니다."
     info "나중에 설치: bash $TOOLKIT_DIR/toolkit/beopgoeul/install.sh"
   fi
 fi
 
 # ============================================================
-# 9. Optional: JuriSupport MCP 등록
+# 10. Optional: JuriSupport MCP 등록
 # ============================================================
-step 9 "(권장) JuriSupport 가입·MCP 연동 — 50건까지 무료"
+step 10 "(권장) JuriSupport 가입·MCP 연동 — 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
@@ -326,11 +372,21 @@ JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
 
 # 브라우저 자동 열기 함수 (OS별)
 open_url() {
+  local url="$1"
+  local opened=0
+
   case "$PLATFORM" in
-    mac)     open "$1" 2>/dev/null ;;
-    linux)   xdg-open "$1" 2>/dev/null || true ;;
-    windows) cmd.exe /c "start $1" 2>/dev/null || powershell.exe -Command "Start-Process '$1'" 2>/dev/null ;;
+    mac)     open "$url" 2>/dev/null || opened=$? ;;
+    linux)   xdg-open "$url" 2>/dev/null || opened=$? ;;
+    windows) cmd.exe /c "start $url" 2>/dev/null || powershell.exe -Command "Start-Process '$url'" 2>/dev/null || opened=$? ;;
   esac
+
+  if [[ "$opened" -ne 0 ]]; then
+    warn "브라우저 자동 열기 실패. 아래 URL을 직접 열어주세요:"
+    echo "  $url"
+  fi
+
+  return 0
 }
 
 if is_dry_run; then
@@ -488,12 +544,20 @@ $(if is_dry_run; then printf '✓ DRY-RUN 완료 (실제 변경 없음)'; else p
   6. 첫 준비서면: /songmu-legal:brief-protocol
 
 플러그인 자동 설치 안 됐다면 (드물지만) 클로드코드 안에서 수동 실행:
-       /plugin marketplace add $MARKETPLACE_PATH
-       /plugin install songmu-legal
+       /plugin marketplace add "$MARKETPLACE_PATH"
+       /plugin install songmu-legal@jurisupport-plugins
+
+korean-law MCP 자동 설치 안 됐다면 클로드코드 안에서 수동 실행:
+       /plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE
+       /plugin install $KOREAN_LAW_PLUGIN_REF
+       (법제처 OC 발급 방법: $TOOLKIT_DIR/guides/07_law_openapi_key.md)
 
 전체 가이드: $TOOLKIT_DIR/README.md
 
 ⚠ /songmu-legal:cold-start-interview 가 "Unknown command"로 뜨면
    plugin 자동 설치가 실패한 것 — 위 수동 명령 두 줄 실행하세요.
+
+⚠ korean-law 도구가 보이지 않으면
+   korean-law MCP 자동 설치가 실패한 것 — 위 korean-law 수동 명령 두 줄 실행하세요.
 
 EOF

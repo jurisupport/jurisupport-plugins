@@ -1,6 +1,6 @@
 ---
 name: brief-protocol
-description: 준비서면 작성 표준 절차 - 사건 인테이크부터 정본 등록·PDF 추출까지 일관된 오케스트레이션. 사건기록 탐색·초안 작성을 직접 수행하고, korean-law, beopgoeul-search, legal-books, JuriSupport(또는 MD) 스킬을 순서대로 호출하며 각 단계에서 사용자 승인을 받음. 판결 자동 검증은 korean-law 1차 + 법고을 2차 (lbox-search 스킬 자동 호출 안 함, lbox는 사용자 수동 검색용). 법원 전자제출 자체는 자동화하지 않으며 사용자가 직접 수행.
+description: 준비서면 작성 표준 절차 - 사건 인테이크부터 정본 등록·PDF 추출까지 일관된 오케스트레이션. 사건기록 탐색·초안 작성을 직접 수행하고, korean-law, beopgoeul-search, legal-books, JuriSupport(또는 MD) 스킬을 순서대로 호출하며 각 단계에서 사용자 승인을 받음. 판결 검증은 korean-law 1차 + 법고을 2차. 법원 전자제출 자체는 자동화하지 않으며 사용자가 직접 수행.
 license: MIT
 metadata:
   category: legal
@@ -129,12 +129,9 @@ JuriSupport등록: 요청시
 → 사건번호·법원·선고일·PDF URL을 구조화 데이터로 반환
 → beopgoeul-search 스킬이 없으면 이 단계는 자동 스킵
 
-⚠️ lbox-search **스킬 자동 호출 금지** — 도구 불안정으로 결과 신뢰 불가.
-   다만 lbox.kr 사이트 자체는 사용자가 직접 수동 검색해도 됨 (필요 시 사용자에게 안내).
-
 [최종 처리]
 → 두 경로 모두 실패 → "(미확인)" 표시하고 사용자에게 보고
-→ 사용자가 lbox.kr 등에서 수동으로 확인해 알려주면 그 결과를 반영
+→ 추가 확인 결과를 알려주면 그 결과를 반영
 → 절대 가짜 판결번호를 그대로 두지 말 것
 ```
 

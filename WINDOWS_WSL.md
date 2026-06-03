@@ -169,9 +169,22 @@ google-chrome --version
 sudo apt install -y ocrmypdf tesseract-ocr tesseract-ocr-kor
 ```
 
-### 4-6. (선택) Google Gemini API 키 발급
+### 4-6. 법제처 Open API 키 준비 (korean-law MCP용)
 
-https://aistudio.google.com/apikey 에서 키 발급. 강의에서 등록.
+무료 발급입니다. Windows 브라우저에서 진행해도 되고, 발급받은 값만 WSL 설치 중 붙여넣으면 됩니다.
+
+1. https://open.law.go.kr/LSO/openApi/guideList.do 접속
+2. 오른쪽 위 **로그인** 또는 **사용자 가입**
+3. 왼쪽 메뉴 **OPEN API 신청** 저장
+4. 왼쪽 메뉴 **API인증키관리**에서 **현재 API인증키(OC)** 복사
+
+상세 화면 예시는 [법제처 Open API 인증키 발급 가이드](guides/07_law_openapi_key.md)를 참고하세요.
+
+### 4-7. (선택) Google Gemini API 키 발급
+
+https://aistudio.google.com/apikey 에서 키 발급. Google 계정 로그인 → **Create API key** → 프로젝트 선택/생성 → 키 복사.
+
+무료 tier로 테스트와 소량 인덱싱은 가능하지만, 교과서 여러 권을 쉽게 인덱싱하려면 rate limit을 피하기 위해 결제 연결된 유료 tier를 권장합니다. 강의에서는 발급만 해 두고 등록은 함께 진행합니다.
 
 ---
 
@@ -195,7 +208,8 @@ bootstrap.sh가 자동으로 설치하는 것:
 
 자동으로 **하지 않는** 것 (사용자 별도 진행):
 - Google Chrome 설치 (4-4 명령으로 수동)
-- Gemini API 키 발급 (4-6)
+- 법제처 Open API 키 준비 (4-6)
+- Gemini API 키 발급 (4-7)
 - `claude` OAuth 로그인 (bootstrap 후 본인이 `claude` 실행)
 
 → **Chrome + Gemini는 강의 전 수동 진행** 권장. 그 외는 bootstrap에 맡겨도 됩니다.

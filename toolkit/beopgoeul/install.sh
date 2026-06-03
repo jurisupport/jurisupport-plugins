@@ -5,7 +5,7 @@
 # - ~/jurisupport-beopgoeul/ directory
 # - Python venv with Selenium
 # - Search wrapper script
-# - Claude Code skill: beopgoeul-search (replaces beopgoeul-guide)
+# - Claude Code/Codex skill: beopgoeul-search (replaces beopgoeul-guide)
 
 set -euo pipefail
 
@@ -237,18 +237,31 @@ PS1
 fi
 
 # ============================================================
-# Install Claude Code skill (replaces beopgoeul-guide)
+# Install skill (replaces beopgoeul-guide)
 # ============================================================
-info_or_plan "클로드코드 스킬 설치 중"
-SKILL_DST="$HOME/.claude/skills/beopgoeul-search"
-run_or_plan mkdir -p "$SKILL_DST"
-run_or_plan cp "$TOOLKIT_DIR/../../skills/beopgoeul-search/SKILL.md" "$SKILL_DST/SKILL.md"
+info_or_plan "클로드코드/Codex 스킬 설치 중"
+SKILL_SRC="$TOOLKIT_DIR/../../skills/beopgoeul-search/SKILL.md"
+for SKILLS_ROOT in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
+  SKILL_DST="$SKILLS_ROOT/beopgoeul-search"
+  run_or_plan mkdir -p "$SKILL_DST"
+  run_or_plan cp "$SKILL_SRC" "$SKILL_DST/SKILL.md"
+done
+run_or_plan mkdir -p "$HOME/.claude/commands"
+run_or_plan cp "$SKILL_SRC" "$HOME/.claude/commands/beopgoeul-search.md"
 
 # Remove old beopgoeul-guide if exists (replaced by beopgoeul-search)
-if [[ -d "$HOME/.claude/skills/beopgoeul-guide" ]]; then
-  run_or_plan rm -rf "$HOME/.claude/skills/beopgoeul-guide"
-  info_or_plan "옛 beopgoeul-guide 스킬 제거 (beopgoeul-search로 교체됨)"
-fi
+for OLD_SKILL_DIR in "$HOME/.claude/skills/beopgoeul-guide" "$HOME/.codex/skills/beopgoeul-guide"; do
+  if [[ -d "$OLD_SKILL_DIR" ]]; then
+    run_or_plan rm -rf "$OLD_SKILL_DIR"
+    info_or_plan "옛 beopgoeul-guide 스킬 제거 (beopgoeul-search로 교체됨): $OLD_SKILL_DIR"
+  fi
+done
+for OLD_COMMAND in "$HOME/.claude/commands/beopgoeul-guide.md"; do
+  if [[ -f "$OLD_COMMAND" ]]; then
+    run_or_plan rm -f "$OLD_COMMAND"
+    info_or_plan "옛 beopgoeul-guide 명령 제거 (beopgoeul-search로 교체됨): $OLD_COMMAND"
+  fi
+done
 
 # ============================================================
 # Smoke test
@@ -275,7 +288,7 @@ CLI 사용법:
   ~/jurisupport-beopgoeul/scripts/search.sh "2024다302217" --max 1
   ~/jurisupport-beopgoeul/scripts/search.sh "민법 750조" --format json
 
-클로드코드에서 (스킬: beopgoeul-search):
+클로드코드/Codex에서 (스킬: beopgoeul-search):
   "법고을에서 시효 완성 후 채무승인 판결 찾아줘"
   → 클로드가 자동으로 search.sh 호출, 결과 정리
 

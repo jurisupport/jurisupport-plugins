@@ -7,17 +7,34 @@ ROOT="$HOME/legal-books"
 VENV="$ROOT/.venv/bin/activate"
 PIDFILE="$ROOT/logs/server.pid"
 LOGFILE="$ROOT/logs/server.log"
+HEALTH_URL="http://localhost:8766/health"
 
 start() {
   if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "Server already running (PID $(cat "$PIDFILE"))"
     return
   fi
+  rm -f "$PIDFILE"
   # shellcheck disable=SC1090
   source "$VENV"
-  nohup python3 "$ROOT/server/server.py" >> "$LOGFILE" 2>&1 &
+  nohup python "$ROOT/server/server.py" >> "$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"
-  echo "Server started (PID $!). Log: $LOGFILE"
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if curl -sf "$HEALTH_URL" >/dev/null; then
+      echo "Server started (PID $!). Log: $LOGFILE"
+      curl -s "$HEALTH_URL"
+      echo ""
+      return
+    fi
+    if ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+      break
+    fi
+    sleep 0.5
+  done
+  echo "Server failed to start. Log: $LOGFILE" >&2
+  tail -40 "$LOGFILE" >&2 || true
+  rm -f "$PIDFILE"
+  exit 1
 }
 
 stop() {
@@ -26,6 +43,7 @@ stop() {
     rm -f "$PIDFILE"
     echo "Server stopped"
   else
+    rm -f "$PIDFILE"
     echo "Server not running"
   fi
 }
@@ -33,8 +51,9 @@ stop() {
 status() {
   if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "Running (PID $(cat "$PIDFILE"))"
-    curl -s http://localhost:8766/health || true
+    curl -s "$HEALTH_URL" || true
   else
+    rm -f "$PIDFILE"
     echo "Not running"
   fi
 }

@@ -130,6 +130,7 @@ Write-Step "Step 4/4: winget 시스템 패키지 제거 (선택)"
 "@ | Write-Host -ForegroundColor Yellow
 
 $packages = @(
+    @{ Name = 'rclone (클라우드 파일 동기화)';    Ids = @('Rclone.Rclone') },
     @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('QPDF.QPDF') },
     @{ Name = 'Tesseract OCR';                   Ids = @('UB-Mannheim.TesseractOCR') },
     @{ Name = 'jq';                              Ids = @('jqlang.jq') },

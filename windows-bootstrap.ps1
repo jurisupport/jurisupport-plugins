@@ -15,6 +15,7 @@
 #   - Tesseract OCR (한글 포함)
 #   - Ghostscript
 #   - qpdf
+#   - rclone
 #   - Claude Code (npm i -g)
 #   - jurisupport-plugins git clone
 #
@@ -47,6 +48,8 @@ $SupportTranscript = Join-Path $SupportRoot 'bootstrap-transcript.log'
 $SupportBundleCreated = $false
 $SupportTranscriptStarted = $false
 $BootstrapHadErrors = $false
+$ClaudePowerShellCommand = 'claude.cmd'
+$ClaudeGitBashCommand = 'claude'
 
 function Redact-SupportText {
     param([AllowNull()][string]$Text)
@@ -254,7 +257,7 @@ function New-SupportBundle {
         Add-SupportLine -Path $envPath -Value "path_machine: $([System.Environment]::GetEnvironmentVariable('Path','Machine'))"
         Add-SupportLine -Path $envPath -Value "path_user: $([System.Environment]::GetEnvironmentVariable('Path','User'))"
 
-        foreach ($cmd in @('winget','git','bash','node','npm','python','py','jq','claude','curl.exe')) {
+        foreach ($cmd in @('winget','git','bash','node','npm','python','py','jq','rclone','claude','claude.cmd','curl.exe')) {
             Invoke-SupportCapture -Path $envPath -Title "command: $cmd" -ScriptBlock {
                 $c = Get-Command $cmd -ErrorAction SilentlyContinue
                 if ($c) { $c | Select-Object Name, Source, Version } else { "$cmd not found" }
@@ -278,7 +281,8 @@ function New-SupportBundle {
                 'python --version',
                 'py --version',
                 'jq --version',
-                'claude --version'
+                'rclone version',
+                'claude.cmd --version'
             )
             foreach ($command in $commands) {
                 "`n> $command"
@@ -291,7 +295,7 @@ function New-SupportBundle {
         }
 
         Invoke-SupportCapture -Path $envPath -Title 'winget sources' -ScriptBlock { winget source list }
-        foreach ($id in @('Git.Git','OpenJS.NodeJS.LTS','Python.Python.3.12','Google.Chrome','jqlang.jq','UB-Mannheim.TesseractOCR','QPDF.QPDF')) {
+        foreach ($id in @('Git.Git','OpenJS.NodeJS.LTS','Python.Python.3.12','Google.Chrome','jqlang.jq','UB-Mannheim.TesseractOCR','QPDF.QPDF','Rclone.Rclone')) {
             Invoke-SupportCapture -Path $envPath -Title "winget package: $id" -ScriptBlock { winget list --id $id --exact }
         }
         Invoke-SupportCapture -Path $envPath -Title 'npm config' -ScriptBlock {
@@ -527,7 +531,7 @@ function Resolve-ExternalCommand {
 
   진행 단계:
     1. winget 사전 점검
-    2. Git, Node, Python, Chrome, jq, Tesseract, Ghostscript, qpdf
+    2. Git, Node, Python, Chrome, jq, Tesseract, Ghostscript, qpdf, rclone
     3. Claude Code (npm install -g)
     4. jurisupport-plugins git clone
     5. 마무리 안내 (Git Bash로 install.sh 실행)
@@ -627,7 +631,8 @@ $packages = @(
     @{ Name = 'Google Chrome';                   Ids = @('Google.Chrome');            Required = $true },
     @{ Name = 'jq (JSON CLI)';                   Ids = @('jqlang.jq');                Required = $true },
     @{ Name = 'Tesseract OCR (한글 포함)';       Ids = @('UB-Mannheim.TesseractOCR'); Required = $false },
-    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('QPDF.QPDF');                Required = $false }
+    @{ Name = 'qpdf (OCRmyPDF 의존성)';          Ids = @('QPDF.QPDF');                Required = $false },
+    @{ Name = 'rclone (클라우드 파일 동기화)';    Ids = @('Rclone.Rclone');            Required = $false }
 )
 
 $total = $packages.Count
@@ -704,7 +709,7 @@ if ($failedRequired.Count -gt 0) {
 }
 if ($failedOptional.Count -gt 0) {
     Write-Warn "선택 패키지 미설치: $($failedOptional -join ', ')"
-    Write-Warn "  → OCRmyPDF(책 스캔용)만 영향. 다른 기능은 정상 동작합니다."
+    Write-Warn "  → OCRmyPDF(책 스캔용) 또는 rclone 클라우드 동기화만 영향. 다른 기능은 정상 동작합니다."
 }
 
 # ============================================================
@@ -948,12 +953,15 @@ if (-not (Test-Path $gitBash)) {
 } else {
     @"
 
-  install.sh가 곧 시작됩니다. 8단계 대화식 설치:
-    1~4. 의존성 점검, Hook, 플러그인, 스킬 (자동/Enter)
-    5~8. CSV 템플릿·검색 서버 (각 단계 [Y/n] 응답)
+  install.sh가 곧 시작됩니다. 10단계 대화식 설치:
+    1~5. 의존성 점검, Hook, 플러그인, korean-law, 스킬 (자동/Enter)
+    6~10. CSV 템플릿·검색 서버·JuriSupport MCP (각 단계 [Y/n] 응답)
 
-  Gemini API 키(무료): https://aistudio.google.com/apikey
-  (6, 7번 단계에서 사용. 건너뛰려면 Enter)
+  Gemini API 키: https://aistudio.google.com/apikey
+  (7, 8번 단계에서 사용. 테스트는 무료 tier 가능, 여러 교과서 인덱싱은 유료 tier 권장. 건너뛰려면 Enter)
+
+  korean-law MCP 설치 중 법제처 Open API 키 입력 프롬프트가 나올 수 있습니다.
+  발급 방법: guides\07_law_openapi_key.md
 
   3초 후 시작...
 "@ | Write-Host -ForegroundColor Cyan
@@ -1005,29 +1013,39 @@ $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
 
 [1] Claude Code 로그인 (1회):
 
-    claude
+    PowerShell:
+      $ClaudePowerShellCommand
+
+    Git Bash:
+      $ClaudeGitBashCommand
 
     → 브라우저가 자동으로 열리며 Claude Pro/Max OAuth 진행.
     → 한 번만 로그인하면 이후 영구 유지.
+    → PowerShell에서 claude.ps1 ExecutionPolicy 오류가 나면 $ClaudePowerShellCommand 를 사용하세요.
 
-  플러그인·JuriSupport MCP 모두 install.sh가 자동 등록.
+  플러그인·korean-law MCP·JuriSupport MCP 모두 install.sh가 자동 등록.
   자동 설치가 실패한 경우에만 수동 명령:
 
-    [수동 fallback A] 플러그인:
-      claude plugin marketplace add $repoDir
-      claude plugin install songmu-legal@jurisupport-plugins
+    [수동 fallback A] songmu-legal 플러그인:
+      $ClaudePowerShellCommand plugin marketplace add $repoDir
+      $ClaudePowerShellCommand plugin install songmu-legal@jurisupport-plugins
 
-    [수동 fallback B] JuriSupport MCP (사건 50건까지 무료):
+    [수동 fallback B] korean-law MCP 플러그인:
+      먼저 guides\07_law_openapi_key.md를 보고 법제처 OC 값을 준비
+      $ClaudePowerShellCommand plugin marketplace add chrisryugj/korean-law-mcp
+      $ClaudePowerShellCommand plugin install korean-law@korean-law-marketplace
+
+    [수동 fallback C] JuriSupport MCP (사건 50건까지 무료):
       1) https://jurisupport.com 가입
       2) https://jurisupport.com/profile 에서 API 토큰 발급
-      3) claude mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse ``
+      3) $ClaudePowerShellCommand mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse ``
            --header "Authorization: Bearer <발급받은_토큰>"
 
 첫 사건 시작:
 
     mkdir `$env:USERPROFILE\사건\2026-001_홍길동_대여금
     cd `$env:USERPROFILE\사건\2026-001_홍길동_대여금
-    claude
+    $ClaudePowerShellCommand
 
     클로드코드 안에서:
       /songmu-legal:cold-start-interview   (최초 1회: 사무소 플레이북)

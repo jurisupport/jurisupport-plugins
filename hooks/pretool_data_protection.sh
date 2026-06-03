@@ -70,40 +70,7 @@ if ! is_external_tool; then
 fi
 
 # ============================================================
-# (1) Restricted domain check — lbox.kr only
-# lbox.kr 자동화는 이용약관 위반 위험. 법고을(lx.scourt.go.kr)은
-# 검색 URL 생성·페이지 조회까지는 허용 (정부 공개 사이트).
-# ============================================================
-RESTRICTED_DOMAINS=("lbox.kr")
-
-if [[ "$TOOL_NAME" == "WebFetch" || "$TOOL_NAME" == "WebSearch" ]]; then
-  for DOMAIN in "${RESTRICTED_DOMAINS[@]}"; do
-    if echo "$HAYSTACK" | grep -qiE "$DOMAIN"; then
-      cat <<EOF >&2
-╔══════════════════════════════════════════════════════════════╗
-║  🚫 lbox.kr 자동화 접근 차단                                  ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  lbox.kr에 LLM이 자동 접근하는 것은 이용약관 위반            ║
-║  위험이 있어 차단됩니다.                                     ║
-║                                                              ║
-║  사용자가 직접 브라우저로 lbox.kr에 로그인하여 검색하고,     ║
-║  결과 PDF를 사건폴더에 저장한 뒤 클로드에 분석을 요청하세요. ║
-║                                                              ║
-║  무료 대안: 법고을(https://lx.scourt.go.kr) 우선 시도        ║
-║                                                              ║
-║  안내: skills/lbox-guide/SKILL.md                            ║
-║         guides/06_precedent_search.md                        ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-EOF
-      exit 2
-    fi
-  done
-fi
-
-# ============================================================
-# (2) Korean PII pattern check
+# Korean PII pattern check
 # ============================================================
 DETECTED=()
 if echo "$HAYSTACK" | grep -qE "$PATTERN_RRN"; then

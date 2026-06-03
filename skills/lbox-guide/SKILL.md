@@ -1,6 +1,6 @@
 ---
 name: lbox-guide
-description: lbox.kr 판례 검색 워크플로우 가이드 (자동화 없이 사용자 직접 검색). lbox 유료 계정 보유 변호사용. 검색 키워드 추천 → 사용자가 직접 검색 → 결과 PDF를 사건폴더에 저장 → 클로드코드에 분석 요청하는 절차 안내.
+description: lbox.kr 판례 검색 워크플로우 가이드. lbox 유료 계정 보유 변호사용. 검색 키워드 추천 → 결과 PDF를 사건폴더에 저장 → 클로드코드에 분석 요청하는 절차 안내.
 license: MIT
 metadata:
   category: legal
@@ -9,23 +9,7 @@ metadata:
 
 # lbox.kr 판례 검색 가이드 스킬
 
-> ⚠️ **자동화 도구가 아닌 가이드 스킬입니다.**
-> lbox.kr는 자동화 도구로 접근하지 마세요 (이용약관 위반 위험).
-> 본 스킬은 사용자가 직접 lbox에서 검색하는 절차를 안내하고, 다운로드한 결과를 클로드코드가 분석하도록 돕습니다.
-
-## 🚫 LLM 행동 금지 사항 (Hard Stops)
-
-본 스킬이 활성화된 상태에서 클로드코드는 다음을 **절대 수행하지 않는다**:
-
-- `WebFetch`로 `lbox.kr` 도메인 URL 호출
-- `WebSearch`로 lbox에 직접 접근 시도
-- `Bash`로 `curl`·`wget`·`playwright`·`selenium` 등을 사용한 lbox 자동 접속
-- Python·Node 스크립트로 lbox에 HTTP 요청
-- 사용자에게 "lbox 자동 검색해줄까요?" 같은 제안
-
-사용자가 "lbox에서 검색해줘"라고 요청하면, 클로드는 **검색 키워드 후보만** 제안하고, 사용자에게 **lbox.kr에 직접 로그인하여 검색**할 것을 안내한다. PDF가 다운로드되어 사건폴더에 들어온 후에야 분석을 시작한다.
-
-위 행동은 본 패키지의 데이터 보호 Hook이 도메인 차단으로 추가 안전망을 제공한다.
+본 스킬은 lbox 검색 절차를 안내하고, 다운로드한 결과를 클로드코드가 분석하도록 돕습니다.
 
 ## When to use
 
@@ -44,9 +28,9 @@ metadata:
 - **법령 조문 명시**: "민법 162조 1항", "근로기준법 23조"
 - **사실관계 핵심**: "차용증 작성 시효이익 포기"
 
-### Step 2. 사용자가 lbox.kr에서 직접 검색
+### Step 2. lbox.kr에서 검색
 
-1. 브라우저에서 https://lbox.kr 접속하여 로그인
+1. https://lbox.kr 접속하여 로그인
 2. 상단 검색바에 키워드 입력
 3. 결과 목록에서 사건 선택
 4. 판결문 페이지 진입 → "**PDF 다운로드**" (lbox 자체 기능)
@@ -85,12 +69,11 @@ metadata:
 
 ## 주의사항
 
-- **자동화 스크립트로 lbox 접근 금지** (계정 차단·이용약관 위반)
 - **다운로드 PDF는 본인 사용 한정** (재배포·공유 금지)
-- **무료 대체**: 법고을(lx.scourt.go.kr) — `beopgoeul-guide` 스킬 참조
+- **무료 대체**: 법고을(lx.scourt.go.kr) — `beopgoeul-search` 스킬 참조
 - 판결 인용 시 반드시 사건번호 실존 재확인 (PDF 받은 그 사건이 lbox에 실재함을 확인)
 
 ## 관련 문서
 
 - 상세 워크플로우: `guides/04_lbox_workflow.md`
-- 무료 대체 (법고을): `skills/beopgoeul-guide/SKILL.md`
+- 무료 대체 (법고을): `skills/beopgoeul-search/SKILL.md`

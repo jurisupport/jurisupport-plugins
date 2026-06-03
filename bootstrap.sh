@@ -15,6 +15,7 @@
 # 인간 입력 필요:
 #   - sudo 비밀번호 1회 (Homebrew 설치용)
 #   - (강의 후 claude 실행 시) Claude Pro OAuth 로그인
+#   - install.sh 실행 중 법제처 Open API 키 (korean-law MCP용)
 #
 # 자동화 불가:
 #   - Claude Pro 가입·결제 (https://claude.ai/upgrade 미리 가입)
@@ -256,11 +257,13 @@ ${BLUE}[2/2] 본 패키지 설치 (install.sh)${NC}
     ./install.sh
 
 → 데이터 보호 Hook + songmu-legal 플러그인 + 스킬 자동 등록.
+   korean-law MCP는 법제처 Open API 키(발급: guides/07_law_openapi_key.md)를 입력하면 자동 등록.
    legal-books·case-records·법고을 toolkit은 선택 설치 (Gemini API 키·Chrome 필요).
 
 자세한 가이드:
   - 콜드스타트:        ~/jurisupport-plugins/COLD_START.md
   - 보안 원칙 (필독):  ~/jurisupport-plugins/guides/00_security.md
+  - 법제처 OC 발급:   ~/jurisupport-plugins/guides/07_law_openapi_key.md
 
 문의: admin@jurisupport.com
 EOF

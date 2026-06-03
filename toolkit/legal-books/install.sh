@@ -260,7 +260,10 @@ else
     echo ""
     echo "================================================================"
     echo "  Gemini API 키 등록"
-    echo "  무료 키 발급: https://aistudio.google.com/apikey"
+    echo "  발급: https://aistudio.google.com/apikey"
+    echo "  방법: Create API key → 프로젝트 선택/생성 → 키 복사"
+    echo "  책 여러 권을 쉽게 인덱싱하려면 무료 tier보다 결제 연결된 유료 tier를 권장합니다."
+    echo "  (무료 tier는 요청/토큰 제한이 낮아 대량 임베딩 중 rate limit이 날 수 있음)"
     echo "================================================================"
     read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY
     if [[ -n "${GEMINI_KEY:-}" ]]; then
@@ -279,6 +282,7 @@ fi
 info_or_plan "서버·스크립트 복사 중"
 run_or_plan cp "$TOOLKIT_DIR/server/server.py" "$ROOT/server/server.py"
 run_or_plan cp "$TOOLKIT_DIR/scripts/add_book.sh" "$ROOT/scripts/add_book.sh"
+run_or_plan cp "$TOOLKIT_DIR/scripts/reindex.sh" "$ROOT/scripts/reindex.sh"
 run_or_plan cp "$TOOLKIT_DIR/scripts/server.sh" "$ROOT/scripts/server.sh"
 run_or_plan cp "$TOOLKIT_DIR/scripts/ingest.py" "$ROOT/scripts/ingest.py"
 # Windows: PowerShell 래퍼도 복사
@@ -345,8 +349,14 @@ cat <<EOF
       --edition "제9판" --year 2018 --publisher "박영사"
 
     소요 시간: 책 두께에 따라 5~30분 (OCR + Gemini 임베딩)
+              무료 tier에서는 rate limit으로 더 오래 걸리거나 중단될 수 있으므로
+              여러 권을 연속 인덱싱할 때는 유료 tier 권장
     내부 처리: tesseract OCR(한+영) → 텍스트 추출 → 청크 분할 →
               Gemini 임베딩 → SQLite FTS5 인덱스
+
+    중간 실패/잘못된 인덱싱 복구:
+      ~/legal-books/scripts/reindex.sh --book-id 001
+      # 또는 전체 재인덱싱: ~/legal-books/scripts/reindex.sh
 
   Step 3. 검색 테스트
     curl -X POST http://localhost:8766/search \\

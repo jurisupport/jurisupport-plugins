@@ -34,9 +34,14 @@ expect_exit \
   '{"tool_name":"WebSearch","tool_input":{"query":"홍길동 700101-1234567"}}'
 
 expect_exit \
-  "WebFetch blocks lbox.kr" \
-  2 \
+  "WebFetch allows lbox.kr without PII" \
+  0 \
   '{"tool_name":"WebFetch","tool_input":{"url":"https://lbox.kr/search"}}'
+
+expect_exit \
+  "WebFetch blocks Korean case number on external URL" \
+  2 \
+  '{"tool_name":"WebFetch","tool_input":{"url":"https://example.com/search","query":"2025가합10737"}}'
 
 expect_exit \
   "Bash remains local for PII pattern" \

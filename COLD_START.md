@@ -10,6 +10,7 @@
 - 클로드 Pro 또는 Max 계정 (월 20달러 이상)
 - Mac 또는 Linux 노트북 (Windows는 WSL2)
 - Homebrew (Mac) 또는 apt (Linux)
+- 법제처 Open API 인증키(OC) ([발급 가이드](guides/07_law_openapi_key.md))
 - 첫 사건 1개 (현재 작업 중인 진짜 사건)
 - 약 30분 ~ 1시간
 
@@ -28,6 +29,7 @@ cd jurisupport-plugins
 | 질문 | 답 |
 |---|---|
 | 데이터 보호 Hook 설치 | Yes (자동) |
+| 법제처 Open API 키 | [발급 가이드](guides/07_law_openapi_key.md)의 `OC` 값 입력 |
 | ~/사건 디렉토리 + CSV 템플릿 복사 | **Yes** (권장) |
 | legal-books 검색 서버 설치 | **첫날은 No** (책 스캔이 안 끝났으므로) |
 | case-records 검색 서버 설치 | **첫날은 No** (과거 사건 인덱싱이 안 끝났으므로) |

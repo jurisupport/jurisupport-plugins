@@ -6,7 +6,7 @@ Steps:
 1. Extract text from PDF (page-by-page)
 2. Write markdown (1 file per book)
 3. Chunk text (~1000 chars, 200 overlap)
-4. Generate Gemini embeddings (batched)
+4. Generate Gemini embeddings (batched, retrying transient failures)
 5. Insert into SQLite (books + chunks + FTS5)
 """
 
@@ -29,8 +29,19 @@ SECRETS = Path(os.path.expanduser("~/.jurisupport/secrets.env"))
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
+EMBEDDING_MODEL = "text-embedding-004"
+DEFAULT_EMBED_BATCH_SIZE = 100
+DEFAULT_EMBED_MAX_RETRIES = 5
 
 load_dotenv(SECRETS)
+
+
+def env_int(name: str, default: int, minimum: int = 1) -> int:
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+    return max(minimum, value)
 
 
 def extract_pages(pdf_path: Path):
@@ -61,7 +72,7 @@ def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
-    """Get Gemini embeddings (text-embedding-004, 768-dim free tier)."""
+    """Get Gemini embeddings from Gemini with bounded retries."""
     from google import genai
 
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -70,15 +81,41 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
             "GEMINI_API_KEY not set. Add to ~/.jurisupport/secrets.env"
         )
     client = genai.Client(api_key=api_key)
-    # Batch up to 100 per request
+    batch_size = env_int("LEGAL_BOOKS_EMBED_BATCH_SIZE", DEFAULT_EMBED_BATCH_SIZE)
+    max_retries = env_int("LEGAL_BOOKS_EMBED_MAX_RETRIES", DEFAULT_EMBED_MAX_RETRIES)
     out = []
-    for i in range(0, len(texts), 100):
-        batch = texts[i:i + 100]
-        result = client.models.embed_content(
-            model="text-embedding-004",
-            contents=batch,
-        )
-        out.extend([e.values for e in result.embeddings])
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        batch_no = (i // batch_size) + 1
+        for attempt in range(1, max_retries + 1):
+            try:
+                result = client.models.embed_content(
+                    model=EMBEDDING_MODEL,
+                    contents=batch,
+                )
+                batch_embeddings = [e.values for e in result.embeddings]
+                if len(batch_embeddings) != len(batch):
+                    raise RuntimeError(
+                        f"Gemini returned {len(batch_embeddings)} embeddings "
+                        f"for {len(batch)} chunks"
+                    )
+                out.extend(batch_embeddings)
+                break
+            except Exception as exc:
+                if attempt == max_retries:
+                    raise RuntimeError(
+                        f"Gemini embedding failed for batch {batch_no} "
+                        f"after {max_retries} attempts: {exc}"
+                    ) from exc
+                wait = min(60, 2 ** attempt)
+                print(
+                    "  [ingest] Gemini embedding retry "
+                    f"{attempt}/{max_retries} for batch {batch_no} "
+                    f"in {wait}s ({exc})",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(wait)
         time.sleep(0.5)  # rate limit cushion
     return out
 
@@ -144,28 +181,53 @@ def main():
     embeddings = embed_batch(texts)
     print(f"  [ingest] {len(embeddings)} embeddings generated", flush=True)
 
-    # Insert into DB
-    print("  [ingest] Inserting into DB...", flush=True)
-    con = sqlite3.connect(DB_PATH)
-    con.execute("INSERT OR REPLACE INTO books (book_id, author, title, edition, year, publisher) VALUES (?,?,?,?,?,?)",
-                (args.book_id, args.author, args.title, args.edition, args.year, args.publisher))
-    for c, emb in zip(all_chunks, embeddings):
-        emb_blob = np.array(emb, dtype=np.float32).tobytes()
-        con.execute(
-            "INSERT OR REPLACE INTO chunks (chunk_id, book_id, page, chunk_text, embedding) VALUES (?,?,?,?,?)",
-            (c["chunk_id"], c["book_id"], c["page"], c["chunk_text"], emb_blob),
+    if len(embeddings) != len(all_chunks):
+        raise RuntimeError(
+            "Embedding count mismatch: "
+            f"{len(all_chunks)} chunks but {len(embeddings)} embeddings"
         )
-    # Rebuild FTS for this book
-    con.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
-    con.commit()
-    con.close()
 
-    # Write chunks.jsonl for archival
+    # Write chunks.jsonl for archival before changing DB. If this fails, DB stays untouched.
     jsonl_path = args.book_dir / f"{args.book_id}.chunks.jsonl"
     with open(jsonl_path, "w", encoding="utf-8") as f:
         for c, emb in zip(all_chunks, embeddings):
             row = {**c, "embedding_dim": len(emb)}
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    # Insert into DB atomically. Reindexing the same book removes stale chunks first.
+    print("  [ingest] Inserting into DB...", flush=True)
+    con = sqlite3.connect(DB_PATH)
+    try:
+        con.execute("BEGIN")
+        con.execute("DELETE FROM chunks WHERE book_id = ?", (args.book_id,))
+        con.execute(
+            "INSERT OR REPLACE INTO books "
+            "(book_id, author, title, edition, year, publisher) "
+            "VALUES (?,?,?,?,?,?)",
+            (
+                args.book_id,
+                args.author,
+                args.title,
+                args.edition,
+                args.year,
+                args.publisher,
+            ),
+        )
+        for c, emb in zip(all_chunks, embeddings):
+            emb_blob = np.array(emb, dtype=np.float32).tobytes()
+            con.execute(
+                "INSERT INTO chunks "
+                "(chunk_id, book_id, page, chunk_text, embedding) "
+                "VALUES (?,?,?,?,?)",
+                (c["chunk_id"], c["book_id"], c["page"], c["chunk_text"], emb_blob),
+            )
+        con.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
 
     print(f"  [ingest] Done. {len(all_chunks)} chunks indexed for book {args.book_id}", flush=True)
 

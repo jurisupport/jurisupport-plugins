@@ -52,9 +52,14 @@ curl -s -X POST http://localhost:8766/search \
       "chunk_text": "...",
       "score": 0.87
     }
+  ],
+  "warnings": [
+    "semantic embedding unavailable; used FTS only: ..."
   ]
 }
 ```
+
+`warnings`가 있어도 `results`가 있으면 로컬 FTS5 검색 결과로 사용할 수 있다. 단, 의미 검색이 빠진 상태이므로 쟁점어를 바꿔 1~2회 추가 검색한다.
 
 ## 인용 규칙 (필수)
 
@@ -80,6 +85,7 @@ DB가 비어 있거나 관련 결과 없음:
 
 ## 추가 도구
 
-- 책 추가: `~/jurisupport-plugins/toolkit/legal-books/scripts/add_book.sh`
-- 서버 관리: `~/jurisupport-plugins/toolkit/legal-books/scripts/server.sh {start|stop|restart|status}`
+- 책 추가: `~/legal-books/scripts/add_book.sh`
+- 재인덱싱: `~/legal-books/scripts/reindex.sh [--book-id 001]`
+- 서버 관리: `~/legal-books/scripts/server.sh {start|stop|restart|status}`
 - 가이드: `~/jurisupport-plugins/guides/02_book_scanning.md`

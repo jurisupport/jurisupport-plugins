@@ -16,8 +16,12 @@ chmod +x hooks/pretool_data_protection.sh
 # settings.json에 수동 등록 — hooks/INSTALL.md 참조
 
 # 2. 가이드 스킬
-mkdir -p ~/.claude/skills
-cp -r skills/lbox-guide skills/beopgoeul-guide ~/.claude/skills/
+mkdir -p ~/.claude/skills ~/.codex/skills ~/.claude/commands
+cp -r skills/lbox-guide ~/.claude/skills/
+cp -r skills/beopgoeul-search ~/.claude/skills/
+cp -r skills/lbox-guide ~/.codex/skills/
+cp -r skills/beopgoeul-search ~/.codex/skills/
+cp skills/beopgoeul-search/SKILL.md ~/.claude/commands/beopgoeul-search.md
 
 # 3. CSV 템플릿
 mkdir -p ~/사건
@@ -26,7 +30,7 @@ cp templates/사건정보_입력가이드.md ~/사건/_입력가이드.md
 ```
 
 이 상태로 가능한 것:
-- `lbox-guide` / `beopgoeul-guide` 스킬로 판례 검색 워크플로우 사용
+- `lbox-guide` / `beopgoeul-search` 스킬로 판례 검색 워크플로우 사용
 - CSV 기반 사건 관리
 - 데이터 보호 Hook 작동
 
@@ -45,6 +49,11 @@ git clone https://github.com/.../jurisupport-plugins.git plugins/
 # 2. Claude Code에 등록
 mkdir -p ~/.claude/plugins/cache/jurisupport-plugins
 ln -s "$(pwd)/plugins/songmu-legal" ~/.claude/plugins/cache/jurisupport-plugins/songmu-legal
+
+# 3. 법령·판결 1차 검증용 korean-law MCP 설치
+#    먼저 guides/07_law_openapi_key.md를 보고 법제처 OC 값을 준비
+claude plugin marketplace add chrisryugj/korean-law-mcp
+claude plugin install korean-law@korean-law-marketplace
 ```
 
 사용:
@@ -86,8 +95,10 @@ bash toolkit/case-records/install.sh
 
 ```bash
 # Hook 제거: ~/.claude/settings.json 편집 (pretool_data_protection.sh 항목 제거)
-# 스킬 제거: rm -rf ~/.claude/skills/{lbox-guide,beopgoeul-guide,legal-books,case-records}
+# 스킬 제거: rm -rf ~/.claude/skills/{lbox-guide,beopgoeul-search,legal-books,case-records}
+# 명령 제거: rm -f ~/.claude/commands/beopgoeul-search.md
 # 플러그인 제거: rm ~/.claude/plugins/cache/jurisupport-plugins/songmu-legal
+# korean-law 제거: claude plugin uninstall korean-law && claude plugin marketplace remove korean-law-marketplace
 # 서버 제거: rm -rf ~/legal-books ~/case-records
 # Secrets: rm -rf ~/.jurisupport (Gemini API 키 등)
 ```

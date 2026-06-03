@@ -78,9 +78,24 @@ claude --version  # 설치 확인
 
 이미 있으면 skip. 없으면 https://www.google.com/chrome/ 에서 다운로드 설치.
 
-### 3-6. (선택) Google Gemini API 키 발급
+### 3-6. 법제처 Open API 키 준비 (korean-law MCP용)
 
-https://aistudio.google.com/apikey 에서 무료 키 발급. **무료 한도로 강의·일상 사용에 충분합니다.**
+무료 발급입니다. 강의 전날까지 아래 순서로 `OC` 값을 준비해 주세요.
+
+1. https://open.law.go.kr/LSO/openApi/guideList.do 접속
+2. 오른쪽 위 **로그인** 또는 **사용자 가입**
+3. 왼쪽 메뉴 **OPEN API 신청** 저장
+4. 왼쪽 메뉴 **API인증키관리**에서 **현재 API인증키(OC)** 복사
+
+상세 화면 예시는 [법제처 Open API 인증키 발급 가이드](guides/07_law_openapi_key.md)를 보시면 됩니다. korean-law MCP 설치 중 이 값을 입력합니다.
+
+### 3-7. (선택) Google Gemini API 키 발급
+
+https://aistudio.google.com/apikey 에서 키를 발급합니다.
+
+발급 방법: Google 계정 로그인 → **Create API key** → 프로젝트 선택/생성 → 키 복사.
+
+무료 tier로 강의 중 테스트와 소량 인덱싱은 가능합니다. 다만 교과서 여러 권을 연속으로 인덱싱하려면 rate limit 때문에 중간에 멈출 수 있으므로, 실제 사무소 서가를 쉽게 구축하려면 결제 연결된 유료 tier를 권장합니다.
 
 → 강의에서는 발급만 해 두시면 됩니다. 노트북에 등록은 강의 중에 함께.
 

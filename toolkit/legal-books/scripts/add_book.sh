@@ -51,7 +51,19 @@ if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
   exit 1
 fi
 
-PDF=""; AUTHOR=""; TITLE=""; EDITION=""; YEAR=""; PUBLISHER=""
+expand_user_path() {
+  case "$1" in
+    "~") printf '%s\n' "$HOME" ;;
+    "~/"*) printf '%s\n' "$HOME/${1#~/}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+sanitize_path_segment() {
+  printf '%s' "$1" | tr -d '/\\:*?"<>|'
+}
+
+PDF=""; AUTHOR=""; TITLE=""; EDITION=""; YEAR="0"; PUBLISHER=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -72,23 +84,80 @@ for v in PDF AUTHOR TITLE; do
   fi
 done
 
+PDF="$(expand_user_path "$PDF")"
 if [[ ! -f "$PDF" ]]; then
   echo "PDF not found: $PDF" >&2; exit 1
 fi
 
-# Allocate book_id (next available 3-digit)
-NEXT_ID=$(ls "$ROOT/books" 2>/dev/null | grep -E '^[0-9]{3}_' | sort -r | head -1 | cut -d_ -f1)
-NEXT_ID=$(( 10#${NEXT_ID:-000} + 1 ))
-BOOK_ID=$(printf "%03d" "$NEXT_ID")
+# shellcheck disable=SC1090
+source "$VENV"
+
+# Allocate book_id from both completed folders and DB rows.
+BOOK_ID=$(ROOT="$ROOT" "$PY" <<'PY'
+import os
+import re
+import sqlite3
+from pathlib import Path
+
+root = Path(os.environ["ROOT"])
+ids = set()
+books_dir = root / "books"
+if books_dir.exists():
+    for child in books_dir.iterdir():
+        if child.is_dir():
+            match = re.match(r"^(\d{3})_", child.name)
+            if match:
+                ids.add(int(match.group(1)))
+
+db_path = root / "db" / "books_fts.db"
+if db_path.exists():
+    try:
+        con = sqlite3.connect(db_path)
+        try:
+            for (book_id,) in con.execute("SELECT book_id FROM books"):
+                if re.fullmatch(r"\d+", str(book_id)):
+                    ids.add(int(book_id))
+        finally:
+            con.close()
+    except sqlite3.Error:
+        pass
+
+print(f"{max(ids, default=0) + 1:03d}")
+PY
+)
 
 # Sanitize for folder name
-SAFE_TITLE=$(echo "$TITLE" | tr -d '/\\:*?"<>|')
-SAFE_AUTHOR=$(echo "$AUTHOR" | tr -d '/\\:*?"<>|')
-BOOK_DIR="$ROOT/books/${BOOK_ID}_${SAFE_AUTHOR}_${SAFE_TITLE}_${EDITION}"
+SAFE_TITLE=$(sanitize_path_segment "$TITLE")
+SAFE_AUTHOR=$(sanitize_path_segment "$AUTHOR")
+SAFE_EDITION=$(sanitize_path_segment "$EDITION")
+FINAL_BOOK_DIR="$ROOT/books/${BOOK_ID}_${SAFE_AUTHOR}_${SAFE_TITLE}_${SAFE_EDITION}"
+BOOK_DIR="$ROOT/books/.${BOOK_ID}_${SAFE_AUTHOR}_${SAFE_TITLE}_${SAFE_EDITION}.incomplete"
+
+if [[ -e "$FINAL_BOOK_DIR" ]]; then
+  echo "[add_book] target folder already exists: $FINAL_BOOK_DIR" >&2
+  exit 1
+fi
+if [[ -e "$BOOK_DIR" ]]; then
+  echo "[add_book] removing stale incomplete folder: $BOOK_DIR" >&2
+  rm -rf "$BOOK_DIR"
+fi
 mkdir -p "$BOOK_DIR"
 
 echo "[add_book] Book ID: $BOOK_ID"
-echo "[add_book] Folder:  $BOOK_DIR"
+echo "[add_book] Folder:  $FINAL_BOOK_DIR"
+
+cleanup_failed_book_dir() {
+  local status=$?
+  if [[ "$status" -ne 0 && -n "${BOOK_DIR:-}" && -d "$BOOK_DIR" ]]; then
+    if [[ "${LEGAL_BOOKS_KEEP_FAILED:-0}" == "1" ]]; then
+      echo "[add_book] failed; keeping incomplete folder for debugging: $BOOK_DIR" >&2
+    else
+      echo "[add_book] failed; removing incomplete folder: $BOOK_DIR" >&2
+      rm -rf "$BOOK_DIR"
+    fi
+  fi
+}
+trap cleanup_failed_book_dir EXIT
 
 # Step 1: OCR (if PDF doesn't already have text layer)
 OCR_PDF="$BOOK_DIR/${BOOK_ID}.pdf"
@@ -99,8 +168,6 @@ ocrmypdf --skip-text --language kor+eng --output-type pdf "$PDF" "$OCR_PDF" || {
 }
 
 # Step 2: Convert to markdown + chunk + embed
-# shellcheck disable=SC1090
-source "$VENV"
 echo "[add_book] Step 2/3: Extracting text and chunking"
 "$PY" "$ROOT/scripts/ingest.py" \
   --book-id "$BOOK_ID" \
@@ -112,7 +179,11 @@ echo "[add_book] Step 2/3: Extracting text and chunking"
   --year "$YEAR" \
   --publisher "$PUBLISHER"
 
+mv "$BOOK_DIR" "$FINAL_BOOK_DIR"
+trap - EXIT
+
 echo "[add_book] Step 3/3: Done. Book $BOOK_ID indexed."
+echo "[add_book] Folder:  $FINAL_BOOK_DIR"
 echo ""
 echo "Search test:"
 echo "  curl -X POST http://localhost:8766/search -H 'Content-Type: application/json' -d '{\"query\":\"$TITLE\",\"top_k\":3}'"

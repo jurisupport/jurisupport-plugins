@@ -66,7 +66,7 @@ cat <<'BANNER'
 ║                                                                ║
 ║   본 스크립트가 제거하는 것:                                    ║
 ║     - 데이터 보호 Hook 등록                                     ║
-║     - songmu-legal 플러그인 등록                                ║
+║     - songmu-legal / korean-law 플러그인 등록                   ║
 ║     - 설치된 클로드코드 스킬 (lbox-guide, beopgoeul-search 등)  ║
 ║     - toolkit 데이터 폴더 (~/legal-books, ~/case-records 등)    ║
 ║                                                                ║
@@ -127,9 +127,9 @@ else
 fi
 
 # ============================================================
-# Step 2. songmu-legal 플러그인·marketplace 등록 해제 (Claude Code CLI)
+# Step 2. songmu-legal/korean-law 플러그인·marketplace 등록 해제 (Claude Code CLI)
 # ============================================================
-step 2 "songmu-legal 플러그인·marketplace 등록 해제"
+step 2 "songmu-legal/korean-law 플러그인·marketplace 등록 해제"
 
 if ! command -v claude >/dev/null 2>&1; then
   warn "claude CLI 없음 → 플러그인 등록 해제 건너뜀"
@@ -148,7 +148,21 @@ else
     info "  · 등록된 songmu-legal 플러그인 없음"
   fi
 
-  # 2) marketplace remove
+  # 1-B) korean-law 플러그인 uninstall
+  if claude plugin list 2>/dev/null | grep -q "korean-law@"; then
+    if ask "korean-law 플러그인을 제거할까요?"; then
+      if $DRY_RUN; then
+        warn "  [dry-run] claude plugin uninstall korean-law"
+      else
+        claude plugin uninstall korean-law 2>&1 | tail -3 || warn "  플러그인 제거 실패. 수동: claude plugin uninstall korean-law"
+        info "  ✓ korean-law 제거"
+      fi
+    fi
+  else
+    info "  · 등록된 korean-law 플러그인 없음"
+  fi
+
+  # 2-A) marketplace remove
   if claude plugin marketplace list 2>/dev/null | grep -q "jurisupport-plugins"; then
     if ask "marketplace 'jurisupport-plugins' 등록도 제거할까요?"; then
       if $DRY_RUN; then
@@ -159,7 +173,21 @@ else
       fi
     fi
   else
-    info "  · 등록된 marketplace 없음"
+    info "  · 등록된 jurisupport-plugins marketplace 없음"
+  fi
+
+  # 2-B) korean-law marketplace remove
+  if claude plugin marketplace list 2>/dev/null | grep -q "korean-law-marketplace"; then
+    if ask "marketplace 'korean-law-marketplace' 등록도 제거할까요?"; then
+      if $DRY_RUN; then
+        warn "  [dry-run] claude plugin marketplace remove korean-law-marketplace"
+      else
+        claude plugin marketplace remove korean-law-marketplace 2>&1 | tail -3 || warn "  marketplace 제거 실패."
+        info "  ✓ korean-law marketplace 제거"
+      fi
+    fi
+  else
+    info "  · 등록된 korean-law marketplace 없음"
   fi
 fi
 
@@ -184,6 +212,14 @@ for SKILL in lbox-guide beopgoeul-search legal-books case-records beopgoeul-guid
   if [[ -d "$SKILL_DIR" ]]; then
     if ask "스킬 제거: $SKILL"; then
       do_rm "$SKILL_DIR"
+    fi
+  fi
+done
+for COMMAND in beopgoeul-search beopgoeul-guide; do
+  COMMAND_FILE="$HOME/.claude/commands/$COMMAND.md"
+  if [[ -f "$COMMAND_FILE" ]]; then
+    if ask "클로드코드 명령 제거: /$COMMAND"; then
+      do_rm "$COMMAND_FILE"
     fi
   fi
 done

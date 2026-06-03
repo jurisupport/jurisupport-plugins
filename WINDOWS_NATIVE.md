@@ -61,33 +61,37 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 
 실패 시 Desktop에 `jurisupport-install-report-YYYYMMDD-HHMMSS.zip`이 생성되고, 기본 업로드 엔드포인트(`https://api.jurisupport.com/support/install-report`)로 전송을 시도합니다. 업로드가 실패하면 ZIP 위치와 메일 작성 창을 열어 수동 전달할 수 있게 합니다.
 
-포함되는 정보: Windows 버전, PowerShell 실행 정책, winget/Git/Node/npm/Python/jq/Claude Code 상태, PATH, 관련 패키지 목록, bootstrap 로그. 사건자료, `~/.claude/settings.json`, `secrets.env`는 포함하지 않습니다. 자세한 엔드포인트 계약: [SUPPORT_REPORTS.md](SUPPORT_REPORTS.md).
+포함되는 정보: Windows 버전, PowerShell 실행 정책, winget/Git/Node/npm/Python/jq/rclone/Claude Code 상태, PATH, 관련 패키지 목록, bootstrap 로그. 사건자료, `~/.claude/settings.json`, `secrets.env`는 포함하지 않습니다. 자세한 엔드포인트 계약: [SUPPORT_REPORTS.md](SUPPORT_REPORTS.md).
 
 이 한 줄이 자동으로 5단계 전부 진행:
 
 | Step | 내용 | 사용자 응답 |
 |---|---|---|
 | 1 | winget 점검·source 동의 | 없음 |
-| 2 | 공통 패키지 8개 winget 설치 (Git/Node/Python/Chrome/jq/Tesseract/qpdf 등) | **UAC 팝업 "예"** (작업 표시줄 노란 방패) |
+| 2 | 공통 패키지 9개 winget 설치 (Git/Node/Python/Chrome/jq/Tesseract/qpdf/rclone 등) | **UAC 팝업 "예"** (작업 표시줄 노란 방패) |
 | 2-B | Ghostscript GitHub release 자동 다운로드·무인 설치 | UAC 팝업 "예" |
 | 3 | Claude Code npm 글로벌 설치 | 없음 |
 | 4 | 본 레포 git clone (`C:\Users\<계정>\jurisupport-plugins`) | 없음 |
-| 5 | install.sh 자동 실행 (Git Bash 호출) — 8단계 | **각 단계 [Y/n]**, (선택) Gemini API 키 |
+| 5 | install.sh 자동 실행 (Git Bash 호출) — 10단계 | **각 단계 [Y/n]**, 법제처 Open API 키, (선택) Gemini API 키 |
 
 **소요 시간**: 약 15분 (네트워크 속도 따라).
 
-### install.sh 8단계 내용
+법제처 Open API 키는 무료 발급입니다. 설치 전에 [법제처 Open API 인증키 발급 가이드](guides/07_law_openapi_key.md)를 보고 `현재 API인증키(OC)` 값을 준비해 두면 설치가 덜 막힙니다.
+
+### install.sh 10단계 내용
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
 | 1 | 의존성 점검 | 필수 |
 | 2 | 데이터 보호 Hook 설치 (Git Bash 절대경로 등록) | 필수 |
 | 3 | songmu-legal 플러그인 등록 (Windows는 복사) | 필수 |
-| 4 | lbox-guide 스킬 설치 | 필수 |
-| 5 | 사건정보 관리표 CSV (`~/사건/_사건정보관리표.csv`) | 권장 [Y/n] |
-| 6 | legal-books 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
-| 7 | case-records 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
-| 8 | beopgoeul-search (Selenium 법고을 자동 검색) | 선택 [Y/n] |
+| 4 | korean-law MCP 플러그인 설치 | 필수 |
+| 5 | lbox-guide + beopgoeul-search 스킬 설치 | 필수 |
+| 6 | 사건정보 관리표 CSV (`~/사건/_사건정보관리표.csv`) | 권장 [Y/n] |
+| 7 | legal-books 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
+| 8 | case-records 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
+| 9 | beopgoeul-search toolkit (Selenium 법고을 자동 검색 실행환경) | 선택 [Y/n] |
+| 10 | JuriSupport MCP 등록 | 권장 [Y/n] |
 
 ### 첫 실행 시 Windows 방화벽 팝업
 
@@ -103,6 +107,10 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 bootstrap이 끝나면 PowerShell 또는 Git Bash에서:
 
 ```powershell
+# PowerShell
+claude.cmd
+
+# Git Bash
 claude
 ```
 
@@ -116,7 +124,7 @@ claude
 mkdir $env:USERPROFILE\사건\2026-001_홍길동_대여금
 cd $env:USERPROFILE\사건\2026-001_홍길동_대여금
 # (사건 자료를 이 폴더에 넣고)
-claude
+claude.cmd
 ```
 
 클로드코드 안에서:
@@ -136,7 +144,7 @@ claude
 | 작업 | 실행 환경 |
 |---|---|
 | 본 패키지 설치 (`./install.sh`) | Git Bash |
-| 클로드코드 실행 (`claude`) | Git Bash 또는 PowerShell 둘 다 OK |
+| 클로드코드 실행 | PowerShell: `claude.cmd` / Git Bash: `claude` |
 | 책 추가 (`add_book.sh`) | Git Bash |
 | 서버 관리 (수동) | PowerShell (`server.ps1`) |
 
@@ -182,14 +190,15 @@ claude
 | Node.js 등 `winget install` 중 화면 변화 없이 멈춘 듯함 | UAC 승인 창이 뜬 게 아니라 작업 표시줄 방패 아이콘으로만 대기 중 | 하단 작업 표시줄의 방패 아이콘을 클릭해 UAC 창을 열고 "예" 선택. 새 스크립트는 20초 이상 대기 시 이 안내를 반복 표시 |
 | 1/8에서 멈춤, UAC 없음 | winget 첫 호출 시 source agreement 동의 대기 | 새 버전(d59fcb4+)에서 사전 동의 자동 처리. `irm "...?t=$(Get-Random)" \| iex`로 캐시 우회 |
 | `입력 조건과 일치하는 패키지를 찾을 수 없습니다` (exit -1978335212) | winget 카탈로그 ID가 변경되었거나 오기 | 새 버전에서 fallback ID 자동 시도. 직접 확인은 `winget search <키워드>` |
-| Ghostscript / qpdf 설치 실패 | winget 카탈로그에 ID 없을 수 있음 (라이선스 별 갈래) | **선택 패키지라 진행 OK**. OCRmyPDF 책 스캔 사용 시만 영향. 수동 설치: [Ghostscript](https://ghostscript.com/releases/gsdnld.html), [qpdf](https://github.com/qpdf/qpdf/releases) |
-| `npm notice ...`가 빨갛게 RemoteException으로 표시 | npm 정보 메시지가 stderr로 출력 → PowerShell이 에러로 오인 | **정상 동작**. 새 버전에서 화면 표시 정상화. `claude --version`이 잘 나오면 설치 성공 |
+| Ghostscript / qpdf / rclone 설치 실패 | winget 카탈로그에 ID 없을 수 있음 (라이선스 별 갈래) | **선택 패키지라 진행 OK**. OCRmyPDF 책 스캔 또는 클라우드 동기화 사용 시만 영향. 수동 설치: [Ghostscript](https://ghostscript.com/releases/gsdnld.html), [qpdf](https://github.com/qpdf/qpdf/releases), `winget install Rclone.Rclone` |
+| `npm notice ...`가 빨갛게 RemoteException으로 표시 | npm 정보 메시지가 stderr로 출력 → PowerShell이 에러로 오인 | **정상 동작**. 새 버전에서 화면 표시 정상화. PowerShell에서 `claude.cmd --version`이 잘 나오면 설치 성공 |
 | `npm.ps1 파일을 로드할 수 없습니다` / ExecutionPolicy 오류 | PowerShell이 `npm.cmd` 대신 `npm.ps1`을 먼저 실행함 | 최신 스크립트는 `npm.cmd`를 우선 사용. 캐시 우회 명령으로 재실행: `irm "...?t=$(Get-Random)" \| iex` |
+| `claude.ps1 파일을 로드할 수 없습니다` / ExecutionPolicy 오류 | PowerShell이 npm의 `claude.ps1` shim을 먼저 실행함 | PowerShell에서는 `claude.cmd`를 실행하세요. Git Bash에서는 `claude` 그대로 사용 가능합니다. |
 | `irm \| iex`가 ExecutionPolicy로 막힘 | 회사 보안 정책 | `Set-ExecutionPolicy Bypass -Scope Process -Force` 먼저 |
 | winget 명령 없음 | Windows 10 구버전, App Installer 미설치, 또는 WindowsApps 앱 실행 별칭이 현재 PowerShell PATH에서 빠짐 | 최신 스크립트는 WindowsApps/앱 설치 위치를 자동 탐색. 계속 실패하면 Microsoft Store에서 "App Installer" 업데이트 또는 https://apps.microsoft.com/detail/9NBLGGH4NNS1 |
 | winget이 설치돼 있는데 "설치되어 있지 않습니다" 표시 | 앱 실행 별칭이 꺼져 있거나 현재 PowerShell 창의 PATH가 오래됨 | Windows 설정 → 앱 → 고급 앱 설정 → 앱 실행 별칭에서 `Windows Package Manager Client`/`winget`을 켠 뒤 새 PowerShell 창에서 재실행 |
 | `npm install -g` 권한 오류 | npm 글로벌 prefix가 보호된 경로 | PowerShell **관리자 권한**으로 재시도 또는 `npm config set prefix "$env:LOCALAPPDATA\npm"` 후 재시도 |
-| `claude --version` "명령을 찾을 수 없음" | PATH가 갱신되지 않음 | 새 PowerShell 창을 열어주세요 |
+| `claude.cmd --version` "명령을 찾을 수 없음" | PATH가 갱신되지 않음 | 새 PowerShell 창을 열어주세요 |
 
 ### 진단 리포트 단계
 
@@ -280,7 +289,7 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 1. `uninstall.sh` 호출 (Git Bash)
 2. `npm uninstall -g @anthropic-ai/claude-code`
 3. `~/jurisupport-plugins/` 폴더 삭제
-4. winget 패키지 8개 (Git/Node/Python/Chrome 등) — 다른 앱이 쓸 수 있으니 각각 명시 Y 필요
+4. winget 패키지 9개 (Git/Node/Python/Chrome/rclone 등) — 다른 앱이 쓸 수 있으니 각각 명시 Y 필요
 
 ---
 
