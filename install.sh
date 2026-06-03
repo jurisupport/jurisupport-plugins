@@ -75,6 +75,27 @@ esac
 info "패키지 경로: $TOOLKIT_DIR"
 info "플랫폼: $PLATFORM"
 
+KOREAN_LAW_OPENAPI_URL="https://open.law.go.kr/LSO/openApi/guideList.do"
+
+# 브라우저 자동 열기 함수 (OS별)
+open_url() {
+  local url="$1"
+  local opened=0
+
+  case "$PLATFORM" in
+    mac)     open "$url" 2>/dev/null || opened=$? ;;
+    linux)   xdg-open "$url" 2>/dev/null || opened=$? ;;
+    windows) cmd.exe /c "start $url" 2>/dev/null || powershell.exe -Command "Start-Process '$url'" 2>/dev/null || opened=$? ;;
+  esac
+
+  if [[ "$opened" -ne 0 ]]; then
+    warn "브라우저 자동 열기 실패. 아래 URL을 직접 열어주세요:"
+    echo "  $url"
+  fi
+
+  return 0
+}
+
 # ============================================================
 # 1. Prerequisites
 # ============================================================
@@ -250,8 +271,21 @@ else
     info "korean-law 플러그인 이미 설치됨"
   else
     info "korean-law 자동 설치 중..."
-    info "설치 중 법제처 Open API 키 입력 프롬프트가 나오면 발급받은 OC 값을 입력하세요."
-    info "발급 방법: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
+    info "설치 중 법제처 Open API 키(OC) 입력 프롬프트가 나올 수 있습니다."
+    read -r -p "법제처 Open API 키(OC)를 이미 준비하셨나요? [Y/n, 엔터=예] " has_law_key
+    if [[ "$has_law_key" =~ ^[Nn]$ ]]; then
+      info "법제처 Open API 신청 페이지를 브라우저로 엽니다..."
+      open_url "$KOREAN_LAW_OPENAPI_URL"
+      echo ""
+      echo "  ------------------------------------------------------------"
+      echo "  1. 브라우저에서 로그인 또는 사용자 가입"
+      echo "  2. OPEN API 신청 완료"
+      echo "  3. API인증키관리에서 현재 API인증키(OC) 복사"
+      echo "  ------------------------------------------------------------"
+      echo "  상세 가이드: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
+      read -r -p "OC 값을 복사했으면 엔터: " _
+    fi
+    info "프롬프트가 나오면 복사한 OC 값을 입력하세요."
     if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
       info "[ok] korean-law 설치 완료"
       info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
@@ -375,25 +409,6 @@ JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
 JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
 
-# 브라우저 자동 열기 함수 (OS별)
-open_url() {
-  local url="$1"
-  local opened=0
-
-  case "$PLATFORM" in
-    mac)     open "$url" 2>/dev/null || opened=$? ;;
-    linux)   xdg-open "$url" 2>/dev/null || opened=$? ;;
-    windows) cmd.exe /c "start $url" 2>/dev/null || powershell.exe -Command "Start-Process '$url'" 2>/dev/null || opened=$? ;;
-  esac
-
-  if [[ "$opened" -ne 0 ]]; then
-    warn "브라우저 자동 열기 실패. 아래 URL을 직접 열어주세요:"
-    echo "  $url"
-  fi
-
-  return 0
-}
-
 if is_dry_run; then
   info_or_plan "JuriSupport MCP 등록 (가입/토큰 발급/MCP add)"
 elif claude mcp list 2>&1 | grep -q "^jurisupport:"; then
@@ -416,8 +431,8 @@ else
     echo "  [팁] 토큰은 $JURI_TOKEN_URL 에서 발급받을 수 있습니다."
     echo "     (가입 후 위 페이지 접속 -> API 토큰 생성)"
     echo ""
-    read -r -p "이미 jurisupport.com 계정 + 토큰이 있으신가요? [Y/n, 엔터=예] " has_token
-    if [[ "$has_token" =~ ^[Nn]$ ]]; then
+    read -r -p "이미 jurisupport.com 계정 + 토큰이 있으신가요? [y/N, 엔터=아니오] " has_token
+    if [[ ! "$has_token" =~ ^[Yy]$ ]]; then
       info "가입 페이지를 브라우저로 엽니다..."
       open_url "$JURI_SIGNUP_URL"
       echo ""

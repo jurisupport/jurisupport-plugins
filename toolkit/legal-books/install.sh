@@ -32,6 +32,27 @@ case "$OS" in
 esac
 info_or_plan "플랫폼: $PLATFORM"
 
+GEMINI_API_KEY_URL="https://aistudio.google.com/apikey"
+
+# 브라우저 자동 열기 함수 (OS별)
+open_url() {
+  local url="$1"
+  local opened=0
+
+  case "$PLATFORM" in
+    mac)     open "$url" 2>/dev/null || opened=$? ;;
+    linux)   xdg-open "$url" 2>/dev/null || opened=$? ;;
+    windows) cmd.exe /c "start $url" 2>/dev/null || powershell.exe -Command "Start-Process '$url'" 2>/dev/null || opened=$? ;;
+  esac
+
+  if [[ "$opened" -ne 0 ]]; then
+    warn "브라우저 자동 열기 실패. 아래 URL을 직접 열어주세요:"
+    echo "  $url"
+  fi
+
+  return 0
+}
+
 # Python 명령 + venv activate 경로
 # Windows: py launcher가 가리키는 python.exe 절대경로를 추출
 # (PY="py -3.12"처럼 공백 들어가면 "$PY" 인용 시 깨지므로)
@@ -260,11 +281,23 @@ else
     echo ""
     echo "================================================================"
     echo "  Gemini API 키 등록"
-    echo "  발급: https://aistudio.google.com/apikey"
+    echo "  발급: $GEMINI_API_KEY_URL"
     echo "  방법: Create API key → 프로젝트 선택/생성 → 키 복사"
     echo "  책 여러 권을 쉽게 인덱싱하려면 무료 tier보다 결제 연결된 유료 tier를 권장합니다."
     echo "  (무료 tier는 요청/토큰 제한이 낮아 대량 임베딩 중 rate limit이 날 수 있음)"
     echo "================================================================"
+    read -r -p "Gemini API 키 발급 페이지를 브라우저로 열까요? [Y/n, 엔터=예] " open_gemini_key
+    if [[ ! "$open_gemini_key" =~ ^[Nn]$ ]]; then
+      info "Gemini API 키 발급 페이지를 브라우저로 엽니다..."
+      open_url "$GEMINI_API_KEY_URL"
+      echo ""
+      echo "  ------------------------------------------------------------"
+      echo "  1. Google 계정으로 로그인"
+      echo "  2. Create API key 클릭"
+      echo "  3. 프로젝트 선택/생성 후 발급된 키 복사"
+      echo "  ------------------------------------------------------------"
+      read -r -p "키를 복사했으면 엔터: " _
+    fi
     read -r -p "Gemini API 키 입력 (건너뛰려면 Enter): " GEMINI_KEY
     if [[ -n "${GEMINI_KEY:-}" ]]; then
       echo "GEMINI_API_KEY=${GEMINI_KEY}" >> "$SECRETS"
