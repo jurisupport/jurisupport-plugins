@@ -45,8 +45,8 @@ ls ~/.claude/settings.json && grep -q "pretool_data_protection" ~/.claude/settin
 # 가이드 스킬 4개 설치 확인
 ls ~/.claude/skills | grep -E "lbox-guide|beopgoeul-guide|legal-books|case-records"
 
-# songmu-legal 플러그인 등록 확인
-ls ~/.claude/plugins/cache/jurisupport-plugins/songmu-legal/.claude-plugin/plugin.json
+# JuriSupport 플러그인 등록 확인
+ls ~/.claude/plugins/cache/jurisupport-plugins/jurisupport/.claude-plugin/plugin.json
 ```
 
 ---
@@ -87,7 +87,7 @@ claude
 
 ---
 
-## Step 4. songmu-legal 콜드스타트 인터뷰 (15분)
+## Step 4. JuriSupport 콜드스타트 인터뷰 (15분)
 
 사무소 운영 정책(의뢰인 호칭, 인용 표기, 파일 포맷 등)을 한 번 학습시킵니다. **최초 1회만 필요**.
 
@@ -97,7 +97,7 @@ claude
 ```
 
 ```
-/songmu-legal:cold-start-interview
+/jurisupport:cold-start-interview
 ```
 
 클로드코드가 다음을 인터뷰:
@@ -204,7 +204,7 @@ korean-law MCP로 모두 재확인해줘.
 |---|---|
 | `install.sh` 실패 | `INSTALL_PARTIAL.md` 참조 — 부분 설치 |
 | 데이터 보호 Hook 차단됨 (의도한 작업인데도) | 의뢰인 정보 마스킹하거나 외부 도구 사용 안 함 |
-| `/songmu-legal:cold-start-interview` 실행 안 됨 | 플러그인 등록 확인 (Step 1 마지막 검증) |
+| `/jurisupport:cold-start-interview` 실행 안 됨 | 플러그인 등록 확인 (Step 1 마지막 검증) |
 | 클로드코드 한글로 답 안 함 | "한국어로 답해주세요" 명시 |
 | 검색 서버 (legal-books/case-records) 응답 없음 | `~/legal-books/scripts/server.sh restart` |
 

@@ -10,7 +10,8 @@
 #   1. Homebrew (없으면)
 #   2. jq, git, python3, node, rclone
 #   3. Claude Code (npm install -g)
-#   4. jurisupport-plugins git clone + install.sh
+#   4. jurisupport-plugins git clone
+#   5. install.sh 자동 실행
 #
 # 인간 입력 필요:
 #   - sudo 비밀번호 1회 (Homebrew 설치용)
@@ -18,7 +19,7 @@
 #   - install.sh 실행 중 법제처 Open API 키 (korean-law MCP용)
 #
 # 자동화 불가:
-#   - Claude Pro 가입·결제 (https://claude.ai/upgrade 미리 가입)
+#   - Claude Pro 가입/결제 (https://claude.ai/upgrade 미리 가입)
 #   - Gemini API 키 발급 (선택, https://aistudio.google.com/apikey)
 
 set -euo pipefail
@@ -37,35 +38,35 @@ fi
 source "$_DRYRUN_LIB" "$@"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
-info()  { echo -e "${GREEN}[bootstrap]${NC} $*"; }
-warn()  { echo -e "${YELLOW}[bootstrap]${NC} $*"; }
-error() { echo -e "${RED}[bootstrap]${NC} $*" >&2; exit 1; }
-step()  { echo -e "\n${BLUE}━━━ $* ━━━${NC}"; }
+if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
+  RED=''; GREEN=''; YELLOW=''; BLUE=''; NC=''
+fi
+info()  { printf '%b[bootstrap]%b %s\n' "$GREEN" "$NC" "$*"; }
+warn()  { printf '%b[bootstrap]%b %s\n' "$YELLOW" "$NC" "$*"; }
+error() { printf '%b[bootstrap]%b %s\n' "$RED" "$NC" "$*" >&2; exit 1; }
+step()  { printf '\n%b=== %s ===%b\n' "$BLUE" "$*" "$NC"; }
 
 # ============================================================
 # 0. Banner + OS check
 # ============================================================
 cat <<'BANNER'
 
-╔════════════════════════════════════════════════════════════════╗
-║                                                                ║
-║   jurisupport-plugins bootstrap                                ║
-║   변호사용 클로드코드 통합 패키지 자동 설치                     ║
-║                                                                ║
-╠════════════════════════════════════════════════════════════════╣
-║                                                                ║
-║   진행 단계:                                                   ║
-║     1. Homebrew (없으면 자동)                                  ║
-║     2. jq · git · python · node · rclone                       ║
-║     3. Claude Code (npm install -g)                            ║
-║     4. jurisupport-plugins git clone + install.sh              ║
-║                                                                ║
-║   ⚠️  관리자 비밀번호 1회 필요 (Homebrew 설치용)                ║
-║   ⚠️  Claude Pro 미가입자는 https://claude.ai/upgrade 먼저      ║
-║                                                                ║
-║   소요 시간: 약 5~10분                                         ║
-║                                                                ║
-╚════════════════════════════════════════════════════════════════╝
+================================================================
+  jurisupport-plugins bootstrap
+  변호사용 클로드코드 통합 패키지 자동 설치
+----------------------------------------------------------------
+  진행 단계:
+    1. Homebrew (없으면 자동)
+    2. jq / git / python / node / rclone
+    3. Claude Code (npm install -g)
+    4. jurisupport-plugins git clone
+    5. install.sh 자동 실행
+
+  [주의] 관리자 비밀번호 1회 필요 (Homebrew 설치용)
+  [주의] Claude Pro 미가입자는 https://claude.ai/upgrade 먼저
+
+  소요 시간: 약 5~10분
+================================================================
 
 BANNER
 
@@ -111,7 +112,7 @@ fi
 if [[ "$PLATFORM" == "mac" ]]; then
   step "2. Homebrew 확인"
   if command -v brew >/dev/null 2>&1; then
-    info "✓ Homebrew 이미 설치됨: $(brew --version | head -1)"
+    info "[ok] Homebrew 이미 설치됨: $(brew --version | head -1)"
   else
     info_or_plan "Homebrew 설치 (3~5분)"
     run_shell_or_plan 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
@@ -125,7 +126,7 @@ if [[ "$PLATFORM" == "mac" ]]; then
         info "PATH 영구 등록: ~/.zprofile"
       fi
     elif is_dry_run && [[ -d /opt/homebrew/bin ]]; then
-      info_or_plan "brew shellenv PATH 등록 → ~/.zprofile"
+      info_or_plan "brew shellenv PATH 등록 -> ~/.zprofile"
     fi
     info_or_plan "Homebrew 설치 완료"
   fi
@@ -143,7 +144,7 @@ step "3. 시스템 패키지 설치"
 install_pkg() {
   local cmd="$1" pkg_mac="$2" pkg_linux="$3"
   if command -v "$cmd" >/dev/null 2>&1; then
-    info "✓ $cmd 이미 설치됨"
+    info "[ok] $cmd 이미 설치됨"
     return
   fi
   info_or_plan "$cmd 설치"
@@ -188,7 +189,7 @@ fi
 step "4. Claude Code 설치"
 
 if command -v claude >/dev/null 2>&1; then
-  info "✓ Claude Code 이미 설치됨: $(claude --version 2>&1 | head -1 || echo 'version unknown')"
+  info "[ok] Claude Code 이미 설치됨: $(claude --version 2>&1 | head -1 || echo 'version unknown')"
 else
   info_or_plan "Claude Code 설치 (npm install -g @anthropic-ai/claude-code)"
   if [[ "$PLATFORM" == "mac" ]]; then
@@ -207,7 +208,7 @@ step "5. jurisupport-plugins 다운로드 + 설치"
 CLONE_DIR="$HOME/jurisupport-plugins"
 
 if [[ -d "$CLONE_DIR/.git" ]]; then
-  info_or_plan "이미 clone 되어 있음 → git pull로 최신화"
+  info_or_plan "이미 clone 되어 있음 -> git pull로 최신화"
   if ! is_dry_run; then
     cd "$CLONE_DIR" && git pull --rebase >/dev/null 2>&1 || warn "git pull 실패 (네트워크?)"
   else
@@ -225,40 +226,40 @@ fi
 info_or_plan "$CLONE_DIR 준비됨"
 
 # ============================================================
-# 6. install.sh 실행 안내 (interactive 부분이라 자동 실행은 안 함)
+# 6. install.sh 자동 실행
 # ============================================================
-step "6. 다음 단계"
+step "6. install.sh 자동 실행"
 
 if is_dry_run; then
-cat <<EOF
+  echo "PLAN: cd $CLONE_DIR && ./install.sh"
+cat <<'EOF'
 
-${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓ DRY-RUN 완료. 위 PLAN: 목록이 실제 실행될 명령입니다.
-  실제 설치하려면 --plan / --dry-run 없이 다시 실행하세요.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}
+================================================================
+[ok] DRY-RUN 완료. 위 PLAN: 목록이 실제 실행될 명령입니다.
+     실제 설치하려면 --plan / --dry-run 없이 다시 실행하세요.
+================================================================
 EOF
 else
+  echo ""
+  echo "  install.sh가 곧 시작됩니다. 데이터 보호 Hook, jurisupport,"
+  echo "  korean-law MCP/JS 플러그인, 스킬, JuriSupport MCP 등록까지"
+  echo "  같은 흐름에서 진행합니다."
+  echo ""
+  (cd "$CLONE_DIR" && ./install.sh) || error "install.sh 실행 실패. 수동 재실행: cd $CLONE_DIR && ./install.sh"
+
+  step "7. 마무리"
 cat <<EOF
 
-${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓ Bootstrap 완료. 이제 두 가지만 남았습니다.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}
+================================================================
+[ok] Bootstrap + install.sh 완료.
+================================================================
 
-${BLUE}[1/2] Claude Code 로그인${NC}
+[1/1] Claude Code 로그인
 새 터미널에서 다음 실행 (브라우저 OAuth 1회):
 
     claude
 
-→ Claude Pro/Max 계정으로 로그인. "안녕하세요" 입력해서 한국어 답 확인.
-
-${BLUE}[2/2] 본 패키지 설치 (install.sh)${NC}
-
-    cd ~/jurisupport-plugins
-    ./install.sh
-
-→ 데이터 보호 Hook + songmu-legal 플러그인 + 스킬 자동 등록.
-   korean-law MCP는 법제처 Open API 키(발급: guides/07_law_openapi_key.md)를 입력하면 자동 등록.
-   legal-books·case-records·법고을 toolkit은 선택 설치 (Gemini API 키·Chrome 필요).
+-> Claude Pro/Max 계정으로 로그인. "안녕하세요" 입력해서 한국어 답 확인.
 
 자세한 가이드:
   - 콜드스타트:        ~/jurisupport-plugins/COLD_START.md

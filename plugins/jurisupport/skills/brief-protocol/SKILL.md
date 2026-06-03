@@ -17,12 +17,12 @@ metadata:
 
 - "○○ 사건 준비서면 작성해줘"
 - "○○ 사건 답변서 표준 절차로 작성"
-- "/songmu-legal:brief-protocol" 직접 호출
+- "/jurisupport:brief-protocol" 직접 호출
 - 사건번호 + 서면 유형 언급 시 자동 트리거
 
 ## Prerequisites
 
-플러그인의 `CLAUDE.md` 플레이북이 채워져 있어야 한다. 비어있으면 `/songmu-legal:cold-start-interview` 먼저 실행.
+플러그인의 `CLAUDE.md` 플레이북이 채워져 있어야 한다. 비어있으면 `/jurisupport:cold-start-interview` 먼저 실행.
 
 ## Workflow
 
@@ -158,7 +158,7 @@ JuriSupport등록: 요청시
 
 검증 리포트가 통과되면, 정본 확정 직전에 **선택적으로** 모의변론을 권유한다:
 
-> "정본 확정 전에 `/songmu-legal:mock-hearing`(모의변론)으로 상대방·재판부 관점의 약점을 점검할까요? 평결이 '보강' 또는 '재구성'이면 Phase 2(초안)로 되돌려 반영합니다."
+> "정본 확정 전에 `/jurisupport:mock-hearing`(모의변론)으로 상대방·재판부 관점의 약점을 점검할까요? 평결이 '보강' 또는 '재구성'이면 Phase 2(초안)로 되돌려 반영합니다."
 
 - 사용자가 원하면 `mock-hearing` 스킬을 BRIEF 모드로 호출(초안 MD를 검토 대상으로 전달).
 - 사건이론 자체에 문제가 확인되면 `mock-hearing` THEORY 모드로 전환하여 법령·판결·교과서 근거 정리표를 먼저 만들고 청구원인/항변 구성을 보강한다.

@@ -1,13 +1,13 @@
-# 송무 실무 플레이북 (songmu-legal) — Example
+# 송무 실무 플레이북 (JuriSupport) — Example
 
 > 📋 이 파일은 **공개 배포용 예시 템플릿**(`CLAUDE.md.example`)이다. 실제 사용 전 다음 단계를 거친다:
 >
 > 1. `cp CLAUDE.md.example CLAUDE.md`
-> 2. `/songmu-legal:cold-start-interview` 실행 → 인터뷰로 placeholder 자동 채움
+> 2. `/jurisupport:cold-start-interview` 실행 → 인터뷰로 placeholder 자동 채움
 > 3. `CLAUDE.md`는 개인정보를 담으므로 git에 커밋되지 않음 (`.gitignore`로 차단됨)
 > 4. **이 파일(`CLAUDE.md.example`) 자체는 절대 직접 수정하지 말 것.** 모든 변경은 `CLAUDE.md`에만.
 
-이 파일은 songmu-legal 플러그인이 활성화된 상태에서 모든 송무 관련 작업에 적용되는 사무소 표준 규칙이다.
+이 파일은 JuriSupport 플러그인이 활성화된 상태에서 모든 송무 관련 작업에 적용되는 사무소 표준 규칙이다.
 
 ---
 
@@ -33,7 +33,7 @@
 |---|---|---|
 | <예: 친분 있는 의뢰인 이름> | <예: "○○ 형님"> | <예: 해요체, 앞부분 간략 + 뒷부분 개조식> |
 
-신규 의뢰인 추가 시 `/songmu-legal:cold-start-interview`에서 갱신.
+신규 의뢰인 추가 시 `/jurisupport:cold-start-interview`에서 갱신.
 override 없는 의뢰인은 자동으로 기본 규칙 적용.
 
 ## 3. 인용·검증 정책 (강제)
@@ -154,7 +154,7 @@ JuriSupport등록: 요청시
 
 JuriSupport 미연동 환경에서는:
 - MD 파일 자체가 정본 (`<작성문서 디렉토리>/<사건>/<서면명>.md`)
-- 사건 메타 관리는 CSV 사건 인덱스(`/songmu-legal:case-index`) 사용
+- 사건 메타 관리는 CSV 사건 인덱스(`/jurisupport:case-index`) 사용
 - **MD 파일 열람·편집 도구로 [Obsidian](https://obsidian.md) 권장**
   - 무료, 로컬 파일 기반 (외부 서버 전송 없음 → 비밀유지의무 부합)
   - `~/사건/` 또는 `~/작성문서/` 폴더를 vault로 열면 모든 서면 한눈에
@@ -190,7 +190,7 @@ JuriSupport 미연동 환경에서는:
 ### 5-2. 탐색 우선순위
 
 1. **JuriSupport MCP** — 사건/문서/할일 메타데이터 (연동된 경우)
-2. **CSV 사건 인덱스** (`/songmu-legal:case-index`) — `<CSV 사건 인덱스 경로>` (예: `onedrive:진행중사건/_index.csv`)
+2. **CSV 사건 인덱스** (`/jurisupport:case-index`) — `<CSV 사건 인덱스 경로>` (예: `onedrive:진행중사건/_index.csv`)
    - JuriSupport 미연동자에게는 정본, 연동자에게는 백업·오프라인 뷰
    - 컬럼: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`
 3. **사건기록 디렉토리** (받은 자료): `<사건기록 디렉토리 경로>`

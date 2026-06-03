@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-songmu-legal CSV 사건 인덱스 헬퍼.
+JuriSupport CSV 사건 인덱스 헬퍼.
 
 JuriSupport MCP를 쓰지 않는 사용자를 위한 가벼운 사건관리 도구.
 CSV 한 파일(_index.csv)을 source of truth로 사용한다.
@@ -174,7 +174,7 @@ def cmd_close(path: Path, args) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="songmu-legal CSV 사건 인덱스")
+    p = argparse.ArgumentParser(description="JuriSupport CSV 사건 인덱스")
     p.add_argument("--csv", required=True, help="_index.csv 경로 (예: ~/사건/_index.csv)")
     sub = p.add_subparsers(dest="cmd", required=True)
 

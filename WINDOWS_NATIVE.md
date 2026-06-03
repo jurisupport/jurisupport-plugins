@@ -84,7 +84,7 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 |---|---|---|
 | 1 | 의존성 점검 | 필수 |
 | 2 | 데이터 보호 Hook 설치 (Git Bash 절대경로 등록) | 필수 |
-| 3 | songmu-legal 플러그인 등록 (Windows는 복사) | 필수 |
+| 3 | JuriSupport 플러그인 등록 (Windows는 복사) | 필수 |
 | 4 | korean-law MCP 플러그인 설치 | 필수 |
 | 5 | lbox-guide + beopgoeul-search 스킬 설치 | 필수 |
 | 6 | 사건정보 관리표 CSV (`~/사건/_사건정보관리표.csv`) | 권장 [Y/n] |
@@ -150,7 +150,7 @@ claude.cmd
 
 ### 2. 심볼릭 링크 대신 복사
 
-윈도우에서 일반 사용자 권한으로는 심볼릭 링크를 만들 수 없습니다. 본 패키지는 songmu-legal 플러그인을 심볼릭 링크 대신 **복사**로 등록합니다.
+윈도우에서 일반 사용자 권한으로는 심볼릭 링크를 만들 수 없습니다. 본 패키지는 JuriSupport 플러그인을 심볼릭 링크 대신 **복사**로 등록합니다.
 
 → **부작용**: GitHub에서 최신 패키지를 받은 후 `git pull` → 다시 `./install.sh`를 실행해야 등록된 플러그인이 갱신됩니다.
 

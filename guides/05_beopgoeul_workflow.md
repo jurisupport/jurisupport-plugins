@@ -64,7 +64,7 @@
 
 ## 법령 검색 (보너스 기능)
 
-법고을은 **법령 본문도 검색** 가능. 다만 한국법령정보센터(law.go.kr)가 더 표준적이라, 본 패키지의 [korean-law MCP](../plugins/songmu-legal/)를 우선 사용 권장.
+법고을은 **법령 본문도 검색** 가능. 다만 한국법령정보센터(law.go.kr)가 더 표준적이라, 본 패키지의 [korean-law MCP](../plugins/jurisupport/)를 우선 사용 권장.
 
 ### 법고을 법령 검색 사용 시점
 

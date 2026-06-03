@@ -20,7 +20,7 @@
 - 가입: https://jurisupport.com
 - MCP 토큰 발급 후 Claude Code에 등록
 - 사건·문서·기일·할일·관계 DB 통합 관리
-- 본 패키지의 songmu-legal 플러그인이 자동 통합
+- 본 패키지의 JuriSupport 플러그인이 자동 통합
 
 → **시작은 옵션 A로**, 사건수·인원 증가하면 옵션 B로 마이그레이션.
 
@@ -109,9 +109,9 @@ cp ~/jurisupport-plugins/templates/사건정보_입력가이드.md ~/사건/_입
 
 ---
 
-## songmu-legal 플러그인과의 통합
+## JuriSupport 플러그인과의 통합
 
-`/songmu-legal:brief-protocol` 같은 명령을 사용할 때:
+`/jurisupport:brief-protocol` 같은 명령을 사용할 때:
 
 - JuriSupport 연동 O → 정본을 JuriSupport 문서로 저장
 - 연동 X → 사건폴더 안 MD 파일로 저장 (기본)

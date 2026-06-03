@@ -66,7 +66,7 @@ cat <<'BANNER'
 ║                                                                ║
 ║   본 스크립트가 제거하는 것:                                    ║
 ║     - 데이터 보호 Hook 등록                                     ║
-║     - songmu-legal / korean-law 플러그인 등록                   ║
+║     - JuriSupport / korean-law 플러그인 등록                   ║
 ║     - 설치된 클로드코드 스킬 (lbox-guide, beopgoeul-search 등)  ║
 ║     - toolkit 데이터 폴더 (~/legal-books, ~/case-records 등)    ║
 ║                                                                ║
@@ -127,26 +127,28 @@ else
 fi
 
 # ============================================================
-# Step 2. songmu-legal/korean-law 플러그인·marketplace 등록 해제 (Claude Code CLI)
+# Step 2. JuriSupport/korean-law 플러그인·marketplace 등록 해제 (Claude Code CLI)
 # ============================================================
-step 2 "songmu-legal/korean-law 플러그인·marketplace 등록 해제"
+step 2 "JuriSupport/korean-law 플러그인·marketplace 등록 해제"
 
 if ! command -v claude >/dev/null 2>&1; then
   warn "claude CLI 없음 → 플러그인 등록 해제 건너뜀"
 else
-  # 1) 플러그인 uninstall
-  if claude plugin list 2>/dev/null | grep -q "songmu-legal"; then
-    if ask "songmu-legal 플러그인을 제거할까요?"; then
-      if $DRY_RUN; then
-        warn "  [dry-run] claude plugin uninstall songmu-legal"
-      else
-        claude plugin uninstall songmu-legal 2>&1 | tail -3 || warn "  플러그인 제거 실패. 수동: claude plugin uninstall songmu-legal"
-        info "  ✓ songmu-legal 제거"
+  # 1) JuriSupport plugin uninstall. Also remove the legacy songmu-legal ID.
+  for PLUGIN_NAME in jurisupport songmu-legal; do
+    if claude plugin list 2>/dev/null | grep -q "$PLUGIN_NAME"; then
+      if ask "$PLUGIN_NAME 플러그인을 제거할까요?"; then
+        if $DRY_RUN; then
+          warn "  [dry-run] claude plugin uninstall $PLUGIN_NAME"
+        else
+          claude plugin uninstall "$PLUGIN_NAME" 2>&1 | tail -3 || warn "  플러그인 제거 실패. 수동: claude plugin uninstall $PLUGIN_NAME"
+          info "  ✓ $PLUGIN_NAME 제거"
+        fi
       fi
+    else
+      info "  · 등록된 $PLUGIN_NAME 플러그인 없음"
     fi
-  else
-    info "  · 등록된 songmu-legal 플러그인 없음"
-  fi
+  done
 
   # 1-B) korean-law 플러그인 uninstall
   if claude plugin list 2>/dev/null | grep -q "korean-law@"; then
@@ -192,14 +194,16 @@ else
 fi
 
 # 옛 cache 심볼릭 링크가 남아있으면 정리 (구버전 install.sh로 깔린 흔적)
-SONGMU_DST="$HOME/.claude/plugins/cache/jurisupport-plugins/songmu-legal"
-SONGMU_PARENT="$HOME/.claude/plugins/cache/jurisupport-plugins"
-if [[ -L "$SONGMU_DST" || -e "$SONGMU_DST" ]]; then
-  info "  옛 cache 잔여 정리: $SONGMU_DST"
-  do_rm "$SONGMU_DST"
-  if [[ -d "$SONGMU_PARENT" ]] && [[ -z "$(ls -A "$SONGMU_PARENT" 2>/dev/null)" ]]; then
-    do_rm "$SONGMU_PARENT"
+PLUGIN_CACHE_PARENT="$HOME/.claude/plugins/cache/jurisupport-plugins"
+for PLUGIN_CACHE_NAME in jurisupport songmu-legal; do
+  PLUGIN_CACHE_DIR="$PLUGIN_CACHE_PARENT/$PLUGIN_CACHE_NAME"
+  if [[ -L "$PLUGIN_CACHE_DIR" || -e "$PLUGIN_CACHE_DIR" ]]; then
+    info "  cache 잔여 정리: $PLUGIN_CACHE_DIR"
+    do_rm "$PLUGIN_CACHE_DIR"
   fi
+done
+if [[ -d "$PLUGIN_CACHE_PARENT" ]] && [[ -z "$(ls -A "$PLUGIN_CACHE_PARENT" 2>/dev/null)" ]]; then
+  do_rm "$PLUGIN_CACHE_PARENT"
 fi
 
 # ============================================================

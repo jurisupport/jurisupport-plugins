@@ -3,7 +3,7 @@
 > 벤치마크 소스 (아이디어 차용, 코드 포크 안 함, 깨끗한 MIT):
 > - [anthropics/claude-for-legal](https://github.com/anthropics/claude-for-legal) (Apache-2.0) — 실무영역별 플러그인·단위 스킬 구조
 > - [crealwork/yc-office-hours](https://github.com/crealwork/yc-office-hours) — 반아첨 압박질문·구조화 평결 (→ `mock-hearing`으로 이미 적용)
-> 대상: 본 레포(`jurisupport-plugins`) / 현재 플러그인: `songmu-legal`
+> 대상: 본 레포(`jurisupport-plugins`) / 현재 플러그인: `jurisupport`
 > 갱신: 2026-05-30 (v2 — `mock-hearing` 반영) / 상태: **검토용**
 > 채택 방향(사용자 선택): A. 송무 스킬 보강 + B. 실무영역 확장 (스케줄 에이전트 보류)
 > 라이선스 전략: **아이디어만 차용 + 전부 직접 구현**. 코드 포크 없음 → Apache 의무·상표 리스크 0
@@ -117,7 +117,7 @@
 
 ## 3. Phase B — 실무영역 확장 (멀티 플러그인)
 
-`jurisupport-plugins`(복수형)인데 `songmu-legal` 하나뿐. claude-for-legal식 실무영역별 플러그인으로 확장. 마켓플레이스는 이미 멀티 지원.
+`jurisupport-plugins`(복수형)인데 `jurisupport` 하나뿐. claude-for-legal식 실무영역별 플러그인으로 확장. 마켓플레이스는 이미 멀티 지원.
 
 ### B1. `jamun-legal` — 자문·계약검토 (권장 1순위)
 | 항목 | 내용 |

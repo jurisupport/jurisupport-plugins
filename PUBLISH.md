@@ -50,12 +50,12 @@ git status --ignored
 
 ```bash
 # GitHub에서 빈 저장소 생성: jurisupport/jurisupport-plugins
-# 설명: 변호사용 클로드코드 통합 패키지 (songmu-legal + 검색·보안·가이드)
+# 설명: 변호사용 클로드코드 통합 패키지 (JuriSupport + 검색·보안·가이드)
 
 cd ~/jurisupport-plugins
 git init 2>/dev/null || true
 git add .
-git commit -m "feat: 변호사용 클로드코드 통합 패키지 (songmu-legal + skills + toolkit + hooks + guides)"
+git commit -m "feat: 변호사용 클로드코드 통합 패키지 (JuriSupport + skills + toolkit + hooks + guides)"
 git branch -M main
 git remote add origin git@github.com:jurisupport/jurisupport-plugins.git 2>/dev/null || \
   git remote set-url origin git@github.com:jurisupport/jurisupport-plugins.git

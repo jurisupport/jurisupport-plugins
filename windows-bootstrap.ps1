@@ -1026,9 +1026,9 @@ $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
   플러그인·korean-law MCP·JuriSupport MCP 모두 install.sh가 자동 등록.
   자동 설치가 실패한 경우에만 수동 명령:
 
-    [수동 fallback A] songmu-legal 플러그인:
+    [수동 fallback A] JuriSupport 플러그인:
       $ClaudePowerShellCommand plugin marketplace add $repoDir
-      $ClaudePowerShellCommand plugin install songmu-legal@jurisupport-plugins
+      $ClaudePowerShellCommand plugin install jurisupport@jurisupport-plugins
 
     [수동 fallback B] korean-law MCP 플러그인:
       먼저 guides\07_law_openapi_key.md를 보고 법제처 OC 값을 준비
@@ -1048,8 +1048,8 @@ $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
     $ClaudePowerShellCommand
 
     클로드코드 안에서:
-      /songmu-legal:cold-start-interview   (최초 1회: 사무소 플레이북)
-      /songmu-legal:brief-protocol         (준비서면 작성 표준 절차)
+      /jurisupport:cold-start-interview   (최초 1회: 사무소 플레이북)
+      /jurisupport:brief-protocol         (준비서면 작성 표준 절차)
 
 전체 가이드: $repoDir\WINDOWS_NATIVE.md
 GitHub:      https://github.com/jurisupport/jurisupport-plugins

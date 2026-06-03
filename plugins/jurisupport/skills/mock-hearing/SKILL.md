@@ -25,7 +25,7 @@ metadata:
 - "이 준비서면 제출 전에 약점 점검해줘", "상대 입장에서 반박해봐"
 - "이 사건 우리 논리에서 약한 데 없나", "재판부가 뭘 물어볼까"
 - "변론기일 대비 모의로 해보자"
-- `/songmu-legal:mock-hearing` 직접 호출
+- `/jurisupport:mock-hearing` 직접 호출
 - brief-protocol Phase 3(인용 검증) 통과 후, 정본 확정 전 선택 단계로 자동 권유
 
 ## Prerequisites
