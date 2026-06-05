@@ -52,6 +52,9 @@ Thumbs.db
 *.log
 logs/
 
+# Local private drafts kept outside the public plugin release surface
+.private/
+
 # OMX runtime traces/state (plans and reports remain visible)
 .omx/logs/
 .omx/state/
