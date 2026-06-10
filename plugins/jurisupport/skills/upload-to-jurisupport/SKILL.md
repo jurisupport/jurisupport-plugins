@@ -8,13 +8,20 @@ Put a completed personal profile draft on JuriSupport only when the lawyer expli
 
 This workflow receives the optional `jurisupport-profile-draft.json` created after `jurisupport-personal-profile.md`. It never publishes a profile and never approves public search exposure.
 
+Web consent is mandatory. Do not treat chat confirmation as upload consent. The lawyer must complete the JuriSupport web consent page first:
+
+```text
+https://jurisupport.com/signup?redirect=/lawyer-search/profile/consent
+```
+
 ## Hard Gates
 
 Proceed only if:
 
 1. `jurisupport-profile-draft.json` exists or the lawyer pasted equivalent draft JSON.
-2. The lawyer confirms the draft may be uploaded to JuriSupport.
-3. The environment has the JuriSupport MCP tool `upload_lawyer_search_profile_draft`, or the lawyer wants a manual upload package.
+2. The lawyer has completed the web consent page at `/lawyer-search/profile/consent`.
+3. The lawyer confirms the draft may be uploaded to JuriSupport.
+4. The environment has the JuriSupport MCP tool `upload_lawyer_search_profile_draft`, or the lawyer wants a manual upload package.
 
 If any gate is missing, explain what is missing and stop before upload.
 
@@ -33,7 +40,8 @@ If `upload_lawyer_search_profile_draft` is available:
 }
 ```
 
-5. Report the returned draft ID and review status.
+5. If the tool returns `PROFILE_UPLOAD_CONSENT_REQUIRED`, stop and tell the lawyer to complete the web consent page. Do not retry until consent is recorded.
+6. Report the returned draft ID and review status.
 
 ## Manual Package
 

@@ -193,4 +193,10 @@ Create `jurisupport-profile-review.md`:
 
 ### 11. Upload Handoff
 
-Do not upload automatically. If the lawyer asks to put the draft on JuriSupport, use `/jurisupport:upload-to-jurisupport`.
+Do not upload automatically. If the lawyer asks to put the draft on JuriSupport, tell them web consent is required first:
+
+```text
+https://jurisupport.com/signup?redirect=/lawyer-search/profile/consent
+```
+
+After web consent is complete, use `/jurisupport:upload-to-jurisupport`.

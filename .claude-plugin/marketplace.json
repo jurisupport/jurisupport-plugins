@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "jurisupport",
-      "description": "JuriSupport 송무 워크플로우와 변호사 개인 프로필 완성 플러그인 — 사건기록 분석, 서면 작성, 인용 검증, 개인 프로필 작성, 선택적 JuriSupport 업로드 지원. 법원 전자제출은 사용자 수동.",
+      "description": "JuriSupport 송무 워크플로우와 변호사 개인 프로필 완성 플러그인 — 사건기록 분석, 서면 작성, 인용 검증, 개인 프로필 작성, 웹 동의 후 선택적 JuriSupport 업로드 지원. 법원 전자제출은 사용자 수동.",
       "category": "legal",
       "source": "./plugins/jurisupport",
       "homepage": "https://jurisupport.com"
