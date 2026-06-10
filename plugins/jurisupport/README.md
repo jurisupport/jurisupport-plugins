@@ -1,6 +1,6 @@
 # JuriSupport
 
-한국 송무 워크플로우 플러그인. 사건 인테이크부터 서면 정본 등록·PDF 추출까지 일관된 절차로 처리한다. 법원 전자제출 자체는 자동화하지 않으며, 사용자가 직접 수행한다.
+한국 송무 워크플로우와 변호사 개인 프로필 완성 플러그인. 사건 인테이크부터 서면 정본 등록·PDF 추출까지 일관된 절차로 처리하고, 본인의 업무 자료를 바탕으로 개인 프로필을 완성해 원하면 JuriSupport에도 올릴 수 있게 돕는다. 법원 전자제출 자체는 자동화하지 않으며, 사용자가 직접 수행한다.
 
 ## 무엇이 들어있나
 
@@ -9,6 +9,8 @@
 - **`/jurisupport:brief-protocol`** - 준비서면 작성 표준 절차 (intake → 사건기록 → 쟁점 → 교과서·판결 검증 → MD 초안 → 정본 등록 → PDF 추출까지의 오케스트레이션).
 - **`/jurisupport:mock-hearing`** - 모의변론. 제출 전 서면·사건이론을 상대방 대리인·재판부 관점에서 검토하고, 구상 단계부터 법령·판결·교과서 근거 정리표를 만든 뒤 강도 채점과 구조화된 평결(제출가능/보강/재구성/출구)·보강 과제를 낸다. 다중파일 구조(질문 목록·채점루브릭·어조 규칙). brief-protocol 인용 검증 통과 후 선택 단계로 연계.
 - **`/jurisupport:case-index`** - CSV 한 파일(`_index.csv`)로 사건 목록·다음기일을 관리. JuriSupport MCP 미사용자용 정본, 또는 연동자의 백업·오프라인 뷰. list/get/add/update/close 명령 제공.
+- **`/jurisupport:complete-personal-profile`** - 변호사가 본인의 사건자료·작성서류·판결문을 바탕으로 `jurisupport-personal-profile.md` 개인 프로필을 완성한다. 원하면 JuriSupport에 올릴 `jurisupport-profile-draft.json`도 만든다.
+- **`/jurisupport:upload-to-jurisupport`** - 변호사가 확인한 프로필 draft를 JuriSupport에 올리거나, MCP가 없으면 수동 업로드 패키지를 만든다. 공개 승인이나 검색 노출은 별도 검토 절차를 따른다.
 
 ### 참조하는 공개 인프라 (배포본에서 기본 작동)
 - **korean-law MCP** - 법령·판결 실존 확인 (필수 1차 검증 경로)
@@ -20,6 +22,12 @@
 ### 경량 대안: CSV 사건 인덱스 (배포본 포함)
 
 JuriSupport를 쓰지 않는 사용자는 `case-index` 스킬로 CSV 한 파일에 사건 목록을 유지할 수 있습니다. 컬럼: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`. 엑셀로 직접 열어 편집해도 되고, 헬퍼 스크립트로 add/update/close 가능. 콜드스타트에서 경로를 설정합니다 (기본 제안: `<클라우드 사건폴더 경로>/_index.csv`).
+
+### 개인 프로필 완성
+
+`/jurisupport:complete-personal-profile`은 송무 작업과 별개로, 변호사가 본인의 프로필을 완성하기 위한 도구입니다. 먼저 로컬에서 `jurisupport-personal-profile.md`를 만들고, "앞으로 어떤 질문을 한 의뢰인을 만나고 싶은지", "어떤 사건을 더 받고 싶은지"를 정리합니다. 원하면 완성한 프로필을 JuriSupport에 올릴 draft까지 만들 수 있습니다.
+
+이 스킬은 프로필을 자동 공개하거나 의뢰인을 배정하지 않습니다. 변호사를 추천, 알선, 순위화, 광고, 스폰서 노출하지도 않습니다. 원본 사건기록 파일은 자동 업로드하지 않고, 변호사가 확인한 draft JSON만 선택적으로 올립니다.
 
 ### 권장 통합: JuriSupport MCP
 
@@ -105,6 +113,7 @@ git commit -m "Update template"
 
 ## 버전
 
+0.2.5 - 개인 프로필 완성 및 선택적 JuriSupport 업로드 스킬 추가
 0.2.4 - 소송문서 Markdown 작성 규칙과 JuriSupport 힌트 태그 보강
 0.2.3 - mock-hearing 추가, 구상 단계 자료 확인, §5 인덱스 보강
 0.2.0 - 서면 작성 규칙·서면 유형·JuriSupport 순서 규칙 보강
