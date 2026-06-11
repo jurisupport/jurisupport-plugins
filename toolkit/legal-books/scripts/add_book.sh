@@ -5,6 +5,10 @@
 #   add_book.sh --pdf /path/to/scan.pdf \
 #               --author "곽윤직" --title "민법총칙" \
 #               --edition "제9판" --year 2018 --publisher "박영사"
+#
+#   add_book.sh --md /path/to/book.md \
+#               --author "곽윤직" --title "민법총칙" \
+#               --edition "제9판" --year 2018 --publisher "박영사"
 
 set -euo pipefail
 
@@ -15,41 +19,6 @@ case "$(uname -s)" in
   Darwin*)              VENV="$ROOT/.venv/bin/activate";     PY=python3; PLATFORM=mac ;;
   *)                    VENV="$ROOT/.venv/bin/activate";     PY=python3; PLATFORM=linux ;;
 esac
-
-# OCR 의존성 사전 점검 (책 추가 시점에 필요)
-missing=""
-command -v ocrmypdf  >/dev/null 2>&1 || missing+="ocrmypdf "
-command -v tesseract >/dev/null 2>&1 || missing+="tesseract "
-if [[ -n "$missing" ]]; then
-  echo "[add_book] 다음 도구가 필요합니다: $missing" >&2
-  echo "" >&2
-  case "$PLATFORM" in
-    mac)
-      echo "  설치: brew install ocrmypdf tesseract tesseract-lang" >&2 ;;
-    linux)
-      echo "  설치: sudo apt install ocrmypdf tesseract-ocr tesseract-ocr-kor" >&2 ;;
-    windows)
-      echo "  설치 (PowerShell):" >&2
-      echo "    winget install UB-Mannheim.TesseractOCR" >&2
-      echo "    winget install ArtifexSoftware.GhostScript.AGPL" >&2
-      echo "    winget install qpdf.qpdf       # 없으면 https://github.com/qpdf/qpdf/releases" >&2
-      echo "    그리고 venv 안에서:" >&2
-      echo "      source ~/legal-books/.venv/Scripts/activate" >&2
-      echo "      pip install ocrmypdf" >&2
-      echo "  설치 후 새 Git Bash 창에서 본 스크립트 재실행" >&2
-      ;;
-  esac
-  exit 1
-fi
-
-# 한국어 언어팩 확인
-if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
-  echo "[add_book] Tesseract 한국어 언어팩(kor) 없음." >&2
-  echo "  Mac:    brew install tesseract-lang" >&2
-  echo "  Linux:  sudo apt install tesseract-ocr-kor" >&2
-  echo "  Windows: UB-Mannheim 빌드 재설치(설치 마법사에서 'Korean' 체크)" >&2
-  exit 1
-fi
 
 expand_user_path() {
   case "$1" in
@@ -63,11 +32,47 @@ sanitize_path_segment() {
   printf '%s' "$1" | tr -d '/\\:*?"<>|'
 }
 
-PDF=""; AUTHOR=""; TITLE=""; EDITION=""; YEAR="0"; PUBLISHER=""
+check_ocr_dependencies() {
+  local missing=""
+  command -v ocrmypdf  >/dev/null 2>&1 || missing+="ocrmypdf "
+  command -v tesseract >/dev/null 2>&1 || missing+="tesseract "
+  if [[ -n "$missing" ]]; then
+    echo "[add_book] 다음 도구가 필요합니다: $missing" >&2
+    echo "" >&2
+    case "$PLATFORM" in
+      mac)
+        echo "  설치: brew install ocrmypdf tesseract tesseract-lang" >&2 ;;
+      linux)
+        echo "  설치: sudo apt install ocrmypdf tesseract-ocr tesseract-ocr-kor" >&2 ;;
+      windows)
+        echo "  설치 (PowerShell):" >&2
+        echo "    winget install UB-Mannheim.TesseractOCR" >&2
+        echo "    winget install ArtifexSoftware.GhostScript.AGPL" >&2
+        echo "    winget install qpdf.qpdf       # 없으면 https://github.com/qpdf/qpdf/releases" >&2
+        echo "    그리고 venv 안에서:" >&2
+        echo "      source ~/legal-books/.venv/Scripts/activate" >&2
+        echo "      pip install ocrmypdf" >&2
+        echo "  설치 후 새 Git Bash 창에서 본 스크립트 재실행" >&2
+        ;;
+    esac
+    exit 1
+  fi
+
+  if ! tesseract --list-langs 2>&1 | grep -q "kor"; then
+    echo "[add_book] Tesseract 한국어 언어팩(kor) 없음." >&2
+    echo "  Mac:    brew install tesseract-lang" >&2
+    echo "  Linux:  sudo apt install tesseract-ocr-kor" >&2
+    echo "  Windows: UB-Mannheim 빌드 재설치(설치 마법사에서 'Korean' 체크)" >&2
+    exit 1
+  fi
+}
+
+PDF=""; MD=""; AUTHOR=""; TITLE=""; EDITION=""; YEAR="0"; PUBLISHER=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --pdf)        PDF="$2"; shift 2 ;;
+    --md)         MD="$2"; shift 2 ;;
     --author)     AUTHOR="$2"; shift 2 ;;
     --title)      TITLE="$2"; shift 2 ;;
     --edition)    EDITION="$2"; shift 2 ;;
@@ -77,16 +82,38 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for v in PDF AUTHOR TITLE; do
+if [[ -n "$PDF" && -n "$MD" ]]; then
+  echo "Use exactly one source: --pdf or --md" >&2
+  exit 1
+fi
+if [[ -z "$PDF" && -z "$MD" ]]; then
+  echo "Required: one of --pdf or --md" >&2
+  exit 1
+fi
+
+for v in AUTHOR TITLE; do
   if [[ -z "${!v}" ]]; then
-    echo "Required: --pdf, --author, --title" >&2
+    echo "Required: --author, --title" >&2
     exit 1
   fi
 done
 
-PDF="$(expand_user_path "$PDF")"
-if [[ ! -f "$PDF" ]]; then
-  echo "PDF not found: $PDF" >&2; exit 1
+INGEST_SOURCE_ARGS=()
+SOURCE_KIND=""
+if [[ -n "$PDF" ]]; then
+  PDF="$(expand_user_path "$PDF")"
+  if [[ ! -f "$PDF" ]]; then
+    echo "PDF not found: $PDF" >&2; exit 1
+  fi
+  check_ocr_dependencies
+  SOURCE_KIND="pdf"
+else
+  MD="$(expand_user_path "$MD")"
+  if [[ ! -f "$MD" ]]; then
+    echo "Markdown not found: $MD" >&2; exit 1
+  fi
+  INGEST_SOURCE_ARGS=(--md "$MD")
+  SOURCE_KIND="md"
 fi
 
 # shellcheck disable=SC1090
@@ -160,18 +187,23 @@ cleanup_failed_book_dir() {
 trap cleanup_failed_book_dir EXIT
 
 # Step 1: OCR (if PDF doesn't already have text layer)
-OCR_PDF="$BOOK_DIR/${BOOK_ID}.pdf"
-echo "[add_book] Step 1/3: OCR (Korean + English, this may take 5–20 min)"
-ocrmypdf --skip-text --language kor+eng --output-type pdf "$PDF" "$OCR_PDF" || {
-  echo "OCR failed. If the PDF already has text, try --force-ocr flag." >&2
-  exit 1
-}
+if [[ "$SOURCE_KIND" == "pdf" ]]; then
+  OCR_PDF="$BOOK_DIR/${BOOK_ID}.pdf"
+  echo "[add_book] Step 1/3: OCR (Korean + English, this may take 5–20 min)"
+  ocrmypdf --skip-text --language kor+eng --output-type pdf "$PDF" "$OCR_PDF" || {
+    echo "OCR failed. If the PDF already has text, try --force-ocr flag." >&2
+    exit 1
+  }
+  INGEST_SOURCE_ARGS=(--pdf "$OCR_PDF")
+else
+  echo "[add_book] Step 1/3: Reading markdown source"
+fi
 
 # Step 2: Convert to markdown + chunk + embed
 echo "[add_book] Step 2/3: Extracting text and chunking"
 "$PY" "$ROOT/scripts/ingest.py" \
   --book-id "$BOOK_ID" \
-  --pdf "$OCR_PDF" \
+  "${INGEST_SOURCE_ARGS[@]}" \
   --book-dir "$BOOK_DIR" \
   --author "$AUTHOR" \
   --title "$TITLE" \

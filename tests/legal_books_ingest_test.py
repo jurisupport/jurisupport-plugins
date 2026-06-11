@@ -113,6 +113,39 @@ def run_ingest(module, tmp: Path, book_id: str, pages, embeddings=None) -> None:
         sys.argv = old_argv
 
 
+def run_ingest_md(module, tmp: Path, book_id: str, markdown: str) -> None:
+    book_dir = tmp / "books" / f"{book_id}_Author_Title"
+    book_dir.mkdir(parents=True, exist_ok=True)
+    md_path = tmp / f"{book_id}.md"
+    md_path.write_text(markdown, encoding="utf-8")
+    module.DB_PATH = tmp / "db" / "books_fts.db"
+    module.embed_batch = lambda texts: [[float(i + 1), 0.0] for i, _ in enumerate(texts)]
+    old_argv = sys.argv[:]
+    sys.argv = [
+        "ingest.py",
+        "--book-id",
+        book_id,
+        "--md",
+        str(md_path),
+        "--book-dir",
+        str(book_dir),
+        "--author",
+        "Author",
+        "--title",
+        "Title",
+        "--edition",
+        "1st",
+        "--year",
+        "2026",
+        "--publisher",
+        "Publisher",
+    ]
+    try:
+        module.main()
+    finally:
+        sys.argv = old_argv
+
+
 def test_reingest_removes_stale_chunks() -> None:
     module = load_ingest_module()
     with tempfile.TemporaryDirectory() as d:
@@ -170,11 +203,61 @@ def test_embedding_count_mismatch_rolls_back() -> None:
         assert chunk_count == 0
 
 
+def test_markdown_input_indexes_page_headings() -> None:
+    module = load_ingest_module()
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        db_path = tmp / "db" / "books_fts.db"
+        init_db(db_path)
+
+        run_ingest_md(
+            module,
+            tmp,
+            "003",
+            "# Author - Title\n\n## p.12\n\nfirst page text\n\n## p.13\n\nsecond page text\n",
+        )
+
+        con = sqlite3.connect(db_path)
+        chunks = con.execute(
+            "SELECT page, chunk_text FROM chunks WHERE book_id = '003' ORDER BY page"
+        ).fetchall()
+        con.close()
+
+        assert chunks == [(12, "first page text"), (13, "second page text")]
+
+
+def test_markdown_input_requires_page_headings() -> None:
+    module = load_ingest_module()
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        db_path = tmp / "db" / "books_fts.db"
+        init_db(db_path)
+
+        try:
+            run_ingest_md(module, tmp, "004", "# Author - Title\n\n본문만 있음\n")
+        except RuntimeError as exc:
+            assert "page headings" in str(exc)
+        else:
+            raise AssertionError("ingest accepted markdown without page headings")
+
+        con = sqlite3.connect(db_path)
+        book_count = con.execute("SELECT COUNT(*) FROM books").fetchone()[0]
+        chunk_count = con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+        con.close()
+
+        assert book_count == 0
+        assert chunk_count == 0
+
+
 def main() -> None:
     test_reingest_removes_stale_chunks()
     print("ok - legal-books reingest removes stale chunks")
     test_embedding_count_mismatch_rolls_back()
     print("ok - legal-books embedding mismatch rolls back")
+    test_markdown_input_indexes_page_headings()
+    print("ok - legal-books markdown input indexes page headings")
+    test_markdown_input_requires_page_headings()
+    print("ok - legal-books markdown input requires page headings")
 
 
 if __name__ == "__main__":

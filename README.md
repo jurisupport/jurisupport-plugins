@@ -194,6 +194,8 @@ claude
 | legal-books | 책 1권 5~30분 (스캔·OCR) | 1주차 자주 보는 책 3권 → 6개월 핵심본 거의 전부 |
 | case-records | 사건 1건 1~3분 (자동 인덱싱) | 1주차 최근 종결 5~10건 → 6개월 누적 사건 대부분 |
 
+legal-books는 먼저 무료 로컬 OCR(OCRmyPDF+Tesseract)로 소량 테스트하세요. Adobe Acrobat, Google Cloud Vision/Document AI, NAVER CLOVA OCR 같은 유료 OCR은 책 여러 권을 한꺼번에 처리하면 페이지 수만큼 비용이 빠르게 누적될 수 있고, 인덱싱 단계의 Gemini 임베딩 비용·제한도 별도로 발생합니다.
+
 자세한 가이드: [02_book_scanning.md](guides/02_book_scanning.md), [03_case_records.md](guides/03_case_records.md). install.sh가 toolkit 설치 직후 동일한 안내를 출력합니다.
 
 ---

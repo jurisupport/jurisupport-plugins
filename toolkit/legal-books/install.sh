@@ -381,6 +381,23 @@ cat <<EOF
       --author "곽윤직" --title "민법총칙" \\
       --edition "제9판" --year 2018 --publisher "박영사"
 
+    비용 주의:
+      · 기본 OCRmyPDF+Tesseract는 무료 로컬 OCR입니다.
+      · Adobe Acrobat, Google Cloud Vision/Document AI, NAVER CLOVA OCR 등
+        유료 OCR은 페이지 수가 누적되면 비용이 커질 수 있습니다.
+      · 먼저 10~20쪽 샘플로 품질과 비용을 확인한 뒤 책 1권씩 진행하세요.
+      · OCR 비용과 별개로 Gemini 임베딩 API 호출도 발생합니다.
+
+    직접 MD 작성은 최후 수단입니다. 가능하면 OCR로 검색 가능한 PDF를
+    만든 뒤 --pdf로 추가하세요. 그래도 텍스트만 남아 있다면:
+    ~/legal-books/scripts/add_book.sh \\
+      --md /경로/book.md \\
+      --author "곽윤직" --title "민법총칙" \\
+      --edition "제9판" --year 2018 --publisher "박영사"
+
+    MD 형식은 각 페이지를 "## p.1", "## p.2"처럼 구분합니다.
+    자세한 템플릿: ~/jurisupport-plugins/guides/02_book_scanning.md
+
     소요 시간: 책 두께에 따라 5~30분 (OCR + Gemini 임베딩)
               무료 tier에서는 rate limit으로 더 오래 걸리거나 중단될 수 있으므로
               여러 권을 연속 인덱싱할 때는 유료 tier 권장

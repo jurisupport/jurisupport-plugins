@@ -27,7 +27,7 @@ curl -s http://localhost:8766/health
 ```
 
 - 서버 미응답 → 사용자에게 서버 실행 요청
-- `books: 0` → 사용자에게 책 추가 안내 (`guides/02_book_scanning.md`)
+- `books: 0` → 사용자에게 책 추가 안내 (`guides/02_book_scanning.md`). 사용자가 "무엇을 준비해야 하느냐"를 묻거나 막막해하면 직접 MD 작성을 먼저 시키지 말고, 무료 로컬 OCR(OCRmyPDF+Tesseract) → 이미 보유한 PDF 프로그램 OCR → 유료 클라우드 OCR 순서와 비용 경고를 안내한다. MD 직접 작성은 최후 수단으로만 설명한다.
 - `books: N>0` → 검색 진행
 
 ## 검색 API
@@ -80,12 +80,13 @@ curl -s -X POST http://localhost:8766/search \
 DB가 비어 있거나 관련 결과 없음:
 
 > 현재 사무소 서적 DB에 본 쟁점에 직접 답할 자료가 없습니다.
-> `~/jurisupport-plugins/guides/02_book_scanning.md`를 참조하여 관련 서적을 추가해 주세요.
+> `~/jurisupport-plugins/guides/02_book_scanning.md`를 참조하여 관련 서적을 추가해 주세요. 먼저 무료 로컬 OCR(OCRmyPDF+Tesseract)로 스캔 PDF를 검색 가능한 PDF로 만들고 `add_book.sh --pdf`로 추가하는 방식이 가장 저렴합니다. Adobe Acrobat, Google Cloud Vision/Document AI, NAVER CLOVA OCR 같은 유료 OCR은 페이지 수가 누적되면 비용이 커질 수 있으므로 10~20쪽 샘플로 비용·품질을 확인한 뒤 진행하세요. MD 직접 작성은 PDF/OCR 경로가 막힌 경우의 최후 수단입니다.
 > 또는 본 답변은 일반 법리 추정으로 진행하되, 인용 출처를 명시하지 않습니다.
 
 ## 추가 도구
 
-- 책 추가: `~/legal-books/scripts/add_book.sh`
+- PDF 책 추가: `~/legal-books/scripts/add_book.sh --pdf /path/to/book.pdf ...`
+- MD 책 추가: `~/legal-books/scripts/add_book.sh --md /path/to/book.md ...`
 - 재인덱싱: `~/legal-books/scripts/reindex.sh [--book-id 001]`
 - 서버 관리: `~/legal-books/scripts/server.sh {start|stop|restart|status}`
 - 가이드: `~/jurisupport-plugins/guides/02_book_scanning.md`

@@ -20,7 +20,7 @@ Usage:
   reindex.sh
   reindex.sh --book-id 001
 
-Rebuilds DB chunks and FTS rows from ~/legal-books/books/<book_id>_*.
+Rebuilds DB chunks and FTS rows from each book folder's <book_id>.pdf or <book_id>.md.
 EOF
 }
 
@@ -83,10 +83,11 @@ if not book_dirs:
 failures = 0
 for book_id, book_dir in book_dirs:
     pdf = book_dir / f"{book_id}.pdf"
+    md = book_dir / f"{book_id}.md"
     meta_path = book_dir / f"{book_id}.meta.json"
-    if not pdf.exists() or not meta_path.exists():
+    if not meta_path.exists() or (not pdf.exists() and not md.exists()):
         print(
-            f"[reindex] skip {book_id}: missing {pdf.name} or {meta_path.name}",
+            f"[reindex] skip {book_id}: missing source PDF/MD or {meta_path.name}",
             file=sys.stderr,
         )
         failures += 1
@@ -100,8 +101,8 @@ for book_id, book_dir in book_dirs:
         str(ingest),
         "--book-id",
         book_id,
-        "--pdf",
-        str(pdf),
+        "--pdf" if pdf.exists() else "--md",
+        str(pdf if pdf.exists() else md),
         "--book-dir",
         str(book_dir),
         "--author",

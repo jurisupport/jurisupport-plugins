@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import pathlib
+import re
 import sqlite3
 import sys
 import time
@@ -32,6 +33,10 @@ CHUNK_OVERLAP = 200
 EMBEDDING_MODEL = "text-embedding-004"
 DEFAULT_EMBED_BATCH_SIZE = 100
 DEFAULT_EMBED_MAX_RETRIES = 5
+PAGE_HEADING_RE = re.compile(
+    r"^\s{0,3}#{1,6}\s*(?:p\.?|page|페이지|쪽)\s*([0-9]+)\s*$",
+    re.IGNORECASE,
+)
 
 load_dotenv(SECRETS)
 
@@ -53,6 +58,36 @@ def extract_pages(pdf_path: Path):
         except Exception as e:
             print(f"  page {i}: extract failed ({e})", file=sys.stderr)
             yield i, ""
+
+
+def extract_markdown_pages(md_path: Path):
+    """Yield (page_number, text) from a standard legal-books markdown file."""
+    pages = []
+    current_page = None
+    current_lines = []
+
+    with open(md_path, "r", encoding="utf-8") as f:
+        for line in f:
+            match = PAGE_HEADING_RE.match(line.rstrip("\n"))
+            if match:
+                if current_page is not None:
+                    pages.append((current_page, "\n".join(current_lines).strip()))
+                current_page = int(match.group(1))
+                current_lines = []
+                continue
+            if current_page is not None:
+                current_lines.append(line.rstrip("\n"))
+
+    if current_page is not None:
+        pages.append((current_page, "\n".join(current_lines).strip()))
+
+    if not pages:
+        raise RuntimeError(
+            "Markdown input must include page headings like '## p.1'. "
+            "Each page must have its own heading so citations can keep page numbers."
+        )
+
+    return pages
 
 
 def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
@@ -123,7 +158,9 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--book-id", required=True)
-    ap.add_argument("--pdf", required=True, type=Path)
+    source = ap.add_mutually_exclusive_group(required=True)
+    source.add_argument("--pdf", type=Path)
+    source.add_argument("--md", type=Path)
     ap.add_argument("--book-dir", required=True, type=Path)
     ap.add_argument("--author", required=True)
     ap.add_argument("--title", required=True)
@@ -133,8 +170,16 @@ def main():
     args = ap.parse_args()
 
     # Extract pages
-    print("  [ingest] Extracting text from PDF...", flush=True)
-    pages = list(extract_pages(args.pdf))
+    if args.pdf:
+        print("  [ingest] Extracting text from PDF...", flush=True)
+        pages = list(extract_pages(args.pdf))
+        source_format = "pdf"
+        source_file = args.pdf.name
+    else:
+        print("  [ingest] Reading markdown pages...", flush=True)
+        pages = list(extract_markdown_pages(args.md))
+        source_format = "md"
+        source_file = args.md.name
     print(f"  [ingest] {len(pages)} pages extracted", flush=True)
 
     # Write markdown (one file, page headers)
@@ -154,6 +199,8 @@ def main():
         "year": args.year,
         "publisher": args.publisher,
         "page_count": len(pages),
+        "source_format": source_format,
+        "source_file": source_file,
     }
     with open(args.book_dir / f"{args.book_id}.meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
