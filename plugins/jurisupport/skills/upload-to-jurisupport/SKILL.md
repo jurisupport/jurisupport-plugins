@@ -1,14 +1,16 @@
 ---
-description: Upload a lawyer-confirmed JuriSupport profile draft, or prepare a manual upload package, after a lawyer completes their personal profile.
+description: Put a lawyer-confirmed completed profile on JuriSupport after web consent.
 ---
 
 # Upload To JuriSupport
 
-Put a completed personal profile draft on JuriSupport only when the lawyer explicitly asks.
+Put a completed personal profile on JuriSupport only when the lawyer explicitly asks.
 
-This workflow receives the optional `jurisupport-profile-draft.json` created after `jurisupport-personal-profile.md`. It never publishes a profile and never approves public search exposure.
+This workflow receives the completed profile prepared by `/jurisupport:complete-personal-profile`. It never publishes a profile and never approves public exposure by itself.
 
-Web consent is mandatory. Do not treat chat confirmation as upload consent. The lawyer must complete the JuriSupport web consent page first:
+Web consent is mandatory. Do not treat chat confirmation as upload consent. In user-facing language, say "완성한 프로필을 JuriSupport에 올린다". Do not lead with filenames, JSON, payload, package, draft, schema, or other technical packaging words unless troubleshooting requires it.
+
+The lawyer must complete the JuriSupport web consent page first:
 
 ```text
 https://jurisupport.com/signup?redirect=/lawyer-search/profile/consent
@@ -18,10 +20,10 @@ https://jurisupport.com/signup?redirect=/lawyer-search/profile/consent
 
 Proceed only if:
 
-1. `jurisupport-profile-draft.json` exists or the lawyer pasted equivalent draft JSON.
+1. A completed profile exists or the lawyer pasted the completed profile content.
 2. The lawyer has completed the web consent page at `/lawyer-search/profile/consent`.
-3. The lawyer confirms the draft may be uploaded to JuriSupport.
-4. The environment has the JuriSupport MCP tool `upload_lawyer_search_profile_draft`, or the lawyer wants a manual upload package.
+3. The lawyer confirms the completed profile may be uploaded to JuriSupport.
+4. The environment has the JuriSupport MCP tool `upload_lawyer_search_profile_draft`, or the lawyer wants a reviewer handoff note.
 
 If any gate is missing, explain what is missing and stop before upload.
 
@@ -29,31 +31,20 @@ If any gate is missing, explain what is missing and stop before upload.
 
 If `upload_lawyer_search_profile_draft` is available:
 
-1. Read the draft JSON.
+1. Read the completed profile and the internal upload data if present.
 2. Confirm it contains `lawyerApprovalRequired: true`.
 3. Confirm it does not include raw case files or identifiers in public fields.
-4. Call `upload_lawyer_search_profile_draft` with:
-
-```json
-{
-  "profileDraft": {}
-}
-```
-
+4. Call `upload_lawyer_search_profile_draft` with the prepared profile data.
 5. If the tool returns `PROFILE_UPLOAD_CONSENT_REQUIRED`, stop and tell the lawyer to complete the web consent page. Do not retry until consent is recorded.
-6. Report the returned draft ID and review status.
+6. Report that the profile was received by JuriSupport and is waiting for review. Do not emphasize technical IDs unless the lawyer asks.
 
 ## Manual Package
 
-If MCP is unavailable, create `jurisupport-profile-upload-package.json`:
+If MCP is unavailable, prepare a concise reviewer handoff note in plain Korean with:
 
-```json
-{
-  "target": "jurisupport_lawyer_profile_draft",
-  "status": "draft",
-  "profileDraft": {},
-  "notesForReviewer": []
-}
-```
+- the completed profile text
+- the consultation areas and desired client questions
+- privacy exclusions
+- notes that need JuriSupport review
 
 Do not mark the profile public.

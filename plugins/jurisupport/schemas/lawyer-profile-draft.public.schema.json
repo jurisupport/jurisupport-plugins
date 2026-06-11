@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jurisupport.com/schemas/lawyer-profile-draft.public.schema.json",
+  "title": "JuriSupport Lawyer Personal Profile Upload Data",
+  "description": "Structured profile data created from a lawyer's completed personal profile when the lawyer wants to upload it to JuriSupport.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "profileVersion",
+    "sourceMode",
+    "lawyerIdentity",
+    "observedPractice",
+    "intendedPractice",
+    "publicProfile",
+    "compliance",
+    "lawyerApprovalRequired",
+    "registrationReadiness"
+  ],
+  "properties": {
+    "profileVersion": {
+      "type": "string",
+      "const": "0.2"
+    },
+    "sourceMode": {
+      "type": "string",
+      "enum": ["local_files", "jurisupport_mcp", "mixed", "manual_only"]
+    },
+    "lawyerIdentity": {
+      "type": "object",
+      "required": ["displayName", "firmName"],
+      "properties": {
+        "lawyerId": {
+          "type": ["string", "null"]
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "firmName": {
+          "type": "string"
+        }
+      }
+    },
+    "sourceInventory": {
+      "type": "array"
+    },
+    "observedPractice": {
+      "type": "object",
+      "required": ["practiceAreas", "problemTypes", "workPatterns"]
+    },
+    "intendedPractice": {
+      "type": "object",
+      "required": ["preferredMatters", "excludedMatters", "regions", "consultationModes", "languages"]
+    },
+    "publicProfile": {
+      "type": "object",
+      "required": ["headline", "bio", "problemFit", "preConsultationMaterials", "strengthCards"]
+    },
+    "internalEvidenceMap": {
+      "type": "array"
+    },
+    "compliance": {
+      "type": "object",
+      "required": ["riskFlags", "reviewNotes", "publicationVerdict"],
+      "properties": {
+        "publicationVerdict": {
+          "type": "string",
+          "enum": ["draft_upload_ready", "needs_review", "private_only", "do_not_publish"]
+        }
+      }
+    },
+    "lawyerApprovalRequired": {
+      "type": "boolean",
+      "const": true
+    },
+    "registrationReadiness": {
+      "type": "string",
+      "enum": ["not_ready", "needs_review", "ready_for_draft_upload"]
+    }
+  }
+}
