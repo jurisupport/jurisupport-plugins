@@ -4,7 +4,7 @@
 # Installs:
 #   1. Data protection hook
 #   2. jurisupport plugin (from git submodule or repo)
-#   3. korean-law MCP plugin (public law/precedent verification)
+#   3. korean-law MCP plugin (public law/precedent verification, if OC is ready)
 #   4. lbox-guide and beopgoeul-search skills
 #   5. Case info CSV template
 #   6. (Optional) legal-books server + skill
@@ -51,8 +51,8 @@ cat <<'BANNER'
   [주의] 설치 전 반드시 읽어야 할 문서:
          guides/00_security.md (의뢰인 정보 보호 원칙)
 
-  [팁] 각 [Y/n] 프롬프트는 엔터만 치면 '예'로 진행됩니다.
-       거부할 때만 'n' 입력.
+  [팁] [Y/n] 프롬프트는 엔터만 치면 '예'로 진행됩니다.
+       [y/N] 프롬프트는 엔터만 치면 '아니오/나중에'로 진행됩니다.
 
   계속: Enter    취소: Ctrl+C
 ================================================================
@@ -244,53 +244,63 @@ else
 fi
 
 # ============================================================
-# 4. korean-law MCP plugin
+# 4. korean-law MCP plugin or offline fallback
 # ============================================================
-step 4 "korean-law MCP 플러그인 설치 (법령/판례 1차 검증)"
+step 4 "korean-law MCP 설치 또는 오프라인 법령 폴백 안내"
 
 KOREAN_LAW_MARKETPLACE_SOURCE="chrisryugj/korean-law-mcp"
 KOREAN_LAW_MARKETPLACE_NAME="korean-law-marketplace"
 KOREAN_LAW_PLUGIN_REF="korean-law@$KOREAN_LAW_MARKETPLACE_NAME"
 
 if is_dry_run; then
-  info_or_plan "korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
-  info_or_plan "korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF"
+  info_or_plan "법제처 OC가 있으면 korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
+  info_or_plan "법제처 OC가 있으면 korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF"
+  info_or_plan "OC가 없으면 설치는 계속 진행하고 /jurisupport:offline-law-fallback 사용"
 else
-  if claude plugin marketplace list 2>/dev/null | grep -q "$KOREAN_LAW_MARKETPLACE_NAME"; then
-    info "marketplace '$KOREAN_LAW_MARKETPLACE_NAME' 이미 등록됨"
-  else
-    info "korean-law marketplace 자동 등록 중: $KOREAN_LAW_MARKETPLACE_SOURCE"
-    if claude plugin marketplace add "$KOREAN_LAW_MARKETPLACE_SOURCE" 2>&1 | tail -3; then
-      info "[ok] korean-law marketplace 등록 완료"
-    else
-      warn "korean-law marketplace 등록 실패. 수동: claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
-    fi
-  fi
-
   if claude plugin list 2>/dev/null | grep -q "korean-law@"; then
     info "korean-law 플러그인 이미 설치됨"
+    info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
   else
-    info "korean-law 자동 설치 중..."
-    info "설치 중 법제처 Open API 키(OC) 입력 프롬프트가 나올 수 있습니다."
-    read -r -p "법제처 Open API 키(OC)를 이미 준비하셨나요? [Y/n, 엔터=예] " has_law_key
-    if [[ "$has_law_key" =~ ^[Nn]$ ]]; then
-      info "법제처 Open API 신청 페이지를 브라우저로 엽니다..."
-      open_url "$KOREAN_LAW_OPENAPI_URL"
-      echo ""
-      echo "  ------------------------------------------------------------"
-      echo "  1. 브라우저에서 로그인 또는 사용자 가입"
-      echo "  2. OPEN API 신청 완료"
-      echo "  3. API인증키관리에서 현재 API인증키(OC) 복사"
-      echo "  ------------------------------------------------------------"
-      echo "  상세 가이드: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
-      read -r -p "OC 값을 복사했으면 엔터: " _
-    fi
-    info "프롬프트가 나오면 복사한 OC 값을 입력하세요."
-    if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
-      info "[ok] korean-law 설치 완료"
-      info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
+    echo ""
+    echo "  korean-law MCP는 법제처 Open API 키(OC)가 있어야 실제 법령·판례 조회가 됩니다."
+    echo "  OC 발급 전에도 JuriSupport 설치는 계속되며,"
+    echo "  플러그인에 포함된 /jurisupport:offline-law-fallback 으로 헌/민/형/상법 및 주요 특별형법 전문 실습이 가능합니다."
+    echo ""
+    read -r -p "법제처 Open API 키(OC)를 지금 갖고 있나요? [y/N, 엔터=아니오] " has_law_key
+    if [[ "$has_law_key" =~ ^[Yy]$ ]]; then
+      if claude plugin marketplace list 2>/dev/null | grep -q "$KOREAN_LAW_MARKETPLACE_NAME"; then
+        info "marketplace '$KOREAN_LAW_MARKETPLACE_NAME' 이미 등록됨"
+      else
+        info "korean-law marketplace 자동 등록 중: $KOREAN_LAW_MARKETPLACE_SOURCE"
+        if claude plugin marketplace add "$KOREAN_LAW_MARKETPLACE_SOURCE" 2>&1 | tail -3; then
+          info "[ok] korean-law marketplace 등록 완료"
+        else
+          warn "korean-law marketplace 등록 실패. 수동: claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
+        fi
+      fi
+
+      info "korean-law 자동 설치 중..."
+      info "프롬프트가 나오면 복사한 OC 값을 입력하세요."
+      if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
+        info "[ok] korean-law 설치 완료"
+        info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
+      else
+        warn "korean-law 자동 설치 실패. 수동: claude plugin install $KOREAN_LAW_PLUGIN_REF"
+      fi
     else
-      warn "korean-law 자동 설치 실패. 수동: claude plugin install $KOREAN_LAW_PLUGIN_REF"
+      warn "OC 미준비 -> korean-law MCP 설치는 건너뜁니다."
+      info "오프라인 실습: 클로드코드에서 /jurisupport:offline-law-fallback 사용"
+      info "포함 범위: 대한민국헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법 전문"
+      read -r -p "법제처 Open API 신청 페이지를 브라우저로 열까요? [y/N] " open_law_page
+      if [[ "$open_law_page" =~ ^[Yy]$ ]]; then
+        info "법제처 Open API 신청 페이지를 브라우저로 엽니다..."
+        open_url "$KOREAN_LAW_OPENAPI_URL"
+      fi
+      echo ""
+      echo "  OC 발급 후 수동 설치:"
+      echo "    claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
+      echo "    claude plugin install $KOREAN_LAW_PLUGIN_REF"
+      echo "  발급 가이드: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
     fi
   fi
 fi
@@ -567,17 +577,21 @@ $(if is_dry_run; then printf '[ok] DRY-RUN 완료 (실제 변경 없음)'; else 
        /plugin marketplace add "$MARKETPLACE_PATH"
        /plugin install jurisupport@jurisupport-plugins
 
-korean-law MCP 자동 설치 안 됐다면 클로드코드 안에서 수동 실행:
+korean-law MCP는 법제처 OC 발급 후 클로드코드 안에서 수동 설치:
        /plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE
        /plugin install $KOREAN_LAW_PLUGIN_REF
        (법제처 OC 발급 방법: $TOOLKIT_DIR/guides/07_law_openapi_key.md)
+
+OC 발급 전 시연/실습:
+       /jurisupport:offline-law-fallback
+       (헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법 전문 스냅샷 포함)
 
 전체 가이드: $TOOLKIT_DIR/README.md
 
 [주의] /jurisupport:cold-start-interview 가 "Unknown command"로 뜨면
    plugin 자동 설치가 실패한 것 - 위 수동 명령 두 줄 실행하세요.
 
-[주의] korean-law 도구가 보이지 않으면
-   korean-law MCP 자동 설치가 실패한 것 - 위 korean-law 수동 명령 두 줄 실행하세요.
+[주의] korean-law 도구가 보이지 않아도 OC 발급 전이면 정상입니다.
+   실습은 /jurisupport:offline-law-fallback 으로 진행하고, 실제 사건 제출 전에는 korean-law MCP를 설치해 재검증하세요.
 
 EOF

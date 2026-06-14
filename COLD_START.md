@@ -29,7 +29,7 @@ cd jurisupport-plugins
 | 질문 | 답 |
 |---|---|
 | 데이터 보호 Hook 설치 | Yes (자동) |
-| 법제처 Open API 키 | [발급 가이드](guides/07_law_openapi_key.md)의 `OC` 값 입력 |
+| 법제처 Open API 키 | 있으면 [발급 가이드](guides/07_law_openapi_key.md)의 `OC` 값 입력, 없으면 Enter로 건너뛰고 `/jurisupport:offline-law-fallback` 사용 |
 | ~/사건 디렉토리 + CSV 템플릿 복사 | **Yes** (권장) |
 | legal-books 검색 서버 설치 | **첫날은 No** (책 스캔이 안 끝났으므로) |
 | case-records 검색 서버 설치 | **첫날은 No** (과거 사건 인덱싱이 안 끝났으므로) |

@@ -52,8 +52,9 @@ claude plugin marketplace add "$(pwd)"
 claude plugin uninstall songmu-legal 2>/dev/null || true
 claude plugin install jurisupport@jurisupport-plugins
 
-# 3. 법령·판결 1차 검증용 korean-law MCP 설치
-#    먼저 guides/07_law_openapi_key.md를 보고 법제처 OC 값을 준비
+# 3. 법령·판결 정식 1차 검증용 korean-law MCP 설치 (법제처 OC 발급 후)
+#    OC 발급 전 시연·실습은 JuriSupport 플러그인 내 /jurisupport:offline-law-fallback 사용
+#    OC 발급 후:
 claude plugin marketplace add chrisryugj/korean-law-mcp
 claude plugin install korean-law@korean-law-marketplace
 ```

@@ -66,7 +66,7 @@ iwr https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 
 PowerShell 한 줄 설치도 빠른 시작용입니다. 조직 보안 정책이 엄격하면 스크립트 내용을 먼저 검토한 뒤 실행하세요.
 
-사용자가 답할 것: UAC 팝업 "예", install.sh 단계별 `[Y/n]`, korean-law용 법제처 Open API 키([발급 가이드](guides/07_law_openapi_key.md)), (선택) Gemini API 키.
+사용자가 답할 것: UAC 팝업 "예", install.sh 단계별 `[Y/n]`, 법제처 Open API 키가 이미 있으면 `OC` 입력(없으면 Enter로 건너뛰고 오프라인 법령 폴백 사용), (선택) Gemini API 키.
 
 제3자 PC 설치를 지원해야 하면 진단 리포트 옵션을 켠 뒤 실행하세요. 실패 시 설치 로그·Windows 버전·winget/Git/Node/npm/Python/rclone/Claude Code 상태를 ZIP으로 묶고, 업로드 엔드포인트로 전송을 시도합니다.
 
@@ -122,7 +122,7 @@ claude
 
 | 구성요소 | 역할 | 의존성 |
 |---|---|---|
-| **JuriSupport 플러그인** | 사건 인테이크 → 준비서면 자동 작성 표준 절차 | korean-law MCP (공개) |
+| **JuriSupport 플러그인** | 사건 인테이크 → 준비서면 자동 작성 표준 절차 | korean-law MCP (공개), OC 발급 전 오프라인 법령 폴백 |
 | **데이터 보호 Hook** | 외부 API 호출 시 의뢰인 정보 자동 감지·차단 | jq |
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 검색. 스킬은 기본 설치, 자동 검색 toolkit은 선택 설치 | Chrome + Python 3.9+ |
@@ -149,7 +149,7 @@ claude
 2. **클로드코드 설치** — https://docs.claude.com/claude-code
 3. **Homebrew** (macOS) 또는 apt (Linux)
 4. **Python 3.9+** (3.10+ 권장)
-5. **법제처 Open API 키** — korean-law MCP 설치 중 입력 ([발급 가이드](guides/07_law_openapi_key.md))
+5. **법제처 Open API 키** — korean-law MCP 정식 법령·판례 조회용. 발급 전에도 설치와 실습은 가능하며, 오프라인 법령 폴백을 사용합니다 ([발급 가이드](guides/07_law_openapi_key.md))
 6. **Google Gemini API 키** — https://aistudio.google.com/apikey
    - legal-books·case-records 임베딩 생성용 (해당 toolkit 설치 시만)
    - 테스트·소량 인덱싱은 무료 tier로 가능하나, 교과서 여러 권을 쉽게 인덱싱하려면 결제 연결된 유료 tier 권장
@@ -164,7 +164,7 @@ claude
 | 1 | 의존성 확인 (Python, jq, git, Claude Code) | 필수 |
 | 2 | 데이터 보호 Hook 설치 | 필수 |
 | 3 | JuriSupport 플러그인 등록 | 필수 |
-| 4 | korean-law MCP 플러그인 설치 | 필수 |
+| 4 | korean-law MCP 설치 또는 오프라인 법령 폴백 안내 | 권장 |
 | 5 | lbox-guide + beopgoeul-search 스킬 설치 | 필수 |
 | 6 | 사건정보 관리표 템플릿 복사 (~/사건/) | 권장 |
 | 7 | legal-books 검색 서버 설치 | 선택 (책 스캔 후) |
@@ -245,7 +245,7 @@ cd ~/jurisupport-plugins
 
 **제거 대상** (9단계):
 1. 데이터 보호 Hook 등록 해제 (settings.json jq 편집)
-2. JuriSupport/korean-law 플러그인 + marketplace 등록 해제 (`claude plugin uninstall`)
+2. JuriSupport/korean-law 플러그인 + marketplace 등록 해제 (`claude plugin uninstall`, 설치된 경우)
 3. 클로드코드 스킬 (lbox-guide, beopgoeul-search, legal-books, case-records)
 4. ~/legal-books/ (서버 stop + 폴더)
 5. ~/case-records/ (서버 stop + 폴더)
