@@ -1,6 +1,6 @@
 {
   "name": "jurisupport",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "JuriSupport 송무 워크플로우 플러그인 (한국 민사소송 기반) — 사건기록 분석, 서면 초안 작성, 인용 검증, 정본 등록, PDF 산출까지 일괄 처리. 법원 전자제출은 사용자 직접 수행.",
   "author": {
     "name": "쥬리서포트",

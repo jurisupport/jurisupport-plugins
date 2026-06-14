@@ -954,13 +954,14 @@ if (-not (Test-Path $gitBash)) {
     @"
 
   install.sh가 곧 시작됩니다. 10단계 대화식 설치:
-    1~5. 의존성 점검, Hook, 플러그인, korean-law, 스킬 (자동/Enter)
+    1~5. 의존성 점검, Hook, 플러그인, korean-law/오프라인 폴백, 스킬
     6~10. CSV 템플릿·검색 서버·JuriSupport MCP (각 단계 [Y/n] 응답)
 
   Gemini API 키: https://aistudio.google.com/apikey
   (7, 8번 단계에서 사용. 테스트는 무료 tier 가능, 여러 교과서 인덱싱은 유료 tier 권장. 건너뛰려면 Enter)
 
-  korean-law MCP 설치 중 법제처 Open API 키 입력 프롬프트가 나올 수 있습니다.
+  법제처 Open API 키가 있으면 korean-law MCP를 설치합니다.
+  키가 아직 없으면 건너뛰고 /jurisupport:offline-law-fallback 으로 헌/민/형/상법 및 주요 특별형법 전문 실습을 진행합니다.
   발급 방법: guides\07_law_openapi_key.md
 
   3초 후 시작...
@@ -1023,14 +1024,15 @@ $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
     → 한 번만 로그인하면 이후 영구 유지.
     → PowerShell에서 claude.ps1 ExecutionPolicy 오류가 나면 $ClaudePowerShellCommand 를 사용하세요.
 
-  플러그인·korean-law MCP·JuriSupport MCP 모두 install.sh가 자동 등록.
+  플러그인·JuriSupport MCP는 install.sh가 자동 등록. korean-law MCP는 법제처 OC가 있을 때 등록.
+  OC 발급 전 실습은 /jurisupport:offline-law-fallback 사용.
   자동 설치가 실패한 경우에만 수동 명령:
 
     [수동 fallback A] JuriSupport 플러그인:
       $ClaudePowerShellCommand plugin marketplace add $repoDir
       $ClaudePowerShellCommand plugin install jurisupport@jurisupport-plugins
 
-    [수동 fallback B] korean-law MCP 플러그인:
+    [수동 fallback B] korean-law MCP 플러그인 (OC 발급 후):
       먼저 guides\07_law_openapi_key.md를 보고 법제처 OC 값을 준비
       $ClaudePowerShellCommand plugin marketplace add chrisryugj/korean-law-mcp
       $ClaudePowerShellCommand plugin install korean-law@korean-law-marketplace
@@ -1038,7 +1040,7 @@ $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
     [수동 fallback C] JuriSupport MCP (사건 50건까지 무료):
       1) https://jurisupport.com 가입
       2) https://jurisupport.com/profile 에서 API 토큰 발급
-      3) $ClaudePowerShellCommand mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse ``
+      3) $ClaudePowerShellCommand mcp add --transport http jurisupport https://api.jurisupport.com/mcp ``
            --header "Authorization: Bearer <발급받은_토큰>"
 
 첫 사건 시작:

@@ -4,7 +4,7 @@
 # Installs:
 #   1. Data protection hook
 #   2. jurisupport plugin (from git submodule or repo)
-#   3. korean-law MCP plugin (public law/precedent verification)
+#   3. korean-law MCP plugin (public law/precedent verification, if OC is ready)
 #   4. lbox-guide and beopgoeul-search skills
 #   5. Case info CSV template
 #   6. (Optional) legal-books server + skill
@@ -51,8 +51,8 @@ cat <<'BANNER'
   [주의] 설치 전 반드시 읽어야 할 문서:
          guides/00_security.md (의뢰인 정보 보호 원칙)
 
-  [팁] 각 [Y/n] 프롬프트는 엔터만 치면 '예'로 진행됩니다.
-       거부할 때만 'n' 입력.
+  [팁] [Y/n] 프롬프트는 엔터만 치면 '예'로 진행됩니다.
+       [y/N] 프롬프트는 엔터만 치면 '아니오/나중에'로 진행됩니다.
 
   계속: Enter    취소: Ctrl+C
 ================================================================
@@ -244,53 +244,63 @@ else
 fi
 
 # ============================================================
-# 4. korean-law MCP plugin
+# 4. korean-law MCP plugin or offline fallback
 # ============================================================
-step 4 "korean-law MCP 플러그인 설치 (법령/판례 1차 검증)"
+step 4 "korean-law MCP 설치 또는 오프라인 법령 폴백 안내"
 
 KOREAN_LAW_MARKETPLACE_SOURCE="chrisryugj/korean-law-mcp"
 KOREAN_LAW_MARKETPLACE_NAME="korean-law-marketplace"
 KOREAN_LAW_PLUGIN_REF="korean-law@$KOREAN_LAW_MARKETPLACE_NAME"
 
 if is_dry_run; then
-  info_or_plan "korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
-  info_or_plan "korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF"
+  info_or_plan "법제처 OC가 있으면 korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
+  info_or_plan "법제처 OC가 있으면 korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF"
+  info_or_plan "OC가 없으면 설치는 계속 진행하고 /jurisupport:offline-law-fallback 사용"
 else
-  if claude plugin marketplace list 2>/dev/null | grep -q "$KOREAN_LAW_MARKETPLACE_NAME"; then
-    info "marketplace '$KOREAN_LAW_MARKETPLACE_NAME' 이미 등록됨"
-  else
-    info "korean-law marketplace 자동 등록 중: $KOREAN_LAW_MARKETPLACE_SOURCE"
-    if claude plugin marketplace add "$KOREAN_LAW_MARKETPLACE_SOURCE" 2>&1 | tail -3; then
-      info "[ok] korean-law marketplace 등록 완료"
-    else
-      warn "korean-law marketplace 등록 실패. 수동: claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
-    fi
-  fi
-
   if claude plugin list 2>/dev/null | grep -q "korean-law@"; then
     info "korean-law 플러그인 이미 설치됨"
+    info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
   else
-    info "korean-law 자동 설치 중..."
-    info "설치 중 법제처 Open API 키(OC) 입력 프롬프트가 나올 수 있습니다."
-    read -r -p "법제처 Open API 키(OC)를 이미 준비하셨나요? [Y/n, 엔터=예] " has_law_key
-    if [[ "$has_law_key" =~ ^[Nn]$ ]]; then
-      info "법제처 Open API 신청 페이지를 브라우저로 엽니다..."
-      open_url "$KOREAN_LAW_OPENAPI_URL"
-      echo ""
-      echo "  ------------------------------------------------------------"
-      echo "  1. 브라우저에서 로그인 또는 사용자 가입"
-      echo "  2. OPEN API 신청 완료"
-      echo "  3. API인증키관리에서 현재 API인증키(OC) 복사"
-      echo "  ------------------------------------------------------------"
-      echo "  상세 가이드: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
-      read -r -p "OC 값을 복사했으면 엔터: " _
-    fi
-    info "프롬프트가 나오면 복사한 OC 값을 입력하세요."
-    if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
-      info "[ok] korean-law 설치 완료"
-      info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
+    echo ""
+    echo "  korean-law MCP는 법제처 Open API 키(OC)가 있어야 실제 법령·판례 조회가 됩니다."
+    echo "  OC 발급 전에도 JuriSupport 설치는 계속되며,"
+    echo "  플러그인에 포함된 /jurisupport:offline-law-fallback 으로 헌/민/형/상법 및 주요 특별형법 전문 실습이 가능합니다."
+    echo ""
+    read -r -p "법제처 Open API 키(OC)를 지금 갖고 있나요? [y/N, 엔터=아니오] " has_law_key
+    if [[ "$has_law_key" =~ ^[Yy]$ ]]; then
+      if claude plugin marketplace list 2>/dev/null | grep -q "$KOREAN_LAW_MARKETPLACE_NAME"; then
+        info "marketplace '$KOREAN_LAW_MARKETPLACE_NAME' 이미 등록됨"
+      else
+        info "korean-law marketplace 자동 등록 중: $KOREAN_LAW_MARKETPLACE_SOURCE"
+        if claude plugin marketplace add "$KOREAN_LAW_MARKETPLACE_SOURCE" 2>&1 | tail -3; then
+          info "[ok] korean-law marketplace 등록 완료"
+        else
+          warn "korean-law marketplace 등록 실패. 수동: claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
+        fi
+      fi
+
+      info "korean-law 자동 설치 중..."
+      info "프롬프트가 나오면 복사한 OC 값을 입력하세요."
+      if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
+        info "[ok] korean-law 설치 완료"
+        info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
+      else
+        warn "korean-law 자동 설치 실패. 수동: claude plugin install $KOREAN_LAW_PLUGIN_REF"
+      fi
     else
-      warn "korean-law 자동 설치 실패. 수동: claude plugin install $KOREAN_LAW_PLUGIN_REF"
+      warn "OC 미준비 -> korean-law MCP 설치는 건너뜁니다."
+      info "오프라인 실습: 클로드코드에서 /jurisupport:offline-law-fallback 사용"
+      info "포함 범위: 대한민국헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법 전문"
+      read -r -p "법제처 Open API 신청 페이지를 브라우저로 열까요? [y/N] " open_law_page
+      if [[ "$open_law_page" =~ ^[Yy]$ ]]; then
+        info "법제처 Open API 신청 페이지를 브라우저로 엽니다..."
+        open_url "$KOREAN_LAW_OPENAPI_URL"
+      fi
+      echo ""
+      echo "  OC 발급 후 수동 설치:"
+      echo "    claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
+      echo "    claude plugin install $KOREAN_LAW_PLUGIN_REF"
+      echo "  발급 가이드: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
     fi
   fi
 fi
@@ -407,7 +417,7 @@ step 10 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
-JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
+JURI_MCP_URL="https://api.jurisupport.com/mcp"
 
 if is_dry_run; then
   info_or_plan "JuriSupport MCP 등록 (가입/토큰 발급/MCP add)"
@@ -424,7 +434,7 @@ else
   echo ""
   read -r -p "JuriSupport 가입/MCP 연동을 진행할까요? [Y/n, 엔터=예] " ans
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+    info "건너뛰기. 나중에:  claude mcp add --transport http jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
   else
     echo ""
@@ -469,7 +479,7 @@ else
         break
       fi
 
-      # jurisupport.com 토큰 검증 (SSE 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
+      # jurisupport.com 토큰 검증 (Streamable HTTP MCP 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
       info "토큰 검증 중..."
       HTTP_CODE=$(
         CURL_CONFIG="$(mktemp)"
@@ -482,7 +492,7 @@ else
           printf 'max-time = 6\n'
           printf 'connect-timeout = 4\n'
           printf 'header = "Authorization: Bearer %s"\n' "$JURI_TOKEN"
-          printf 'header = "Accept: text/event-stream"\n'
+          printf 'header = "Accept: application/json, text/event-stream"\n'
           printf 'url = "%s"\n' "$JURI_MCP_URL"
         } > "$CURL_CONFIG"
         curl --config "$CURL_CONFIG" 2>/dev/null || echo "000"
@@ -490,9 +500,8 @@ else
 
       case "$HTTP_CODE" in
         200|204|000)
-          # 000 = curl timeout: SSE 스트림이 정상 응답하면 keep-alive로 잡힘. 일단 진행.
           if [[ "$HTTP_CODE" == "000" ]]; then
-            info "[ok] 토큰 응답 정상 (SSE keep-alive, HTTP 000)"
+            warn "토큰 검증 응답 대기/네트워크 제한 가능성 (HTTP 000) - 그대로 등록 진행"
           else
             info "[ok] 토큰 검증 성공 (HTTP $HTTP_CODE)"
           fi
@@ -520,11 +529,11 @@ else
     done
 
     if [[ -z "$JURI_TOKEN" ]]; then
-      info "나중에 등록:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+      info "나중에 등록:  claude mcp add --transport http jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     else
       info "MCP 등록 중..."
       warn "Claude Code CLI는 bearer header 등록 시 --header 인자를 사용합니다. 등록 순간 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다."
-      if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN" 2>&1 | tail -3; then
+      if claude mcp add --transport http jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN" 2>&1 | tail -3; then
         info "[ok] JuriSupport MCP 등록 완료"
         info "-> 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
         echo ""
@@ -534,7 +543,7 @@ else
         echo "    - 사건번호만 있으면 클로드코드 안에서 mcp__jurisupport__create_case 로도 추가 가능."
         echo ""
       else
-        warn "등록 실패. 수동: claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+        warn "등록 실패. 수동: claude mcp add --transport http jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
       fi
       unset JURI_TOKEN  # 셸 환경에서 토큰 흔적 제거
     fi
@@ -567,17 +576,21 @@ $(if is_dry_run; then printf '[ok] DRY-RUN 완료 (실제 변경 없음)'; else 
        /plugin marketplace add "$MARKETPLACE_PATH"
        /plugin install jurisupport@jurisupport-plugins
 
-korean-law MCP 자동 설치 안 됐다면 클로드코드 안에서 수동 실행:
+korean-law MCP는 법제처 OC 발급 후 클로드코드 안에서 수동 설치:
        /plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE
        /plugin install $KOREAN_LAW_PLUGIN_REF
        (법제처 OC 발급 방법: $TOOLKIT_DIR/guides/07_law_openapi_key.md)
+
+OC 발급 전 시연/실습:
+       /jurisupport:offline-law-fallback
+       (헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법 전문 스냅샷 포함)
 
 전체 가이드: $TOOLKIT_DIR/README.md
 
 [주의] /jurisupport:cold-start-interview 가 "Unknown command"로 뜨면
    plugin 자동 설치가 실패한 것 - 위 수동 명령 두 줄 실행하세요.
 
-[주의] korean-law 도구가 보이지 않으면
-   korean-law MCP 자동 설치가 실패한 것 - 위 korean-law 수동 명령 두 줄 실행하세요.
+[주의] korean-law 도구가 보이지 않아도 OC 발급 전이면 정상입니다.
+   실습은 /jurisupport:offline-law-fallback 으로 진행하고, 실제 사건 제출 전에는 korean-law MCP를 설치해 재검증하세요.
 
 EOF

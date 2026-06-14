@@ -1,7 +1,7 @@
 # 법제처 Open API 인증키 발급 가이드
 
-> korean-law MCP가 법령·판례를 조회하려면 법제처 Open API 인증키, 즉 `OC` 값이 필요합니다.
-> 발급은 무료이고, 처음 한 번만 해두면 됩니다.
+> korean-law MCP가 법령·판례를 실시간 조회하려면 법제처 Open API 인증키, 즉 `OC` 값이 필요합니다.
+> 발급은 무료이고, 처음 한 번만 해두면 됩니다. 다만 발급 전에도 JuriSupport 설치는 계속 진행되며, 시연·실습은 내장 오프라인 법령 스냅샷으로 할 수 있습니다.
 
 ---
 
@@ -12,7 +12,7 @@
 3. 왼쪽 메뉴에서 **OPEN API 신청**을 누릅니다.
 4. 신청서를 저장합니다. 사용 목적은 `Claude Code korean-law MCP 법령·판례 검증`처럼 적으면 됩니다.
 5. 왼쪽 메뉴에서 **API인증키관리**를 열고 **현재 API인증키(OC)** 값을 복사합니다.
-6. `install.sh` 또는 `korean-law` 설치 프롬프트에 그 값을 붙여넣습니다.
+6. `install.sh` 또는 `korean-law` 설치 프롬프트에 그 값을 붙여넣습니다. 이미 설치를 마쳤다면 아래 수동 설치 명령으로 나중에 추가합니다.
 
 공식 사이트에서 키 이름은 보통 `API인증키`, `OC`, `현재 API인증키(OC)`로 표시됩니다.
 
@@ -34,16 +34,17 @@
 
 ---
 
-## 설치할 때 입력
+## 설치할 때 입력 또는 나중에 추가
 
-전체 설치 중 이런 문구가 나오면 방금 복사한 `OC` 값을 입력합니다.
+전체 설치 중 이런 문구가 나오면, 이미 복사한 `OC` 값이 있을 때만 `y`를 입력해 korean-law MCP 설치를 진행합니다.
 
 ```text
-법제처 API 키
-> API 키:
+법제처 Open API 키(OC)를 지금 갖고 있나요? [y/N, 엔터=아니오]
 ```
 
-Claude Code 플러그인 수동 설치 중에도 같은 값을 넣습니다.
+OC가 아직 없으면 Enter로 건너뛰어도 됩니다. 설치는 계속되고, `/jurisupport:offline-law-fallback`으로 헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법 전문 스냅샷을 이용해 실습할 수 있습니다.
+
+OC 발급 후 Claude Code 안에서 다음을 실행합니다.
 
 ```text
 /plugin marketplace add chrisryugj/korean-law-mcp
@@ -66,24 +67,21 @@ korean-law MCP로 민법 제750조 본문을 확인해줘.
 
 ## 급할 때 임시 진행
 
-강의나 데모처럼 당장 발급이 막힌 경우에는 공식 샘플값 `test`로 설치를 넘길 수 있습니다.
+강의나 데모처럼 당장 발급이 막힌 경우에는 korean-law MCP 설치를 건너뛰고, JuriSupport 플러그인에 포함된 오프라인 법령 스냅샷을 사용합니다.
 
-```bash
-claude mcp add --transport stdio --scope user \
-  --env LAW_OC=test \
-  korean-law -- npx -y korean-law-mcp@latest
+```text
+/jurisupport:offline-law-fallback
 ```
 
-다만 `test`는 실사용 보장용 키가 아닙니다. 실제 사건 검증 전에는 반드시 본인 `OC`로 교체하세요.
+오프라인 스냅샷 포함 범위:
 
-교체는 기존 등록을 지우고 다시 등록하는 방식이 가장 단순합니다.
+- 대한민국헌법
+- 민법, 민사소송법
+- 형법, 형사소송법
+- 상법
+- 주요 특별형법 전문
 
-```bash
-claude mcp remove korean-law
-claude mcp add --transport stdio --scope user \
-  --env LAW_OC=<본인_OC> \
-  korean-law -- npx -y korean-law-mcp@latest
-```
+다만 이는 기준일 2026-06-14의 실습용 스냅샷입니다. 실제 사건 검증 전에는 반드시 본인 `OC`로 korean-law MCP를 설치하고 최신 조문·판례를 재검증하세요.
 
 ---
 
