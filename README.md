@@ -88,7 +88,7 @@ WSL2를 선호하시면 [WINDOWS_WSL.md](WINDOWS_WSL.md) (W2 옵션) 참조 — 
 ### 수동 설치 (사전 준비물 직접 설치한 경우)
 
 ```bash
-git clone https://github.com/jurisupport/jurisupport-plugins.git
+git clone -c core.autocrlf=false -c core.longpaths=true https://github.com/jurisupport/jurisupport-plugins.git
 cd jurisupport-plugins
 ./install.sh              # Mac/Linux/Windows(Git Bash) 공통
 ```
@@ -97,6 +97,8 @@ Windows에서 플러그인이 계속 예전 버전으로 보이면 PowerShell에
 
 ```powershell
 cd $env:USERPROFILE\jurisupport-plugins
+git config core.autocrlf false
+git config core.longpaths true
 git fetch origin main
 git reset --hard origin/main
 claude.cmd plugin marketplace update jurisupport-plugins

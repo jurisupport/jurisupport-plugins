@@ -557,23 +557,37 @@ function Invoke-WingetInstallWithReminder {
         '--accept-source-agreements'
     )
 
-    $process = Start-Process -FilePath $WingetCommand -ArgumentList $arguments -NoNewWindow -PassThru
-    $nextReminder = (Get-Date).AddSeconds(20)
-
-    while (-not $process.HasExited) {
-        $now = Get-Date
-        if ($now -ge $nextReminder) {
-            Write-Warn "설치가 아직 진행 중입니다. 화면 아래 작업 표시줄의 방패 아이콘/UAC 창이 깜빡이면 열어서 '예'를 클릭하세요."
-            Write-Warn "UAC 창이 PowerShell 뒤에 가려질 수 있습니다. Alt+Tab으로 숨은 창도 확인하세요."
-            $nextReminder = $now.AddSeconds(45)
-        }
-
-        Start-Sleep -Seconds 2
-        $process.Refresh()
+    # The process launcher can return before the WindowsApps winget execution alias has
+    # finished the real install, leaving ExitCode empty. Direct invocation keeps
+    # PowerShell attached to winget until the install completes.
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $WingetCommand @arguments
+        if ($null -eq $LASTEXITCODE) { return 1 }
+        return [int]$LASTEXITCODE
+    } catch {
+        Write-Warn "winget install 실행 중 예외: $($_.Exception.Message)"
+        return 1
+    } finally {
+        $ErrorActionPreference = $prevEAP
     }
+}
 
-    $process.WaitForExit()
-    return $process.ExitCode
+function Test-WingetPackageInstalled {
+    param(
+        [string]$WingetCommand,
+        [string]$PackageId
+    )
+
+    try {
+        $hit = & $WingetCommand list --id $PackageId --exact 2>$null |
+            Select-String -SimpleMatch $PackageId |
+            Select-Object -First 1
+        return [bool]$hit
+    } catch {
+        return $false
+    }
 }
 
 function Resolve-ExternalCommand {
@@ -729,8 +743,7 @@ foreach ($pkg in $packages) {
     # 이미 설치된 ID가 있는지 먼저 확인
     $alreadyInstalled = $false
     foreach ($id in $pkg.Ids) {
-        $hit = & $WingetCommand list --id $id --exact 2>$null | Select-String $id
-        if ($hit) {
+        if (Test-WingetPackageInstalled -WingetCommand $WingetCommand -PackageId $id) {
             Write-Host "  ✓ 이미 설치됨: $id" -ForegroundColor DarkGray
             $alreadyInstalled = $true
             break
@@ -755,6 +768,10 @@ foreach ($pkg in $packages) {
         if ($installExitCode -eq 0 -or $installExitCode -eq -1978335189) {
             # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (이미 최신)
             Write-Host "  ✓ 설치 완료: $id" -ForegroundColor Green
+            $installedOk = $true
+            break
+        } elseif (Test-WingetPackageInstalled -WingetCommand $WingetCommand -PackageId $id) {
+            Write-Host "  ✓ 설치 확인됨: $id (winget exit $installExitCode)" -ForegroundColor Green
             $installedOk = $true
             break
         } else {
@@ -946,6 +963,7 @@ try {
             & git remote remove origin 2>$null | Out-Null
             & git remote add origin https://github.com/jurisupport/jurisupport-plugins.git
             & git config core.autocrlf false
+            & git config core.longpaths true
             Write-Host "[git fetch] origin에서 최신 받는 중..." -ForegroundColor Cyan
             & git fetch origin --progress 2>&1 | ForEach-Object { Write-Host $_ }
             if ($LASTEXITCODE -ne 0) {
@@ -965,9 +983,10 @@ try {
     } elseif (Test-Path $repoDir) {
         # 정상 git 저장소 → pull + line ending 정규화
         Write-Info "기존 git 저장소 발견: $repoDir"
-        Write-Host "[git config] core.autocrlf=false 강제" -ForegroundColor DarkGray
+        Write-Host "[git config] core.autocrlf=false, core.longpaths=true 강제" -ForegroundColor DarkGray
         Push-Location $repoDir
         & git config core.autocrlf false
+        & git config core.longpaths true
         Write-Host "[git fetch] origin/main 최신화 중..." -ForegroundColor Cyan
         & git fetch --progress origin main:refs/remotes/origin/main 2>&1 | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -ne 0) {
@@ -981,12 +1000,12 @@ try {
     } else {
         # 새 clone
         Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
-        Write-Host "  (core.autocrlf=false 강제 — .sh 파일 CRLF 손상 방지)" -ForegroundColor DarkGray
-        & git clone --progress -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
+        Write-Host "  (core.autocrlf=false, core.longpaths=true 강제 — .sh CRLF 손상 및 긴 법원양식 경로 체크아웃 실패 방지)" -ForegroundColor DarkGray
+        & git clone --progress -c core.autocrlf=false -c core.longpaths=true https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -eq 0) {
             Write-Info "✓ Clone 완료: $repoDir"
         } else {
-            Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+            Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false -c core.longpaths=true https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
             Exit-WithPause 1
         }
     }
@@ -994,9 +1013,10 @@ try {
     if (Test-Path $repoDir) {
         # 정상 git 저장소 → pull + line ending 정규화
         Write-Info "기존 git 저장소 발견: $repoDir"
-        Write-Host "[git config] core.autocrlf=false 강제 (Windows .sh CRLF 손상 방지)" -ForegroundColor DarkGray
+        Write-Host "[git config] core.autocrlf=false, core.longpaths=true 강제 (Windows .sh CRLF 및 긴 경로 체크아웃 보호)" -ForegroundColor DarkGray
         Push-Location $repoDir
         & git config core.autocrlf false
+        & git config core.longpaths true
         Write-Host "[git fetch] origin/main 최신화 중..." -ForegroundColor Cyan
         & git fetch --progress origin main:refs/remotes/origin/main 2>&1 | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -ne 0) {
@@ -1010,12 +1030,12 @@ try {
     } else {
         # 새 clone
         Write-Host "[git clone] https://github.com/jurisupport/jurisupport-plugins.git" -ForegroundColor Cyan
-        Write-Host "  (core.autocrlf=false 강제 — .sh 파일 CRLF 손상 방지)" -ForegroundColor DarkGray
-        & git clone --progress -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
+        Write-Host "  (core.autocrlf=false, core.longpaths=true 강제 — .sh CRLF 손상 및 긴 법원양식 경로 체크아웃 실패 방지)" -ForegroundColor DarkGray
+        & git clone --progress -c core.autocrlf=false -c core.longpaths=true https://github.com/jurisupport/jurisupport-plugins.git $repoDir 2>&1 | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -eq 0) {
             Write-Info "✓ Clone 완료: $repoDir"
         } else {
-            Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
+            Write-Err "Clone 실패. 수동 실행: git clone -c core.autocrlf=false -c core.longpaths=true https://github.com/jurisupport/jurisupport-plugins.git $repoDir"
             Exit-WithPause 1
         }
     }

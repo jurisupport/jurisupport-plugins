@@ -37,6 +37,16 @@ expect_contains \
   "git reset --hard origin/main"
 
 expect_contains \
+  "Windows bootstrap enables Git long path checkout support" \
+  "$WINDOWS_BOOTSTRAP" \
+  "git config core.longpaths true"
+
+expect_contains \
+  "Windows bootstrap clones with long path checkout support" \
+  "$WINDOWS_BOOTSTRAP" \
+  "git clone --progress -c core.autocrlf=false -c core.longpaths=true"
+
+expect_contains \
   "Windows plugin refresh updates marketplace first" \
   "$INSTALL" \
   "claude plugin marketplace update jurisupport-plugins"

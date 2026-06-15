@@ -44,7 +44,7 @@ cp templates/사건정보_입력가이드.md ~/사건/_입력가이드.md
 
 ```bash
 # 1. plugin source 준비
-git clone https://github.com/jurisupport/jurisupport-plugins.git
+git clone -c core.autocrlf=false -c core.longpaths=true https://github.com/jurisupport/jurisupport-plugins.git
 cd jurisupport-plugins
 
 # 2. Claude Code에 등록

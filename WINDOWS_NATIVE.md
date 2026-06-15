@@ -160,6 +160,8 @@ claude.cmd
 
 ```powershell
 cd $env:USERPROFILE\jurisupport-plugins
+git config core.autocrlf false
+git config core.longpaths true
 git fetch origin main
 git reset --hard origin/main
 claude.cmd plugin marketplace update jurisupport-plugins
@@ -227,6 +229,7 @@ claude.cmd plugin install jurisupport@jurisupport-plugins
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
+| `fatal: unable to checkout working tree` 또는 `Filename too long` | 법원양식 원본 파일 중 Windows 기본 경로 제한을 넘는 긴 경로가 있음 | `cd $env:USERPROFILE\jurisupport-plugins; git config core.longpaths true; git restore --source=HEAD :/` 실행 후 bootstrap 재실행 |
 | **PowerShell에서 `./install.sh` 입력 시 "이 sh 파일을 열 앱 선택" 대화상자** | PowerShell은 `.sh`를 실행 파일로 인식 못함 | (A) **Git Bash 실행** (시작 메뉴 → Git Bash 검색) 후 `cd ~/jurisupport-plugins && ./install.sh`<br>(B) PowerShell에서 `bash install.sh` 직접 호출<br>(C) 탐색기에서 폴더 우클릭 → "Open Git Bash Here" |
 | `$'\r': command not found` 또는 `set: invalid option name` | Windows core.autocrlf=true가 .sh를 CRLF로 변환 | 새 버전(228c569+)은 `.gitattributes`로 자동 방지. 이전에 받은 경우 다음 실행: `cd ~/jurisupport-plugins && git config core.autocrlf false && git rm --cached -r . && git reset --hard` |
 | `./install.sh: bad interpreter` | Git Bash가 아닌 다른 셸 | Git Bash로 다시 실행 |
