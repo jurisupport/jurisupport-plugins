@@ -72,13 +72,13 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 | 2-B | Ghostscript GitHub release 자동 다운로드·무인 설치 | UAC 팝업 "예" |
 | 3 | Claude Code npm 글로벌 설치/최신화 | 없음 |
 | 4 | 본 레포 git clone (`C:\Users\<계정>\jurisupport-plugins`) | 없음 |
-| 5 | install.sh 자동 실행 (Git Bash 호출) — 11단계 | **각 단계 [Y/n]**, 법제처 Open API 키, (선택) Gemini API 키 |
+| 5 | install.sh 자동 실행 (Git Bash 호출) — 12단계 | **각 단계 [Y/n]**, 법제처 Open API 키, (선택) Gemini API 키 |
 
 **소요 시간**: 약 15분 (네트워크 속도 따라).
 
 법제처 Open API 키는 무료 발급입니다. 설치 전에 [법제처 Open API 인증키 발급 가이드](guides/07_law_openapi_key.md)를 보고 `현재 API인증키(OC)` 값을 준비해 두면 설치가 덜 막힙니다.
 
-### install.sh 11단계 내용
+### install.sh 12단계 내용
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
@@ -92,7 +92,8 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 | 8 | case-records 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
 | 9 | court-forms 법원 양식 DB toolkit | 선택 [Y/n] |
 | 10 | beopgoeul-search toolkit (Selenium 법고을 자동 검색 실행환경) | 선택 [Y/n] |
-| 11 | JuriSupport MCP 등록 | 권장 [Y/n] |
+| 11 | clean-legal-db 오프라인 법률 DB 설치 | 선택 [Y/n] |
+| 12 | JuriSupport MCP 등록 | 권장 [Y/n] |
 
 ### 첫 실행 시 Windows 방화벽 팝업
 

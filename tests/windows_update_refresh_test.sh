@@ -56,6 +56,11 @@ expect_contains \
   "$WINDOWS_BOOTSTRAP" \
   "./install.sh < /dev/tty"
 
+expect_contains \
+  "Windows bootstrap reports current install step count" \
+  "$WINDOWS_BOOTSTRAP" \
+  "install.sh가 곧 시작됩니다. 12단계 대화식 설치:"
+
 if [[ "$failures" -gt 0 ]]; then
   exit 1
 fi

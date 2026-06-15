@@ -99,6 +99,38 @@ open_url() {
   return 0
 }
 
+prompt_read() {
+  local __var="$1"
+  local prompt="$2"
+  local value=""
+
+  if [[ -r /dev/tty && -w /dev/tty ]]; then
+    printf "%s" "$prompt" > /dev/tty
+    IFS= read -r value < /dev/tty || value=""
+  else
+    IFS= read -r -p "$prompt" value || value=""
+  fi
+
+  printf -v "$__var" '%s' "$value"
+}
+
+prompt_secret() {
+  local __var="$1"
+  local prompt="$2"
+  local value=""
+
+  if [[ -r /dev/tty && -w /dev/tty ]]; then
+    printf "%s" "$prompt" > /dev/tty
+    IFS= read -r -s value < /dev/tty || value=""
+    printf "\n" > /dev/tty
+  else
+    IFS= read -r -s -p "$prompt" value || value=""
+    echo ""
+  fi
+
+  printf -v "$__var" '%s' "$value"
+}
+
 # ============================================================
 # 1. Prerequisites
 # ============================================================
@@ -498,7 +530,7 @@ else
   echo "  - 토큰 발급:   $JURI_TOKEN_URL  (가입 후)"
   echo "  - MCP 엔드포인트: $JURI_MCP_URL"
   echo ""
-  read -r -p "JuriSupport 가입/MCP 연동을 진행할까요? [Y/n, 엔터=예] " ans
+  prompt_read ans "JuriSupport 가입/MCP 연동을 진행할까요? [Y/n, 엔터=예] "
   if [[ "$ans" =~ ^[Nn]$ ]]; then
     info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
@@ -507,7 +539,7 @@ else
     echo "  [팁] 토큰은 $JURI_TOKEN_URL 에서 발급받을 수 있습니다."
     echo "     (가입 후 위 페이지 접속 -> API 토큰 생성)"
     echo ""
-    read -r -p "이미 jurisupport.com 계정 + 토큰이 있으신가요? [y/N, 엔터=아니오] " has_token
+    prompt_read has_token "이미 jurisupport.com 계정 + 토큰이 있으신가요? [y/N, 엔터=아니오] "
     if [[ ! "$has_token" =~ ^[Yy]$ ]]; then
       info "가입 페이지를 브라우저로 엽니다..."
       open_url "$JURI_SIGNUP_URL"
@@ -516,7 +548,7 @@ else
       echo "  1. 브라우저에서 jurisupport.com 가입 (사건 50건까지 무료)"
       echo "  2. 가입/로그인 완료되면 엔터 -> 프로필 페이지 자동으로 열립니다"
       echo "  ------------------------------------------------------------"
-      read -r -p "가입 완료 후 엔터: " _
+      prompt_read _ "가입 완료 후 엔터: "
       info "프로필 페이지(토큰 발급)를 엽니다..."
       open_url "$JURI_TOKEN_URL"
       echo ""
@@ -524,7 +556,7 @@ else
       echo "  3. 프로필 페이지($JURI_TOKEN_URL)에서 API 토큰 발급"
       echo "  4. 토큰을 복사한 뒤 이 터미널로 돌아오세요"
       echo "  ------------------------------------------------------------"
-      read -r -p "토큰 복사 완료되면 엔터: " _
+      prompt_read _ "토큰 복사 완료되면 엔터: "
     fi
 
     # 토큰 입력 + 검증 (최대 3회 재시도)
@@ -537,8 +569,7 @@ else
       else
         echo "  토큰을 다시 입력하세요 (시도 $((attempt+1))/3, 건너뛰려면 Enter):"
       fi
-      read -r -s -p "  토큰: " JURI_TOKEN
-      echo ""
+      prompt_secret JURI_TOKEN "  토큰: "
 
       if [[ -z "$JURI_TOKEN" ]]; then
         warn "토큰 미입력 -> MCP 등록 건너뜀."

@@ -1041,9 +1041,9 @@ if (-not (Test-Path $gitBash)) {
 } else {
     @"
 
-  install.sh가 곧 시작됩니다. 11단계 대화식 설치:
+  install.sh가 곧 시작됩니다. 12단계 대화식 설치:
     1~5. 의존성 점검, Hook, 플러그인, korean-law/오프라인 폴백, 스킬
-    6~11. CSV 템플릿·검색 서버·법원양식·JuriSupport MCP (각 단계 [Y/n] 응답)
+    6~12. CSV 템플릿·검색 서버·법원양식·오프라인 DB·JuriSupport MCP (각 단계 [Y/n] 응답)
 
   Gemini API 키: https://aistudio.google.com/apikey
   (7, 8번 단계에서 사용. 테스트는 무료 tier 가능, 여러 교과서 인덱싱은 유료 tier 권장. 건너뛰려면 Enter)

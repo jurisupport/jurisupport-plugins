@@ -118,6 +118,16 @@ expect_contains \
   "이미 jurisupport.com 계정 + 토큰이 있으신가요? [y/N, 엔터=아니오]"
 
 expect_contains \
+  "JuriSupport token input uses resilient secret prompt" \
+  "$INSTALL" \
+  'prompt_secret JURI_TOKEN "  토큰: "'
+
+expect_contains \
+  "resilient secret prompt reads controlling terminal" \
+  "$INSTALL" \
+  'read -r -s value < /dev/tty || value=""'
+
+expect_contains \
   "Gemini API key URL is defined" \
   "$LEGAL_BOOKS_INSTALL" \
   'GEMINI_API_KEY_URL="https://aistudio.google.com/apikey"'
