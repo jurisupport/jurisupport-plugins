@@ -7,7 +7,7 @@
 ### 스킬 (이 플러그인)
 - **`/jurisupport:cold-start-interview`** - 사무소 플레이북 학습 (최초 1회). 의뢰인 호칭 규칙, 인용 표기 정책, 파일 포맷, 사건기록 저장 위치, CSV 사건 인덱스 경로 등을 인터뷰하여 CLAUDE.md를 채운다.
 - **`/jurisupport:brief-protocol`** - 준비서면 작성 표준 절차 (intake → 사건기록 → 쟁점 → 교과서·판결 검증 → MD 초안 → 정본 등록 → PDF 추출까지의 오케스트레이션).
-- **`/jurisupport:mock-hearing`** - 모의변론. 제출 전 서면·사건이론을 상대방 대리인·재판부 관점에서 검토하고, 구상 단계부터 법령·판결·교과서 근거 정리표를 만든 뒤 강도 채점과 구조화된 평결(제출가능/보강/재구성/출구)·보강 과제를 낸다. 다중파일 구조(질문 목록·채점루브릭·어조 규칙). brief-protocol 인용 검증 통과 후 선택 단계로 연계.
+- **`/jurisupport:mock-hearing`** - 전문 모의변론. 제출 전 서면·사건이론을 청구권규범·요건사실·입증책임·항변/재항변·판결 유추/구별 순서로 재구성하고, JuriSupport·korean-law·법고을·legal-books·case-records·court-forms 등 가용 자원을 이용해 근거를 검증한 뒤 구조화된 평결(제출가능/보강/재구성/출구)과 보강 과제를 낸다. brief-protocol 인용 검증 통과 후 선택 단계로 연계.
 - **`/jurisupport:case-index`** - CSV 한 파일(`_index.csv`)로 사건 목록·다음기일을 관리. JuriSupport MCP 미사용자용 정본, 또는 연동자의 백업·오프라인 뷰. list/get/add/update/close 명령 제공.
 - **`/jurisupport:complete-personal-profile`** - 변호사가 본인의 사건자료·작성서류·판결문을 바탕으로 직접 읽고 활용할 수 있는 개인 프로필을 완성한다. 원하면 JuriSupport에 올릴 수 있도록 이어서 정리한다.
 - **`/jurisupport:upload-to-jurisupport`** - 변호사가 확인한 완성 프로필을 웹 동의 후 JuriSupport에 올린다. 공개 승인이나 노출 시작은 별도 검토 절차를 따른다.
@@ -117,6 +117,7 @@ git commit -m "Update template"
 
 ## 버전
 
+0.2.9 - mock-hearing 법적 사고 프로토콜 강화(청구권규범 카드, 입증책임 지도, 항변·재항변 트리, 판결 유추·구별 메모, 보강 절차 연계)
 0.2.8 - OC 발급 전 시연·실습용 오프라인 법령 전문 폴백 추가(헌/민/형/상법, 소송법, 주요 특별형법)
 0.2.7 - 개인 프로필 설명을 사용자 친화적 문구로 정리
 0.2.6 - 프로필 업로드 전 웹 동의 절차 반영

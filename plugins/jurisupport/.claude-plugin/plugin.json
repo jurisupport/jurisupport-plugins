@@ -1,6 +1,6 @@
 {
   "name": "jurisupport",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "JuriSupport 송무 워크플로우와 변호사 개인 프로필 완성 플러그인 — 사건기록 분석, 서면 초안 작성, 인용 검증, 정본 등록, PDF 산출, 직접 읽고 활용할 수 있는 개인 프로필 완성과 웹 동의 후 선택적 JuriSupport 업로드를 지원합니다. 법원 전자제출은 사용자 직접 수행.",
   "author": {
     "name": "쥬리서포트",
