@@ -93,6 +93,17 @@ cd jurisupport-plugins
 ./install.sh              # Mac/Linux/Windows(Git Bash) 공통
 ```
 
+Windows에서 플러그인이 계속 예전 버전으로 보이면 PowerShell에서 강제 갱신:
+
+```powershell
+cd $env:USERPROFILE\jurisupport-plugins
+git fetch origin main
+git reset --hard origin/main
+claude.cmd plugin marketplace update jurisupport-plugins
+claude.cmd plugin uninstall --keep-data -y jurisupport
+claude.cmd plugin install jurisupport@jurisupport-plugins
+```
+
 수동 사전 설치 가이드: [AUDIENCE_PRE_INSTALL.md](AUDIENCE_PRE_INSTALL.md) (Mac/Linux) / [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) (Windows 네이티브) / [WINDOWS_WSL.md](WINDOWS_WSL.md) (Windows WSL2)
 
 ---

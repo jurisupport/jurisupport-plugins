@@ -880,29 +880,30 @@ $ErrorActionPreference = 'Continue'
 try {
     $claudeInstalled = & $NpmCommand list -g --depth=0 2>$null | Select-String '@anthropic-ai/claude-code'
     if ($claudeInstalled) {
-        Write-Info "Claude Code 이미 설치됨"
+        Write-Info "Claude Code 이미 설치됨 - 최신 버전 확인/갱신 중..."
     } else {
         Write-Host "[npm] @anthropic-ai/claude-code 다운로드·설치 중 (약 1~2분)..." -ForegroundColor Cyan
-        Write-Host "       (npm notice 빨간 메시지가 보여도 정상입니다 — 정보 출력일 뿐)" -ForegroundColor DarkGray
-        Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm install -g" -PercentComplete 40
+    }
+    Write-Host "       (npm notice 빨간 메시지가 보여도 정상입니다 — 정보 출력일 뿐)" -ForegroundColor DarkGray
+    Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Status "npm install -g" -PercentComplete 40
 
-        # stderr를 stdout으로 합쳐서 PowerShell RemoteException 회피
-        & $NpmCommand install -g @anthropic-ai/claude-code --loglevel http 2>&1 | ForEach-Object { Write-Host $_ }
-        $npmInstallExitCode = $LASTEXITCODE
+    # stderr를 stdout으로 합쳐서 PowerShell RemoteException 회피.
+    # 이미 설치된 경우에도 다시 실행해 plugin/mcp 최신 CLI 기능을 확보한다.
+    & $NpmCommand install -g @anthropic-ai/claude-code --loglevel http 2>&1 | ForEach-Object { Write-Host $_ }
+    $npmInstallExitCode = $LASTEXITCODE
 
-        if ($npmInstallExitCode -eq 0) {
-            $ClaudeCommand = Resolve-ExternalCommand -Names @('claude.cmd', 'claude.exe', 'claude')
-            if ($ClaudeCommand) {
-                $ver = & $ClaudeCommand --version 2>$null
-                Write-Info "✓ Claude Code 설치 완료: $ver"
-            } else {
-                Write-Info "✓ Claude Code 설치 완료"
-                Write-Warn "claude 명령은 새 PowerShell/Git Bash 창에서 확인해 주세요 (PATH 갱신 필요 가능)."
-            }
+    if ($npmInstallExitCode -eq 0) {
+        $ClaudeCommand = Resolve-ExternalCommand -Names @('claude.cmd', 'claude.exe', 'claude')
+        if ($ClaudeCommand) {
+            $ver = & $ClaudeCommand --version 2>$null
+            Write-Info "✓ Claude Code 준비 완료: $ver"
         } else {
-            Write-Err "Claude Code 설치 실패 (exit $npmInstallExitCode)"
-            Write-Err "수동 실행: 새 PowerShell(관리자)에서  npm install -g @anthropic-ai/claude-code"
+            Write-Info "✓ Claude Code 준비 완료"
+            Write-Warn "claude 명령은 새 PowerShell/Git Bash 창에서 확인해 주세요 (PATH 갱신 필요 가능)."
         }
+    } else {
+        Write-Err "Claude Code 설치/갱신 실패 (exit $npmInstallExitCode)"
+        Write-Err "수동 실행: 새 PowerShell(관리자)에서  npm install -g @anthropic-ai/claude-code"
     }
 } finally {
     $ErrorActionPreference = $prevEAP
@@ -967,11 +968,15 @@ try {
         Write-Host "[git config] core.autocrlf=false 강제" -ForegroundColor DarkGray
         Push-Location $repoDir
         & git config core.autocrlf false
-        Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
-        & git pull --progress 2>&1 | ForEach-Object { Write-Host $_ }
-        Write-Host "[git checkout] .gitattributes 기준으로 line ending 정상화..." -ForegroundColor DarkGray
-        & git rm --cached -r . --quiet 2>&1 | Out-Null
-        & git reset --hard HEAD 2>&1 | ForEach-Object { Write-Host $_ }
+        Write-Host "[git fetch] origin/main 최신화 중..." -ForegroundColor Cyan
+        & git fetch --progress origin main:refs/remotes/origin/main 2>&1 | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -ne 0) {
+            Pop-Location
+            Write-Err "git fetch 실패. 네트워크/방화벽 확인 후 재시도."
+            Exit-WithPause 1
+        }
+        Write-Host "[git reset --hard] origin/main으로 정규화..." -ForegroundColor Cyan
+        & git reset --hard origin/main 2>&1 | ForEach-Object { Write-Host $_ }
         Pop-Location
     } else {
         # 새 clone
@@ -992,11 +997,15 @@ try {
         Write-Host "[git config] core.autocrlf=false 강제 (Windows .sh CRLF 손상 방지)" -ForegroundColor DarkGray
         Push-Location $repoDir
         & git config core.autocrlf false
-        Write-Host "[git pull] 최신화 중..." -ForegroundColor Cyan
-        & git pull --progress 2>&1 | ForEach-Object { Write-Host $_ }
-        Write-Host "[git checkout] .gitattributes 기준으로 line ending 정상화..." -ForegroundColor DarkGray
-        & git rm --cached -r . --quiet 2>&1 | Out-Null
-        & git reset --hard HEAD 2>&1 | ForEach-Object { Write-Host $_ }
+        Write-Host "[git fetch] origin/main 최신화 중..." -ForegroundColor Cyan
+        & git fetch --progress origin main:refs/remotes/origin/main 2>&1 | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -ne 0) {
+            Pop-Location
+            Write-Err "git fetch 실패. 네트워크/방화벽 확인 후 재시도."
+            Exit-WithPause 1
+        }
+        Write-Host "[git reset --hard] origin/main으로 정규화..." -ForegroundColor Cyan
+        & git reset --hard origin/main 2>&1 | ForEach-Object { Write-Host $_ }
         Pop-Location
     } else {
         # 새 clone
@@ -1032,9 +1041,9 @@ if (-not (Test-Path $gitBash)) {
 } else {
     @"
 
-  install.sh가 곧 시작됩니다. 10단계 대화식 설치:
+  install.sh가 곧 시작됩니다. 11단계 대화식 설치:
     1~5. 의존성 점검, Hook, 플러그인, korean-law/오프라인 폴백, 스킬
-    6~10. CSV 템플릿·검색 서버·JuriSupport MCP (각 단계 [Y/n] 응답)
+    6~11. CSV 템플릿·검색 서버·법원양식·JuriSupport MCP (각 단계 [Y/n] 응답)
 
   Gemini API 키: https://aistudio.google.com/apikey
   (7, 8번 단계에서 사용. 테스트는 무료 tier 가능, 여러 교과서 인덱싱은 유료 tier 권장. 건너뛰려면 Enter)
@@ -1047,13 +1056,14 @@ if (-not (Test-Path $gitBash)) {
 "@ | Write-Host -ForegroundColor Cyan
     Start-Sleep -Seconds 3
 
-    # PowerShell의 stdin을 그대로 bash에 전달 → 대화식 [Y/n] 정상 동작
+    # irm | iex 실행 시 PowerShell stdin이 파이프로 묶일 수 있으므로
+    # Git Bash의 /dev/tty를 직접 열어 대화식 [Y/n] 입력을 받는다.
     # 임시로 EAP=Continue (bash가 stderr로 정보 보낼 수 있음)
     $prevEAP = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
         Push-Location $repoDir
-        & $gitBash './install.sh'
+        & $gitBash '-c' 'if [ -r /dev/tty ]; then ./install.sh < /dev/tty; else ./install.sh; fi'
         $installExit = $LASTEXITCODE
         Pop-Location
     } finally {

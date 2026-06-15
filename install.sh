@@ -204,7 +204,10 @@ else
   if is_dry_run; then
     info_or_plan "marketplace 등록: $MARKETPLACE_PATH"
     info_or_plan "legacy songmu-legal 플러그인 등록 정리"
-    info_or_plan "JuriSupport 플러그인 설치"
+    info_or_plan "JuriSupport 플러그인 설치/갱신"
+    if [[ "$PLATFORM" == "windows" ]]; then
+      info_or_plan "Windows 기존 설치본 재설치(--keep-data)"
+    fi
     info_or_plan "CLAUDE.md 템플릿 복사"
   else
     # 1) marketplace 등록 (이미 있으면 건너뜀)
@@ -225,10 +228,7 @@ else
       claude plugin uninstall songmu-legal 2>&1 | tail -3 || warn "legacy songmu-legal 제거 실패. 수동: claude plugin uninstall songmu-legal"
     fi
 
-    # 3) JuriSupport 플러그인 설치 (이미 있으면 건너뜀)
-    if claude plugin list 2>/dev/null | grep -q "jurisupport"; then
-      info "JuriSupport 플러그인 이미 설치됨"
-    else
+    install_jurisupport_plugin() {
       info "JuriSupport 자동 설치 중..."
       # Keep plugin installs attached to the terminal so Claude can show
       # interactive trust/config prompts.
@@ -237,6 +237,25 @@ else
       else
         warn "자동 설치 실패. 수동: claude plugin install jurisupport@jurisupport-plugins"
       fi
+    }
+
+    # 3) JuriSupport 플러그인 설치/갱신
+    if claude plugin list 2>/dev/null | grep -q "jurisupport"; then
+      if [[ "$PLATFORM" == "windows" ]]; then
+        info "Windows는 플러그인을 복사본으로 보관하므로 최신 파일로 재설치합니다"
+        claude plugin marketplace update jurisupport-plugins 2>&1 | tail -3 || \
+          warn "marketplace 갱신 실패. 수동: claude plugin marketplace update jurisupport-plugins"
+        if claude plugin uninstall --keep-data -y jurisupport; then
+          install_jurisupport_plugin
+        else
+          warn "기존 JuriSupport 제거 실패. 수동: claude plugin uninstall --keep-data -y jurisupport"
+          warn "그 다음 실행: claude plugin install jurisupport@jurisupport-plugins"
+        fi
+      else
+        info "JuriSupport 플러그인 이미 설치됨"
+      fi
+    else
+      install_jurisupport_plugin
     fi
 
     # Bootstrap CLAUDE.md from CLAUDE.md.example if missing
@@ -581,7 +600,7 @@ else
     else
       info "MCP 등록 중..."
       warn "Claude Code CLI는 bearer header 등록 시 --header 인자를 사용합니다. 등록 순간 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다."
-      if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN" 2>&1 | tail -3; then
+      if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
         info "[ok] JuriSupport MCP 등록 완료"
         info "-> 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
         echo ""

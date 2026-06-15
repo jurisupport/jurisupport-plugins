@@ -70,15 +70,15 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 | 1 | winget 점검·source 동의 | 없음 |
 | 2 | 공통 패키지 9개 winget 설치 (Git/Node/Python/Chrome/jq/Tesseract/qpdf/rclone 등) | **UAC 팝업 "예"** (작업 표시줄 노란 방패). jq는 winget 실패 시 사용자 로컬 portable fallback 자동 시도 |
 | 2-B | Ghostscript GitHub release 자동 다운로드·무인 설치 | UAC 팝업 "예" |
-| 3 | Claude Code npm 글로벌 설치 | 없음 |
+| 3 | Claude Code npm 글로벌 설치/최신화 | 없음 |
 | 4 | 본 레포 git clone (`C:\Users\<계정>\jurisupport-plugins`) | 없음 |
-| 5 | install.sh 자동 실행 (Git Bash 호출) — 10단계 | **각 단계 [Y/n]**, 법제처 Open API 키, (선택) Gemini API 키 |
+| 5 | install.sh 자동 실행 (Git Bash 호출) — 11단계 | **각 단계 [Y/n]**, 법제처 Open API 키, (선택) Gemini API 키 |
 
 **소요 시간**: 약 15분 (네트워크 속도 따라).
 
 법제처 Open API 키는 무료 발급입니다. 설치 전에 [법제처 Open API 인증키 발급 가이드](guides/07_law_openapi_key.md)를 보고 `현재 API인증키(OC)` 값을 준비해 두면 설치가 덜 막힙니다.
 
-### install.sh 10단계 내용
+### install.sh 11단계 내용
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
@@ -90,8 +90,9 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 | 6 | 사건정보 관리표 CSV (`~/사건/_사건정보관리표.csv`) | 권장 [Y/n] |
 | 7 | legal-books 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
 | 8 | case-records 검색 서버 (Python+SQLite+FastAPI) | 선택 [Y/n] |
-| 9 | beopgoeul-search toolkit (Selenium 법고을 자동 검색 실행환경) | 선택 [Y/n] |
-| 10 | JuriSupport MCP 등록 | 권장 [Y/n] |
+| 9 | court-forms 법원 양식 DB toolkit | 선택 [Y/n] |
+| 10 | beopgoeul-search toolkit (Selenium 법고을 자동 검색 실행환경) | 선택 [Y/n] |
+| 11 | JuriSupport MCP 등록 | 권장 [Y/n] |
 
 ### 첫 실행 시 Windows 방화벽 팝업
 
@@ -152,7 +153,18 @@ claude.cmd
 
 윈도우에서 일반 사용자 권한으로는 심볼릭 링크를 만들 수 없습니다. 본 패키지는 JuriSupport 플러그인을 심볼릭 링크 대신 **복사**로 등록합니다.
 
-→ **부작용**: GitHub에서 최신 패키지를 받은 후 `git pull` → 다시 `./install.sh`를 실행해야 등록된 플러그인이 갱신됩니다.
+→ **부작용**: GitHub에서 최신 패키지를 받은 후 `git pull` → 다시 `./install.sh`를 실행해야 등록된 플러그인이 갱신됩니다. 최신 installer는 Windows에서 기존 `jurisupport` 설치본을 `--keep-data`로 재설치하여 Claude 안의 복사본까지 갱신합니다.
+
+이미 예전 설치본이 계속 보이면 PowerShell에서 강제로 갱신하세요:
+
+```powershell
+cd $env:USERPROFILE\jurisupport-plugins
+git fetch origin main
+git reset --hard origin/main
+claude.cmd plugin marketplace update jurisupport-plugins
+claude.cmd plugin uninstall --keep-data -y jurisupport
+claude.cmd plugin install jurisupport@jurisupport-plugins
+```
 
 ### 3. 검색 서버 백그라운드 관리
 
@@ -221,6 +233,7 @@ claude.cmd
 | `step` 함수 색 코드가 raw text로 보임 | 콘솔 ANSI 미지원 | Windows Terminal 설치 권장 |
 | `[error] ocrmypdf 필요` (legal-books 6단계) | OCRmyPDF는 책 스캔 시점에만 필요 | 새 버전(4470c54+)에서 warn으로 강등. 검색 서버는 가동됨. 책 추가 시 `add_book.sh`가 다시 안내 |
 | `winget install` 후 Git Bash가 명령을 못 찾음 (`tesseract: command not found` 등) | Git Bash가 PATH를 캐시 | **Git Bash 창을 닫고 새로 열기** (PowerShell PATH 변경은 새 셸 필요) |
+| 플러그인이 계속 예전 버전으로 보임 | Windows는 Claude 플러그인을 복사본으로 설치함 | 위 `plugin uninstall --keep-data` 후 `plugin install` 강제 갱신 명령 실행 |
 
 ### 사용 단계
 
