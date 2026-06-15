@@ -22,7 +22,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CY
 if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
   RED=''; GREEN=''; YELLOW=''; BLUE=''; CYAN=''; NC=''
 fi
-TOTAL_STEPS=10
+TOTAL_STEPS=11
 info()  { printf '%b[info]%b %s\n' "$GREEN" "$NC" "$*"; }
 warn()  { printf '%b[warn]%b %s\n' "$YELLOW" "$NC" "$*"; }
 error() { printf '%b[error]%b %s\n' "$RED" "$NC" "$*"; exit 1; }
@@ -410,10 +410,30 @@ else
   fi
 fi
 
+# 10. Optional: clean-legal-db (오프라인 법률 DB 검색)
 # ============================================================
-# 10. Optional: JuriSupport MCP 등록
+step 10 "(선택) 클린 법률 DB 설치 (오프라인 SQLite, 약 235MB)"
+
+if is_dry_run; then
+  info_or_plan "clean-legal-db 설치 (DB 다운로드 + 스킬 등록)"
+else
+  echo ""
+  echo "  · 저작권 청정 법령·판례 DB(18,150여 건)를 오프라인 검색하게 해주는 도구입니다."
+  echo "  · API 키·인터넷 불필요. 설치 시 DB(약 235MB)를 1회 다운로드합니다."
+  echo "  · 다운로드 시간·용량 부담되면 건너뛰고 나중에 재설치 가능."
+  echo ""
+  read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+    bash "$TOOLKIT_DIR/toolkit/clean-legal-db/install.sh" || warn "clean-legal-db 설치 실패. 나중에 다시 시도하세요."
+  else
+    info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/clean-legal-db/install.sh"
+  fi
+fi
+
 # ============================================================
-step 10 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
+# 11. Optional: JuriSupport MCP 등록
+# ============================================================
+step 11 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급

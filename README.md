@@ -128,6 +128,7 @@ claude
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 검색. 스킬은 기본 설치, 자동 검색 toolkit은 선택 설치 | Chrome + Python 3.9+ |
 | **legal-books 스킬 + toolkit** | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 (책 1권당 5~30분, 점진 추가) |
 | **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 기본 FTS 인덱싱. Gemini 임베딩은 명시 동의 시만 사용 |
+| **clean-legal-db 스킬 + toolkit** | 저작권 청정 법령·판례 DB(18,150여 건) **오프라인** 키워드 검색 | Python 3.8+ (DB 약 235MB 1회 다운로드, API 키·인터넷 불필요) |
 | **사건정보 관리표 템플릿** | JuriSupport 미사용 시 엑셀/CSV 사건관리 | 없음 |
 
 ---
@@ -157,7 +158,7 @@ claude
 
 ---
 
-## 설치 단계 (install.sh 10단계)
+## 설치 단계 (install.sh 11단계)
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
@@ -170,7 +171,8 @@ claude
 | 7 | legal-books 검색 서버 설치 | 선택 (책 스캔 후) |
 | 8 | case-records 검색 서버 설치 | 선택 (사건폴더 인덱싱) |
 | 9 | beopgoeul-search 자동 검색 toolkit 설치 | 선택 (Chrome 필요, 스킬은 5단계에서 이미 설치) |
-| 10 | JuriSupport MCP 등록 | 권장 |
+| 10 | clean-legal-db 오프라인 법률 DB 설치 | 선택 (DB 약 235MB 다운로드) |
+| 11 | JuriSupport MCP 등록 | 권장 |
 
 부분 설치: [INSTALL_PARTIAL.md](INSTALL_PARTIAL.md) 참조.
 

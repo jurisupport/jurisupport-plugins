@@ -30,6 +30,10 @@ token.json
 toolkit/legal-books/db/
 toolkit/case-records/db/
 
+# clean-legal-db DB 본체(246MB)는 git에 넣지 않음 — GitHub Release 자산으로 배포
+clean_legal.db
+**/clean_legal.db
+
 # Python
 __pycache__/
 *.pyc
