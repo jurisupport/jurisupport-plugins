@@ -68,7 +68,7 @@ irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 | Step | 내용 | 사용자 응답 |
 |---|---|---|
 | 1 | winget 점검·source 동의 | 없음 |
-| 2 | 공통 패키지 9개 winget 설치 (Git/Node/Python/Chrome/jq/Tesseract/qpdf/rclone 등) | **UAC 팝업 "예"** (작업 표시줄 노란 방패) |
+| 2 | 공통 패키지 9개 winget 설치 (Git/Node/Python/Chrome/jq/Tesseract/qpdf/rclone 등) | **UAC 팝업 "예"** (작업 표시줄 노란 방패). jq는 winget 실패 시 사용자 로컬 portable fallback 자동 시도 |
 | 2-B | Ghostscript GitHub release 자동 다운로드·무인 설치 | UAC 팝업 "예" |
 | 3 | Claude Code npm 글로벌 설치 | 없음 |
 | 4 | 본 레포 git clone (`C:\Users\<계정>\jurisupport-plugins`) | 없음 |
@@ -190,6 +190,7 @@ claude.cmd
 | Node.js 등 `winget install` 중 화면 변화 없이 멈춘 듯함 | UAC 승인 창이 뜬 게 아니라 작업 표시줄 방패 아이콘으로만 대기 중 | 하단 작업 표시줄의 방패 아이콘을 클릭해 UAC 창을 열고 "예" 선택. 새 스크립트는 20초 이상 대기 시 이 안내를 반복 표시 |
 | 1/8에서 멈춤, UAC 없음 | winget 첫 호출 시 source agreement 동의 대기 | 새 버전(d59fcb4+)에서 사전 동의 자동 처리. `irm "...?t=$(Get-Random)" \| iex`로 캐시 우회 |
 | `입력 조건과 일치하는 패키지를 찾을 수 없습니다` (exit -1978335212) | winget 카탈로그 ID가 변경되었거나 오기 | 새 버전에서 fallback ID 자동 시도. 직접 확인은 `winget search <키워드>` |
+| jq 설치 실패로 중단 | winget jq 패키지 설치 실패 또는 PATH 갱신 문제 | 최신 스크립트는 GitHub 공식 릴리스에서 `%LOCALAPPDATA%\Programs\jurisupport-bin\jq.exe` portable fallback을 자동 시도. 그래도 실패하면 `winget source reset --force; winget source update; winget install --id jqlang.jq --exact --source winget` 후 새 PowerShell에서 재실행 |
 | Ghostscript / qpdf / rclone 설치 실패 | winget 카탈로그에 ID 없을 수 있음 (라이선스 별 갈래) | **선택 패키지라 진행 OK**. OCRmyPDF 책 스캔 또는 클라우드 동기화 사용 시만 영향. 수동 설치: [Ghostscript](https://ghostscript.com/releases/gsdnld.html), [qpdf](https://github.com/qpdf/qpdf/releases), `winget install Rclone.Rclone` |
 | `npm notice ...`가 빨갛게 RemoteException으로 표시 | npm 정보 메시지가 stderr로 출력 → PowerShell이 에러로 오인 | **정상 동작**. 새 버전에서 화면 표시 정상화. PowerShell에서 `claude.cmd --version`이 잘 나오면 설치 성공 |
 | `npm.ps1 파일을 로드할 수 없습니다` / ExecutionPolicy 오류 | PowerShell이 `npm.cmd` 대신 `npm.ps1`을 먼저 실행함 | 최신 스크립트는 `npm.cmd`를 우선 사용. 캐시 우회 명령으로 재실행: `irm "...?t=$(Get-Random)" \| iex` |
@@ -243,6 +244,7 @@ winget source update
 
 # 3. 개별 패키지 ID 존재 확인
 winget search Git.Git
+winget search jqlang.jq
 winget search ArtifexSoftware.GhostScript
 winget search qpdf
 

@@ -415,6 +415,79 @@ function Add-PathEntryOnce {
     }
 }
 
+function Add-UserPathEntryOnce {
+    param([AllowNull()][string]$PathEntry)
+
+    if (-not $PathEntry -or -not (Test-Path $PathEntry)) { return }
+
+    Add-PathEntryOnce $PathEntry
+
+    $separator = [IO.Path]::PathSeparator
+    $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+    $entries = @($userPath -split [regex]::Escape($separator) | Where-Object { $_ })
+    $alreadyPresent = $entries | Where-Object { $_ -ieq $PathEntry } | Select-Object -First 1
+    if ($alreadyPresent) { return }
+
+    $newUserPath = if ($userPath) { "$PathEntry$separator$userPath" } else { $PathEntry }
+    [System.Environment]::SetEnvironmentVariable('Path', $newUserPath, 'User')
+    Write-Host "  · 사용자 PATH 추가: $PathEntry" -ForegroundColor DarkGray
+}
+
+function Install-JqPortable {
+    $existing = Resolve-ExternalCommand -Names @('jq.exe', 'jq')
+    if ($existing) {
+        Write-Host "  ✓ jq 이미 사용 가능: $existing" -ForegroundColor DarkGray
+        return $true
+    }
+
+    $localAppData = [Environment]::GetFolderPath('LocalApplicationData')
+    if (-not $localAppData) { $localAppData = $env:LOCALAPPDATA }
+    if (-not $localAppData) {
+        Write-Warn "  · LOCALAPPDATA 경로를 찾지 못해 jq portable fallback을 건너뜁니다."
+        return $false
+    }
+
+    Write-Host "  → winget 실패: jq portable 자동 다운로드 시도..." -ForegroundColor DarkGray
+    try {
+        $api = 'https://api.github.com/repos/jqlang/jq/releases/latest'
+        $rel = Invoke-RestMethod -Uri $api -TimeoutSec 30 -UserAgent 'jurisupport-bootstrap'
+        $assetPattern = if ([Environment]::Is64BitOperatingSystem) {
+            '^jq-windows-amd64\.exe$'
+        } else {
+            '^jq-windows-i386\.exe$'
+        }
+        $asset = $rel.assets | Where-Object { $_.name -match $assetPattern } | Select-Object -First 1
+        if (-not $asset) {
+            Write-Warn "  · jq Windows 실행 파일을 release에서 찾지 못했습니다."
+            Write-Warn "    수동: https://github.com/jqlang/jq/releases"
+            return $false
+        }
+
+        $binDir = Join-Path $localAppData 'Programs\jurisupport-bin'
+        New-Item -ItemType Directory -Path $binDir -Force | Out-Null
+        $jqExe = Join-Path $binDir 'jq.exe'
+        $tmp = Join-Path $env:TEMP $asset.name
+
+        Write-Host "  → 다운로드: $($asset.name) ($([math]::Round($asset.size / 1MB, 1)) MB)" -ForegroundColor DarkGray
+        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $tmp -UseBasicParsing
+        Move-Item -Path $tmp -Destination $jqExe -Force
+        Add-UserPathEntryOnce $binDir
+
+        $ver = & $jqExe --version 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "  · jq portable 검증 실패. 수동: winget install jqlang.jq"
+            return $false
+        }
+
+        Write-Host "  ✓ jq portable 설치 완료: $ver" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Warn "  · jq portable 자동 다운로드 실패: $($_.Exception.Message)"
+        Write-Warn "    수동: winget install --id jqlang.jq --exact --source winget"
+        return $false
+    }
+}
+
 function Get-WingetCandidatePaths {
     $paths = @()
     $localAppDataCandidates = @(
@@ -686,6 +759,12 @@ foreach ($pkg in $packages) {
             break
         } else {
             Write-Host "  · 설치 실패: $id (exit $installExitCode) — 다음 후보 시도" -ForegroundColor DarkYellow
+        }
+    }
+
+    if (-not $installedOk) {
+        if ($pkg.Ids -contains 'jqlang.jq') {
+            $installedOk = Install-JqPortable
         }
     }
 
