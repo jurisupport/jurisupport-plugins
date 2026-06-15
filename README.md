@@ -126,6 +126,7 @@ claude
 | **데이터 보호 Hook** | 외부 API 호출 시 의뢰인 정보 자동 감지·차단 | jq |
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 검색. 스킬은 기본 설치, 자동 검색 toolkit은 선택 설치 | Chrome + Python 3.9+ |
+| **court-forms toolkit** | 대한민국 법원 전자소송포털 공개 양식모음 로컬 DB·검색·공식 HWP/PDF 다운로드 | Python 3.9+ |
 | **legal-books 스킬 + toolkit** | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 (책 1권당 5~30분, 점진 추가) |
 | **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 기본 FTS 인덱싱. Gemini 임베딩은 명시 동의 시만 사용 |
 | **clean-legal-db 스킬 + toolkit** | 저작권 청정 법령·판례 DB(18,150여 건) **오프라인** 키워드 검색 | Python 3.8+ (DB 약 235MB 1회 다운로드, API 키·인터넷 불필요) |
@@ -158,7 +159,7 @@ claude
 
 ---
 
-## 설치 단계 (install.sh 11단계)
+## 설치 단계 (install.sh 12단계)
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
@@ -170,11 +171,28 @@ claude
 | 6 | 사건정보 관리표 템플릿 복사 (~/사건/) | 권장 |
 | 7 | legal-books 검색 서버 설치 | 선택 (책 스캔 후) |
 | 8 | case-records 검색 서버 설치 | 선택 (사건폴더 인덱싱) |
-| 9 | beopgoeul-search 자동 검색 toolkit 설치 | 선택 (Chrome 필요, 스킬은 5단계에서 이미 설치) |
-| 10 | clean-legal-db 오프라인 법률 DB 설치 | 선택 (DB 약 235MB 다운로드) |
-| 11 | JuriSupport MCP 등록 | 권장 |
+| 9 | court-forms 법원 양식 DB toolkit 설치 | 선택 (공개 양식 메타DB, 파일은 필요 시 다운로드) |
+| 10 | beopgoeul-search 자동 검색 toolkit 설치 | 선택 (Chrome 필요, 스킬은 5단계에서 이미 설치) |
+| 11 | clean-legal-db 오프라인 법률 DB 설치 | 선택 (DB 약 235MB 다운로드) |
+| 12 | JuriSupport MCP 등록 | 권장 |
 
 부분 설치: [INSTALL_PARTIAL.md](INSTALL_PARTIAL.md) 참조.
+
+### 법원 양식 전체 자산화
+
+전자소송포털 공개 양식모음 전체를 원본 파일 + Markdown 파생물로 레포에 넣으려면:
+
+```bash
+bash toolkit/court-forms/install.sh
+~/court-forms/scripts/court_forms.py sync --download all --continue-on-error
+~/court-forms/scripts/court_forms.py export-md \
+  --output data/court-forms \
+  --copy-files \
+  --download-missing \
+  --continue-on-error
+```
+
+생성물은 `data/court-forms/forms/<분야>/<form_id>_<제목>/` 아래에 들어갑니다. `index.md`는 검색·초안 작성용이고, `original/`의 공식 HWP/PDF/DOC 파일을 제출·편집 기준으로 둡니다.
 
 ---
 
@@ -240,21 +258,22 @@ claude
 
 ```bash
 cd ~/jurisupport-plugins
-./uninstall.sh           # 각 단계마다 Y/n 확인 (9단계)
+./uninstall.sh           # 각 단계마다 Y/n 확인 (10단계)
 ./uninstall.sh --yes     # 전 항목 자동 제거 (사용자 데이터는 보존)
 ./uninstall.sh --dry-run # 미리보기만
 ```
 
-**제거 대상** (9단계):
+**제거 대상** (10단계):
 1. 데이터 보호 Hook 등록 해제 (settings.json jq 편집)
-2. JuriSupport/korean-law 플러그인 + marketplace 등록 해제 (`claude plugin uninstall`, 설치된 경우)
-3. 클로드코드 스킬 (lbox-guide, beopgoeul-search, legal-books, case-records)
+2. JuriSupport/korean-law 플러그인 + marketplace 등록 해제 (`claude plugin uninstall`)
+3. 클로드코드 스킬 (lbox-guide, beopgoeul-search, court-forms, legal-books, case-records)
 4. ~/legal-books/ (서버 stop + 폴더)
 5. ~/case-records/ (서버 stop + 폴더)
-6. ~/jurisupport-beopgoeul/
-7. ~/사건/_사건정보관리표.csv (사용자 데이터 가능성 — 확인 후)
-8. ~/.jurisupport/secrets.env (Gemini API 키 — 확인 후)
-9. JuriSupport MCP 등록 해제 (`claude mcp remove`)
+6. ~/court-forms/ (법원 양식 메타DB·다운로드 캐시)
+7. ~/jurisupport-beopgoeul/
+8. ~/사건/_사건정보관리표.csv (사용자 데이터 가능성 — 확인 후)
+9. ~/.jurisupport/secrets.env (Gemini API 키 — 확인 후)
+10. JuriSupport MCP 등록 해제 (`claude mcp remove`)
 
 **보존 대상 (기본)**: `~/사건/` 폴더, Claude Code 자체, 시스템 패키지(brew/apt/winget로 깐 것), jurisupport.com 계정·데이터.
 

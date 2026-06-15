@@ -23,38 +23,20 @@ case "$OS" in
 esac
 info_or_plan "플랫폼: $PLATFORM"
 
-# Python 명령 + venv activate 경로
-# Windows: py launcher가 가리키는 python.exe 절대경로를 추출
-# (PY="py -3.12"처럼 공백 들어가면 "$PY" 인용 시 깨지므로)
-# Windows 경로(C:\...)를 Git Bash에서 쓸 수 있는 POSIX(/c/...)로 변환
-to_posix() {
-  if command -v cygpath >/dev/null 2>&1; then
-    cygpath -u "$1" 2>/dev/null || echo "$1"
-  else
-    echo "$1"
-  fi
-}
-
+source "$TOOLKIT_DIR/../../lib/python-detect.sh"
+select_python 3.10 || error "Python 3.10 이상 필요. PowerShell: winget install Python.Python.3.12"
+info "Python $PY_VERSION: $PY_DISPLAY"
+if [[ "$PLATFORM" == "windows" && "$PY_VERSION" == 3.11.* ]]; then
+  warn "Python 3.12 권장"
+fi
 if [[ "$PLATFORM" == "windows" ]]; then
-  if command -v py >/dev/null 2>&1 && py -3.12 --version >/dev/null 2>&1; then
-    PY="$(to_posix "$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
-    info "Python 3.12: $PY"
-  elif command -v py >/dev/null 2>&1 && py -3.11 --version >/dev/null 2>&1; then
-    PY="$(to_posix "$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
-    info "Python 3.11: $PY (3.12 권장)"
-  else
-    PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
-    [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
-    info "Python 경로: $PY ($("$PY" --version 2>&1))"
-  fi
   VENV_ACTIVATE="Scripts/activate"
 else
-  PY="python3"
   VENV_ACTIVATE="bin/activate"
 fi
 
 # Prerequisites
-"$PY" --version >/dev/null 2>&1 || error "Python 3.10 이상 필요"
+run_python --version >/dev/null 2>&1 || error "Python 3.10 이상 필요"
 command -v curl >/dev/null || error "curl 필요"
 
 ROOT="$HOME/case-records"
@@ -90,21 +72,21 @@ fi
 
 info_or_plan "Python 가상환경 생성"
 if is_dry_run; then
-  if [[ "$PLATFORM" == "linux" ]] && ! "$PY" -c "import ensurepip" 2>/dev/null; then
+  if [[ "$PLATFORM" == "linux" ]] && ! run_python -c "import ensurepip" 2>/dev/null; then
     info_or_plan "python3-venv 자동 설치"
   fi
   info_or_plan "venv 생성: $ROOT/.venv"
   info_or_plan "pip install: fastapi uvicorn pydantic sqlite-utils google-genai pypdf numpy python-dotenv python-docx"
 else
   # Ubuntu/Debian은 python3-venv 별도 설치 필요
-  if [[ "$PLATFORM" == "linux" ]] && ! "$PY" -c "import ensurepip" 2>/dev/null; then
+  if [[ "$PLATFORM" == "linux" ]] && ! run_python -c "import ensurepip" 2>/dev/null; then
     info "python3-venv 자동 설치 중..."
-    PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+    PYV=$(run_python -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
     sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
       sudo apt-get install -y python3-venv 2>&1 | tail -3
-    "$PY" -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
+    run_python -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
   fi
-  "$PY" -m venv "$ROOT/.venv"
+  run_python -m venv "$ROOT/.venv"
   # shellcheck disable=SC1091
   source "$ROOT/.venv/$VENV_ACTIVATE"
   info "venv Python 버전: $(python --version 2>&1)"
@@ -121,7 +103,7 @@ info_or_plan "SQLite DB 초기화"
 if is_dry_run; then
   info_or_plan "SQLite DB 생성: $ROOT/db/cases_fts.db (cases, documents, chunks, chunks_fts 테이블)"
 else
-  "$PY" - <<'PY'
+  run_python - <<'PY'
 import sqlite3, os
 ROOT = os.path.expanduser("~/case-records")
 db_path = os.path.join(ROOT, "db", "cases_fts.db")
@@ -180,7 +162,7 @@ if is_dry_run; then
 else
   if [[ ! -f "$TOKEN_FILE" ]]; then
     umask 077
-    "$PY" - <<'PY' > "$TOKEN_FILE"
+    run_python - <<'PY' > "$TOKEN_FILE"
 import secrets
 print(secrets.token_urlsafe(32))
 PY
@@ -228,7 +210,7 @@ echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}case-records toolkit 설치 완료 — 검색 서버 가동 중${NC}"
 echo -e "${GREEN}========================================${NC}"
-cat <<EOF
+cat <<'EOF'
 
 ⚠ 현재 사건 DB는 비어 있습니다.
    본 패키지가 변호사의 과거 사건을 갖고 있을 수 없으므로, 사무소 보유
@@ -240,10 +222,10 @@ cat <<EOF
 ────────────────────────────────────────────────────────────
 
   종결된 사건 1건 선택 후:
-    ~/case-records/scripts/ingest_case.sh \\
-      --case-dir ~/사건/2018가단11111_홍○○_대여금 \\
-      --case-id 2018가단11111 \\
-      --case-name "홍○○ 대여금" \\
+    ~/case-records/scripts/ingest_case.sh \
+      --case-dir ~/사건/2018가단11111_홍○○_대여금 \
+      --case-id 2018가단11111 \
+      --case-name "홍○○ 대여금" \
       --status 종결 --result 전부승소
 
   내부 처리: 사건폴더 안 PDF·DOCX·MD·TXT 텍스트 추출 → 청크 분할 →
@@ -252,10 +234,10 @@ cat <<EOF
   ⚠ 기본값은 사건 본문을 외부 임베딩 API로 보내지 않습니다.
     의미 기반 검색을 위해 Gemini 임베딩을 쓰려면 명시적으로:
 
-    ~/case-records/scripts/ingest_case.sh \\
-      --case-dir ~/사건/2018가단11111_홍○○_대여금 \\
-      --case-id 2018가단11111 \\
-      --case-name "홍○○ 대여금" \\
+    ~/case-records/scripts/ingest_case.sh \
+      --case-dir ~/사건/2018가단11111_홍○○_대여금 \
+      --case-id 2018가단11111 \
+      --case-name "홍○○ 대여금" \
       --allow-external-embedding
 
 ────────────────────────────────────────────────────────────
@@ -288,10 +270,10 @@ cat <<EOF
    ~/case-records/scripts/search_case_records.py "보증금" --top-k 3
 
    직접 HTTP 호출이 필요한 경우:
-   TOKEN=\$(cat ~/.jurisupport/case-records.token)
-   curl -X POST http://localhost:8767/search \\
-     -H "Authorization: Bearer \$TOKEN" \\
-     -H 'Content-Type: application/json' \\
+   TOKEN=$(cat ~/.jurisupport/case-records.token)
+   curl -X POST http://localhost:8767/search \
+     -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' \
      -d '{"query":"보증금","top_k":3}'
 
 클로드코드에서 자연어:

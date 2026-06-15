@@ -2,15 +2,18 @@
 # jurisupport-plugins one-shot installer (Mac/Linux)
 #
 # Installs:
-#   1. Data protection hook
-#   2. jurisupport plugin (from git submodule or repo)
-#   3. korean-law MCP plugin (public law/precedent verification, if OC is ready)
-#   4. lbox-guide and beopgoeul-search skills
-#   5. Case info CSV template
-#   6. (Optional) legal-books server + skill
-#   7. (Optional) case-records server + skill
-#   8. (Optional) beopgoeul-search toolkit
-#   9. (Recommended) JuriSupport MCP registration
+#   1. Prerequisite tool check
+#   2. Data protection hook
+#   3. jurisupport plugin (from git submodule or repo)
+#   4. korean-law MCP plugin (public law/precedent verification, if OC is ready)
+#   5. lbox-guide and beopgoeul-search skills
+#   6. Case info CSV template
+#   7. (Optional) legal-books server + skill
+#   8. (Optional) case-records server + skill
+#   9. (Optional) court-forms DB toolkit
+#   10. (Optional) beopgoeul-search toolkit
+#   11. (Optional) clean-legal-db offline legal database
+#   12. (Recommended) JuriSupport MCP registration
 
 set -euo pipefail
 
@@ -22,7 +25,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CY
 if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
   RED=''; GREEN=''; YELLOW=''; BLUE=''; CYAN=''; NC=''
 fi
-TOTAL_STEPS=11
+TOTAL_STEPS=12
 info()  { printf '%b[info]%b %s\n' "$GREEN" "$NC" "$*"; }
 warn()  { printf '%b[warn]%b %s\n' "$YELLOW" "$NC" "$*"; }
 error() { printf '%b[error]%b %s\n' "$RED" "$NC" "$*"; exit 1; }
@@ -227,7 +230,9 @@ else
       info "JuriSupport 플러그인 이미 설치됨"
     else
       info "JuriSupport 자동 설치 중..."
-      if claude plugin install jurisupport@jurisupport-plugins 2>&1 | tail -3; then
+      # Keep plugin installs attached to the terminal so Claude can show
+      # interactive trust/config prompts.
+      if claude plugin install jurisupport@jurisupport-plugins; then
         info "[ok] JuriSupport 설치 완료"
       else
         warn "자동 설치 실패. 수동: claude plugin install jurisupport@jurisupport-plugins"
@@ -280,12 +285,13 @@ else
       fi
 
       info "korean-law 자동 설치 중..."
-      info "프롬프트가 나오면 복사한 OC 값을 입력하세요."
-      if claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail -6; then
+      info "설치 승인 및 법제처 OC 입력 프롬프트가 나오면 그대로 진행하세요."
+      if claude plugin install "$KOREAN_LAW_PLUGIN_REF"; then
         info "[ok] korean-law 설치 완료"
         info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
       else
-        warn "korean-law 자동 설치 실패. 수동: claude plugin install $KOREAN_LAW_PLUGIN_REF"
+        warn "korean-law 자동 설치가 완료되지 않았습니다. JuriSupport 설치는 계속 진행합니다."
+        warn "수동 재시도: claude plugin install $KOREAN_LAW_PLUGIN_REF"
       fi
     else
       warn "OC 미준비 -> korean-law MCP 설치는 건너뜁니다."
@@ -323,7 +329,7 @@ done
 run_or_plan mkdir -p "$HOME/.claude/commands"
 run_or_plan cp "$TOOLKIT_DIR/skills/beopgoeul-search/SKILL.md" "$HOME/.claude/commands/beopgoeul-search.md"
 info_or_plan "명령 설치: beopgoeul-search"
-# Step 9 installs the runnable Selenium toolkit for beopgoeul-search.
+# Step 10 installs the runnable Selenium toolkit for beopgoeul-search.
 
 # ============================================================
 # 6. CSV template
@@ -392,9 +398,30 @@ else
 fi
 
 # ============================================================
-# 9. Optional: beopgoeul (법고을) auto-search toolkit
+# 9. Optional: court-forms toolkit
 # ============================================================
-step 9 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
+step 9 "(선택) 법원 양식 DB toolkit 설치"
+
+if is_dry_run; then
+  info_or_plan "법원 전자소송포털 공개 양식 DB toolkit 설치"
+else
+  echo ""
+  echo "  - 전자소송포털 공개 양식모음 메타데이터를 로컬 SQLite DB로 검색합니다."
+  echo "  - 기본 동기화는 HWP/PDF 원본을 받지 않고 목록과 다운로드 URL만 저장합니다."
+  echo "  - 양식 작성 시 필요한 공식 서식을 검색하고 필요한 파일만 다운로드합니다."
+  echo ""
+  read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+    bash "$TOOLKIT_DIR/toolkit/court-forms/install.sh" || warn "court-forms 설치 실패. 나중에 다시 시도하세요."
+  else
+    info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/court-forms/install.sh"
+  fi
+fi
+
+# ============================================================
+# 10. Optional: beopgoeul (법고을) auto-search toolkit
+# ============================================================
+step 10 "(선택) 법고을 자동 검색 toolkit 설치 (Selenium)"
 
 if is_dry_run; then
   info_or_plan "법고을 자동 검색 toolkit 설치"
@@ -410,9 +437,9 @@ else
   fi
 fi
 
-# 10. Optional: clean-legal-db (오프라인 법률 DB 검색)
+# 11. Optional: clean-legal-db (오프라인 법률 DB 검색)
 # ============================================================
-step 10 "(선택) 클린 법률 DB 설치 (오프라인 SQLite, 약 235MB)"
+step 11 "(선택) 클린 법률 DB 설치 (오프라인 SQLite, 약 235MB)"
 
 if is_dry_run; then
   info_or_plan "clean-legal-db 설치 (DB 다운로드 + 스킬 등록)"
@@ -431,9 +458,9 @@ else
 fi
 
 # ============================================================
-# 11. Optional: JuriSupport MCP 등록
+# 12. Optional: JuriSupport MCP 등록
 # ============================================================
-step 11 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
+step 12 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급

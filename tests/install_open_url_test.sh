@@ -72,6 +72,18 @@ expect_contains() {
   fi
 }
 
+expect_not_contains() {
+  local name="$1"
+  local file="$2"
+  local pattern="$3"
+
+  if rg -q --fixed-strings "$pattern" "$file"; then
+    fail "$name: unexpected $pattern in $file"
+  else
+    printf 'ok - %s\n' "$name"
+  fi
+}
+
 expect_failed_browser_is_nonfatal "install.sh" "$INSTALL"
 expect_failed_browser_is_nonfatal "legal-books install.sh" "$LEGAL_BOOKS_INSTALL"
 
@@ -84,6 +96,21 @@ expect_contains \
   "korean-law missing-key flow opens browser" \
   "$INSTALL" \
   'open_url "$KOREAN_LAW_OPENAPI_URL"'
+
+expect_contains \
+  "korean-law plugin install keeps terminal prompts" \
+  "$INSTALL" \
+  'if claude plugin install "$KOREAN_LAW_PLUGIN_REF"; then'
+
+expect_not_contains \
+  "korean-law plugin install is not piped" \
+  "$INSTALL" \
+  'claude plugin install "$KOREAN_LAW_PLUGIN_REF" 2>&1 | tail'
+
+expect_contains \
+  "JuriSupport plugin install keeps terminal prompts" \
+  "$INSTALL" \
+  'if claude plugin install jurisupport@jurisupport-plugins; then'
 
 expect_contains \
   "JuriSupport signup is default when no token is ready" \

@@ -26,31 +26,15 @@ case "$OS" in
   *) error "지원하지 않는 OS: $OS (macOS/Linux/Windows Git Bash만 지원)" ;;
 esac
 
-# Windows 경로(C:\...)를 Git Bash에서 쓸 수 있는 POSIX(/c/...)로 변환
-to_posix() {
-  if command -v cygpath >/dev/null 2>&1; then
-    cygpath -u "$1" 2>/dev/null || echo "$1"
-  else
-    echo "$1"
-  fi
-}
-
-# Python 명령 결정 (Windows: py launcher → cygpath로 POSIX 변환)
+source "$TOOLKIT_DIR/../../lib/python-detect.sh"
+select_python 3.9 || error "Python 3.9 이상 필요. PowerShell: winget install Python.Python.3.12"
+info "Python $PY_VERSION: $PY_DISPLAY"
+if [[ "$PLATFORM" == "windows" && "$PY_VERSION" == 3.11.* ]]; then
+  warn "Python 3.12 권장"
+fi
 if [[ "$PLATFORM" == "windows" ]]; then
-  if command -v py >/dev/null 2>&1 && py -3.12 --version >/dev/null 2>&1; then
-    PY="$(to_posix "$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
-    info "Python 3.12: $PY"
-  elif command -v py >/dev/null 2>&1 && py -3.11 --version >/dev/null 2>&1; then
-    PY="$(to_posix "$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
-    info "Python 3.11: $PY (3.12 권장)"
-  else
-    PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
-    [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
-    info "Python 경로: $PY ($("$PY" --version 2>&1))"
-  fi
   VENV_ACTIVATE="Scripts/activate"
 else
-  PY="python3"
   VENV_ACTIVATE="bin/activate"
 fi
 
@@ -132,15 +116,15 @@ info_or_plan "Chrome 확인됨"
 # ============================================================
 if [[ "$PLATFORM" == "linux" ]]; then
   # python3-venv가 없으면 venv 생성 실패. 자동 설치.
-  if ! "$PY" -c "import ensurepip" 2>/dev/null; then
+  if ! run_python -c "import ensurepip" 2>/dev/null; then
     if is_dry_run; then
       info_or_plan "python3-venv 자동 설치"
     else
       info "python3-venv 자동 설치 중..."
-      PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+      PYV=$(run_python -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
       sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
         sudo apt-get install -y python3-venv 2>&1 | tail -3
-      if ! "$PY" -c "import ensurepip" 2>/dev/null; then
+      if ! run_python -c "import ensurepip" 2>/dev/null; then
         error "python3-venv 설치 실패. 수동 설치 후 다시 실행: sudo apt install python3-venv"
       fi
       info "✓ python3-venv 설치 완료"
@@ -151,7 +135,7 @@ fi
 # ============================================================
 # Python version
 # ============================================================
-PYV=$("$PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PYV=$(run_python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 PYMAJ=$(echo "$PYV" | cut -d. -f1)
 PYMIN=$(echo "$PYV" | cut -d. -f2)
 if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 9 ]]; then
@@ -195,7 +179,7 @@ if is_dry_run; then
   info_or_plan "venv 생성: $ROOT/.venv"
   info_or_plan "pip install: selenium==4.25.0"
 else
-  "$PY" -m venv "$ROOT/.venv"
+  run_python -m venv "$ROOT/.venv"
   # shellcheck disable=SC1091
   source "$ROOT/.venv/$VENV_ACTIVATE"
   info "venv Python 버전: $(python --version 2>&1)"

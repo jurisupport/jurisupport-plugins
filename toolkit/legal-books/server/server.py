@@ -11,6 +11,7 @@ Endpoints:
 import os
 import re
 import sqlite3
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -18,8 +19,12 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-ROOT = Path(os.path.expanduser("~/legal-books"))
-DB_PATH = ROOT / "db" / "books_fts.db"
+LIB_DIR = Path(__file__).resolve().parents[1] / "lib"
+if LIB_DIR.exists():
+    sys.path.insert(0, str(LIB_DIR))
+
+from legal_books_db import DB_PATH, ensure_db
+
 SECRETS = Path(os.path.expanduser("~/.jurisupport/secrets.env"))
 load_dotenv(SECRETS)
 
@@ -30,6 +35,7 @@ TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣_]+")
 
 
 def get_db():
+    ensure_db(DB_PATH)
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
     return con

@@ -36,7 +36,7 @@ cp templates/사건정보_입력가이드.md ~/사건/_입력가이드.md
 
 불가능한 것 (추가 설치 필요):
 - JuriSupport 플러그인 사용
-- legal-books / case-records 검색
+- court-forms / legal-books / case-records 검색
 
 ---
 
@@ -94,15 +94,29 @@ bash toolkit/case-records/install.sh
 
 ---
 
+## court-forms 법원 양식 DB만
+
+```bash
+bash toolkit/court-forms/install.sh
+```
+
+설치 후:
+- 전자소송포털 공개 양식모음 메타데이터를 `~/court-forms/db/forms.db`에 저장
+- 검색 → `~/court-forms/scripts/court_forms.py search "주소보정" --top-k 5`
+- 공식 HWP/PDF 다운로드 → `~/court-forms/scripts/court_forms.py download --query "주소보정" --kind hwp --out-dir .`
+- 레포 자산화 → `~/court-forms/scripts/court_forms.py export-md --output data/court-forms --copy-files --download-missing`
+
+---
+
 ## 제거
 
 ```bash
 # Hook 제거: ~/.claude/settings.json 편집 (pretool_data_protection.sh 항목 제거)
-# 스킬 제거: rm -rf ~/.claude/skills/{lbox-guide,beopgoeul-search,legal-books,case-records}
-# 명령 제거: rm -f ~/.claude/commands/beopgoeul-search.md
+# 스킬 제거: rm -rf ~/.claude/skills/{lbox-guide,beopgoeul-search,court-forms,legal-books,case-records}
+# 명령 제거: rm -f ~/.claude/commands/{beopgoeul-search,court-forms}.md
 # 플러그인 제거: claude plugin uninstall jurisupport
 # legacy 제거: claude plugin uninstall songmu-legal
 # korean-law 제거: claude plugin uninstall korean-law && claude plugin marketplace remove korean-law-marketplace
-# 서버 제거: rm -rf ~/legal-books ~/case-records
+# toolkit 제거: rm -rf ~/legal-books ~/case-records ~/court-forms
 # Secrets: rm -rf ~/.jurisupport (Gemini API 키 등)
 ```

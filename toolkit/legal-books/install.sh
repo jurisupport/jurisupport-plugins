@@ -53,33 +53,15 @@ open_url() {
   return 0
 }
 
-# Python 명령 + venv activate 경로
-# Windows: py launcher가 가리키는 python.exe 절대경로를 추출
-# (PY="py -3.12"처럼 공백 들어가면 "$PY" 인용 시 깨지므로)
-# Windows 경로(C:\...)를 Git Bash에서 쓸 수 있는 POSIX(/c/...)로 변환
-to_posix() {
-  if command -v cygpath >/dev/null 2>&1; then
-    cygpath -u "$1" 2>/dev/null || echo "$1"
-  else
-    echo "$1"
-  fi
-}
-
+source "$TOOLKIT_DIR/../../lib/python-detect.sh"
+select_python 3.10 || error "Python 3.10+ 필요. PowerShell: winget install Python.Python.3.12"
+info "Python $PY_VERSION: $PY_DISPLAY"
+if [[ "$PLATFORM" == "windows" && "$PY_VERSION" == 3.11.* ]]; then
+  warn "Python 3.12 권장"
+fi
 if [[ "$PLATFORM" == "windows" ]]; then
-  if command -v py >/dev/null 2>&1 && py -3.12 --version >/dev/null 2>&1; then
-    PY="$(to_posix "$(py -3.12 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
-    info "Python 3.12: $PY"
-  elif command -v py >/dev/null 2>&1 && py -3.11 --version >/dev/null 2>&1; then
-    PY="$(to_posix "$(py -3.11 -c 'import sys; print(sys.executable)' 2>/dev/null)")"
-    info "Python 3.11: $PY (3.12 권장)"
-  else
-    PY="$(command -v python3 2>/dev/null || command -v python 2>/dev/null)"
-    [[ -z "$PY" ]] && error "Python 미설치. PowerShell: winget install Python.Python.3.12"
-    info "Python 경로: $PY ($("$PY" --version 2>&1))"
-  fi
   VENV_ACTIVATE="Scripts/activate"
 else
-  PY="python3"
   VENV_ACTIVATE="bin/activate"
 fi
 
@@ -94,7 +76,7 @@ check_cmd() {
   fi
 }
 
-"$PY" --version >/dev/null 2>&1 || error "Python 3.10+ 필요."
+run_python --version >/dev/null 2>&1 || error "Python 3.10+ 필요."
 check_cmd curl "curl 필요."
 
 # OCRmyPDF · Tesseract는 책 스캔(add_book.sh)할 때만 필요.
@@ -135,7 +117,7 @@ else
 fi
 
 # Check Python version >= 3.10
-PYV=$("$PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PYV=$(run_python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 PYMAJ=$(echo "$PYV" | cut -d. -f1)
 PYMIN=$(echo "$PYV" | cut -d. -f2)
 if [[ "$PYMAJ" -lt 3 ]] || [[ "$PYMAJ" -eq 3 && "$PYMIN" -lt 10 ]]; then
@@ -186,7 +168,7 @@ fi
 info_or_plan "Python 가상환경 생성"
 if is_dry_run; then
   # Ubuntu/Debian python3-venv 설치
-  if [[ "$PLATFORM" == "linux" ]] && ! "$PY" -c "import ensurepip" 2>/dev/null; then
+  if [[ "$PLATFORM" == "linux" ]] && ! run_python -c "import ensurepip" 2>/dev/null; then
     info_or_plan "python3-venv 자동 설치"
   fi
   info_or_plan "venv 생성: $ROOT/.venv"
@@ -196,14 +178,14 @@ if is_dry_run; then
   fi
 else
   # Ubuntu/Debian은 python3-venv 별도 설치 필요
-  if [[ "$PLATFORM" == "linux" ]] && ! "$PY" -c "import ensurepip" 2>/dev/null; then
+  if [[ "$PLATFORM" == "linux" ]] && ! run_python -c "import ensurepip" 2>/dev/null; then
     info "python3-venv 자동 설치 중..."
-    PYV=$("$PY" -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
+    PYV=$(run_python -c 'import sys; print(f"python3.{sys.version_info.minor}-venv")')
     sudo apt-get install -y "$PYV" python3-venv 2>&1 | tail -3 || \
       sudo apt-get install -y python3-venv 2>&1 | tail -3
-    "$PY" -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
+    run_python -c "import ensurepip" 2>/dev/null || error "python3-venv 설치 실패. 수동: sudo apt install python3-venv"
   fi
-  "$PY" -m venv "$ROOT/.venv"
+  run_python -m venv "$ROOT/.venv"
   # shellcheck disable=SC1091
   source "$ROOT/.venv/$VENV_ACTIVATE"
   info "venv Python 버전: $(python --version 2>&1)"
@@ -236,7 +218,7 @@ info_or_plan "SQLite DB 초기화"
 if is_dry_run; then
   info_or_plan "SQLite DB 생성: $ROOT/db/books_fts.db (books, chunks, chunks_fts 테이블)"
 else
-  "$PY" - <<'PY'
+  run_python - <<'PY'
 import sqlite3, os, pathlib
 ROOT = os.path.expanduser("~/legal-books")
 db_path = os.path.join(ROOT, "db", "books_fts.db")

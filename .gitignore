@@ -26,9 +26,11 @@ token.json
 *.local
 *.local.*
 
-# 사용자 로컬 데이터 (legal-books·case-records DB 본체는 ~/legal-books/, ~/case-records/에 따로 생성)
+# 사용자 로컬 데이터 (DB 본체는 ~/legal-books/, ~/case-records/, ~/court-forms/에 따로 생성)
 toolkit/legal-books/db/
 toolkit/case-records/db/
+toolkit/court-forms/db/
+.playwright-cli/
 
 # clean-legal-db DB 본체(246MB)는 git에 넣지 않음 — GitHub Release 자산으로 배포
 clean_legal.db

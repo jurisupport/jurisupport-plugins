@@ -211,7 +211,7 @@ fi
 # ============================================================
 step 3 "클로드코드 스킬 제거"
 
-for SKILL in lbox-guide beopgoeul-search legal-books case-records beopgoeul-guide; do
+for SKILL in lbox-guide beopgoeul-search court-forms legal-books case-records beopgoeul-guide; do
   SKILL_DIR="$HOME/.claude/skills/$SKILL"
   if [[ -d "$SKILL_DIR" ]]; then
     if ask "스킬 제거: $SKILL"; then
@@ -219,7 +219,7 @@ for SKILL in lbox-guide beopgoeul-search legal-books case-records beopgoeul-guid
     fi
   fi
 done
-for COMMAND in beopgoeul-search beopgoeul-guide; do
+for COMMAND in beopgoeul-search court-forms beopgoeul-guide; do
   COMMAND_FILE="$HOME/.claude/commands/$COMMAND.md"
   if [[ -f "$COMMAND_FILE" ]]; then
     if ask "클로드코드 명령 제거: /$COMMAND"; then
@@ -269,9 +269,23 @@ else
 fi
 
 # ============================================================
-# Step 6. beopgoeul toolkit
+# Step 6. court-forms toolkit
 # ============================================================
-step 6 "beopgoeul-search toolkit 제거"
+step 6 "court-forms toolkit 제거 (법원 양식 DB 포함)"
+
+if [[ -d "$HOME/court-forms" ]]; then
+  warn "  ⚠ ~/court-forms 안에 법원 양식 메타DB와 다운로드 캐시가 있습니다."
+  if ask "~/court-forms/ 전체를 제거할까요?"; then
+    do_rm "$HOME/court-forms"
+  fi
+else
+  info "  · 없음"
+fi
+
+# ============================================================
+# Step 7. beopgoeul toolkit
+# ============================================================
+step 7 "beopgoeul-search toolkit 제거"
 
 if [[ -d "$HOME/jurisupport-beopgoeul" ]]; then
   if ask "~/jurisupport-beopgoeul/ 전체를 제거할까요?"; then
@@ -282,9 +296,9 @@ else
 fi
 
 # ============================================================
-# Step 7. CSV 템플릿 (사용자 데이터일 수 있음)
+# Step 8. CSV 템플릿 (사용자 데이터일 수 있음)
 # ============================================================
-step 7 "사건정보 관리표 CSV (사용자 데이터 가능성)"
+step 8 "사건정보 관리표 CSV (사용자 데이터 가능성)"
 
 CSV="$HOME/사건/_사건정보관리표.csv"
 CSV_GUIDE="$HOME/사건/_입력가이드.md"
@@ -300,9 +314,9 @@ else
 fi
 
 # ============================================================
-# Step 8. Gemini API 키 (사용자 자격증명)
+# Step 9. Gemini API 키 (사용자 자격증명)
 # ============================================================
-step 8 "Gemini API 키 (~/.jurisupport/secrets.env)"
+step 9 "Gemini API 키 (~/.jurisupport/secrets.env)"
 
 SECRETS="$HOME/.jurisupport/secrets.env"
 if [[ -f "$SECRETS" ]]; then
@@ -319,9 +333,9 @@ else
 fi
 
 # ============================================================
-# Step 9. JuriSupport MCP 등록 해제
+# Step 10. JuriSupport MCP 등록 해제
 # ============================================================
-step 9 "JuriSupport MCP 등록 해제"
+step 10 "JuriSupport MCP 등록 해제"
 
 if ! command -v claude >/dev/null 2>&1; then
   warn "claude CLI 없음 → MCP 제거 건너뜀"

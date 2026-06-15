@@ -23,8 +23,12 @@ import numpy as np
 from pypdf import PdfReader
 from dotenv import load_dotenv
 
-ROOT = Path(os.path.expanduser("~/legal-books"))
-DB_PATH = ROOT / "db" / "books_fts.db"
+LIB_DIR = Path(__file__).resolve().parents[1] / "lib"
+if LIB_DIR.exists():
+    sys.path.insert(0, str(LIB_DIR))
+
+from legal_books_db import DB_PATH, ensure_db
+
 SECRETS = Path(os.path.expanduser("~/.jurisupport/secrets.env"))
 
 CHUNK_SIZE = 1000
@@ -196,6 +200,7 @@ def main():
 
     # Insert into DB atomically. Reindexing the same book removes stale chunks first.
     print("  [ingest] Inserting into DB...", flush=True)
+    ensure_db(DB_PATH)
     con = sqlite3.connect(DB_PATH)
     try:
         con.execute("BEGIN")

@@ -33,6 +33,7 @@ cd jurisupport-plugins
 | ~/사건 디렉토리 + CSV 템플릿 복사 | **Yes** (권장) |
 | legal-books 검색 서버 설치 | **첫날은 No** (책 스캔이 안 끝났으므로) |
 | case-records 검색 서버 설치 | **첫날은 No** (과거 사건 인덱싱이 안 끝났으므로) |
+| court-forms 법원 양식 DB 설치 | **Yes** (가볍고 바로 유용) |
 
 → legal-books·case-records는 둘째 주 이후 추가 설치 가능 (가이드 02·03 참조).
 
@@ -42,8 +43,8 @@ cd jurisupport-plugins
 # 데이터 보호 Hook 작동 확인
 ls ~/.claude/settings.json && grep -q "pretool_data_protection" ~/.claude/settings.json && echo "✅ Hook OK"
 
-# 가이드 스킬 4개 설치 확인
-ls ~/.claude/skills | grep -E "lbox-guide|beopgoeul-guide|legal-books|case-records"
+# 가이드/검색 스킬 설치 확인
+ls ~/.claude/skills | grep -E "lbox-guide|beopgoeul-search|court-forms|legal-books|case-records"
 
 # JuriSupport 플러그인 등록 확인
 ls ~/.claude/plugins/cache/jurisupport-plugins/jurisupport/.claude-plugin/plugin.json
@@ -158,7 +159,7 @@ korean-law MCP로 위 쟁점과 관련된 민법 조문을 가져와줘.
 
 ### C. (선택) 판례 검색
 
-본 패키지의 `lbox-guide` 또는 `beopgoeul-guide` 스킬을 활용:
+본 패키지의 `lbox-guide` 또는 `beopgoeul-search` 스킬을 활용:
 
 ```
 lbox-guide 스킬로 검색 키워드 3개 추천해줘.
@@ -191,6 +192,7 @@ korean-law MCP로 모두 재확인해줘.
 
 | 추가 작업 | 가이드 |
 |---|---|
+| 자주 쓰는 법원 양식 검색·다운로드 | `~/court-forms/scripts/court_forms.py search "주소보정"` |
 | 책 스캔하여 legal-books DB 구축 시작 | `guides/02_book_scanning.md` |
 | 과거 종결 사건 인덱싱 | `guides/03_case_records.md` |
 | 2세션 병렬 시도 (다른 사건 2개 동시) | 시연스크립트 참조 |
@@ -207,6 +209,7 @@ korean-law MCP로 모두 재확인해줘.
 | `/jurisupport:cold-start-interview` 실행 안 됨 | 플러그인 등록 확인 (Step 1 마지막 검증) |
 | 클로드코드 한글로 답 안 함 | "한국어로 답해주세요" 명시 |
 | 검색 서버 (legal-books/case-records) 응답 없음 | `~/legal-books/scripts/server.sh restart` |
+| 법원 양식 DB가 비어 있음 | `~/court-forms/scripts/court_forms.py sync` |
 
 ---
 
@@ -214,7 +217,7 @@ korean-law MCP로 모두 재확인해줘.
 
 > 1주차: 한 사건 한 세션, 첫 준비서면 작성
 > 2주차: 2 사건 2 세션 동시 진행
-> 3주차: legal-books·lbox-guide·beopgoeul-guide 적극 활용
+> 3주차: legal-books·lbox-guide·beopgoeul-search 적극 활용
 > 4주차: 본인 사무소 워크플로우 일부를 cold-start-interview로 추가 학습
 >
 > 그리고 본인 사무소만의 플러그인을 만들어볼 단계입니다.
