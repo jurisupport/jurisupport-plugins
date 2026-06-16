@@ -9,6 +9,7 @@
 - **`/jurisupport:brief-protocol`** - 준비서면 작성 표준 절차 (intake → 사건기록 → 쟁점 → 교과서·판결 검증 → MD 초안 → 정본 등록 → PDF 추출까지의 오케스트레이션).
 - **`/jurisupport:mock-hearing`** - 전문 모의변론. 제출 전 서면·사건이론을 청구권규범·요건사실·입증책임·항변/재항변·판결 유추/구별 순서로 재구성하고, JuriSupport·korean-law·법고을·legal-books·case-records·court-forms 등 가용 자원을 이용해 근거를 검증한 뒤 구조화된 평결(제출가능/보강/재구성/출구)과 보강 과제를 낸다. brief-protocol 인용 검증 통과 후 선택 단계로 연계.
 - **`/jurisupport:case-index`** - CSV 한 파일(`_index.csv`)로 사건 목록·다음기일을 관리. JuriSupport MCP 미사용자용 정본, 또는 연동자의 백업·오프라인 뷰. list/get/add/update/close 명령 제공.
+- **`/jurisupport:records-sync`** - 사건기록 폴더와 작성서류 폴더를 함께 읽어 `case-records` DB에 동기화. 기본값으로 주장서면·신청서면만 파싱해 의견서·준비서면 작성 시 과거 서면을 참고할 수 있게 한다.
 - **`/jurisupport:complete-personal-profile`** - 변호사가 본인의 사건자료·작성서류·판결문을 바탕으로 직접 읽고 활용할 수 있는 개인 프로필을 완성한다. 원하면 JuriSupport에 올릴 수 있도록 이어서 정리한다.
 - **`/jurisupport:upload-to-jurisupport`** - 변호사가 확인한 완성 프로필을 웹 동의 후 JuriSupport에 올린다. 공개 승인이나 노출 시작은 별도 검토 절차를 따른다.
 - **`/jurisupport:offline-law-fallback`** - 법제처 OC 키 발급 전 시연·실습용 오프라인 법령 전문 스냅샷. 헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법을 포함한다. 실제 제출 전에는 온라인 재검증 필수.

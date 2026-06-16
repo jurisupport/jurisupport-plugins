@@ -33,6 +33,8 @@ def main() -> int:
     parser.add_argument("--query", dest="query_opt", help="Search query.")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--doc-type", default="")
+    parser.add_argument("--doc-category", choices=("argument", "application", "other"), default="")
+    parser.add_argument("--source-kind", choices=("record", "draft", "mixed"), default="")
     parser.add_argument("--case-id", default="")
     parser.add_argument("--url", default="http://localhost:8767/search")
     args = parser.parse_args()
@@ -60,6 +62,10 @@ def main() -> int:
     filters = {}
     if args.doc_type:
         filters["doc_type"] = args.doc_type
+    if args.doc_category:
+        filters["doc_category"] = args.doc_category
+    if args.source_kind:
+        filters["source_kind"] = args.source_kind
     if args.case_id:
         filters["case_id"] = args.case_id
 

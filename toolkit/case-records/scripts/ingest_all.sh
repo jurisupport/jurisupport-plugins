@@ -5,10 +5,12 @@
 set -euo pipefail
 
 ROOT_DIR=""
+DOC_SCOPE="target"
 ALLOW_EXTERNAL_EMBEDDING=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --root) ROOT_DIR="$2"; shift 2 ;;
+    --doc-scope) DOC_SCOPE="$2"; shift 2 ;;
     --allow-external-embedding) ALLOW_EXTERNAL_EMBEDDING=1; shift ;;
     *) echo "Unknown: $1" >&2; exit 1 ;;
   esac
@@ -62,5 +64,6 @@ for CDIR in "$ROOT_DIR"/*/; do
     --case-dir "$CDIR" \
     --case-id "$CASE_ID" \
     --case-name "$CASE_NAME" \
+    --doc-scope "$DOC_SCOPE" \
     "${EXTRA_ARGS[@]}" || echo "[warn] failed: $CASE_ID"
 done

@@ -9,7 +9,7 @@ case "$(uname -s)" in
   *)                    VENV="$ROOT/.venv/bin/activate"; PY=python3 ;;
 esac
 
-CASE_DIR=""; CASE_ID=""; CASE_NAME=""; STATUS=""; RESULT=""; COURT=""; ALLOW_EXTERNAL_EMBEDDING=0
+CASE_DIR=""; CASE_ID=""; CASE_NAME=""; STATUS=""; RESULT=""; COURT=""; SOURCE_KIND="mixed"; DOC_SCOPE="target"; ALLOW_EXTERNAL_EMBEDDING=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --case-dir)   CASE_DIR="$2"; shift 2 ;;
@@ -18,6 +18,8 @@ while [[ $# -gt 0 ]]; do
     --status)     STATUS="$2"; shift 2 ;;
     --result)     RESULT="$2"; shift 2 ;;
     --court)      COURT="$2"; shift 2 ;;
+    --source-kind) SOURCE_KIND="$2"; shift 2 ;;
+    --doc-scope)  DOC_SCOPE="$2"; shift 2 ;;
     --allow-external-embedding) ALLOW_EXTERNAL_EMBEDDING=1; shift ;;
     *) echo "Unknown: $1" >&2; exit 1 ;;
   esac
@@ -46,4 +48,6 @@ fi
   --status "${STATUS:-진행중}" \
   --result "${RESULT:-}" \
   --court "${COURT:-}" \
+  --source-kind "$SOURCE_KIND" \
+  --doc-scope "$DOC_SCOPE" \
   "${EXTRA_ARGS[@]}"

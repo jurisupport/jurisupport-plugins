@@ -11,8 +11,8 @@
 → 2023가단12345 (박○○ 사건) 준비서면 p.4 ~ 5 발췌 + 결과(전부승소)
 → 2022가단67890 (이○○ 사건) 답변서 p.2 발췌 + 결과(일부조정)
 
-"이 쟁점 법원은 보통 어떻게 판단했어?"
-→ 인용된 우리 사건 판결문 5건 + 공통 논리 요약
+"이 쟁점에서 우리는 어떤 신청을 했어?"
+→ 과거 문서제출명령신청서·사실조회신청서 5건 + 공통 구조 요약
 ```
 
 ---
@@ -52,7 +52,7 @@
     ├── ingest_case.sh                    ← 사건 1건 인덱싱
     ├── ingest_all.sh                     ← 사건폴더 일괄 인덱싱
     ├── search_case_records.py            ← 토큰 포함 검색 helper
-    └── reindex.sh                        ← 전체 재인덱싱
+    └── sync_records.sh                   ← 사건기록+작성서류 동시 인덱싱
 ```
 
 ---
@@ -84,9 +84,9 @@ cd ~/jurisupport-plugins/toolkit/case-records
 ```
 
 스크립트가 자동으로:
-1. 사건폴더의 PDF·DOCX·MD·TXT 파일 탐색 (HWP/HWPX는 현재 자동 추출하지 않고 건너뜀)
-2. 자체 변환기로 텍스트 추출
-3. 파일명 메타파싱 (사건번호·문서종류·일자·당사자 추출)
+1. 사건폴더의 주장서면·신청서면만 우선 탐색
+2. PDF·DOCX·DOC·HWPX·MD·TXT 텍스트 추출 (HWP는 `hwpjs` 설치 시)
+3. 파일명 메타파싱 (사건번호·문서종류·일자·당사자 추출) + 파일명 기반 문서분류
 4. 청크 분할 (1500자, 300자 오버랩)
 5. DB 삽입 + FTS 인덱스 생성
 
@@ -99,6 +99,37 @@ cd ~/jurisupport-plugins/toolkit/case-records
 ```
 
 `~/사건/` 하위 모든 사건폴더를 자동 감지 후 미인덱싱 사건만 추가.
+
+기본값은 주장서면(`argument`)과 신청서면(`application`)만 인덱싱합니다. 증거·계약서·등본까지 모두 넣어야 하면:
+
+```bash
+~/case-records/scripts/ingest_all.sh --root "~/사건" --doc-scope all
+```
+
+### 사건기록 폴더 + 작성서류 폴더 동시 인덱싱
+
+받은 자료와 작성문서가 분리된 사무소는 이 경로를 사용합니다.
+
+```bash
+~/case-records/scripts/sync_records.sh \
+  --record-root "~/사건기록" \
+  --draft-root "~/작성문서"
+```
+
+저장 방식:
+
+- 원본 파일은 복사하지 않음
+- DB에는 텍스트 청크, 원본 경로, `source_kind`, `doc_category`만 저장
+- `source_kind=record`: 사건기록 폴더에서 온 문서
+- `source_kind=draft`: 작성서류 폴더에서 온 문서
+- `doc_category=argument`: 소장·답변서·준비서면·의견서 등 주장서면
+- `doc_category=application`: 문서제출명령·사실조회·증거신청·보정서 등 신청서면
+
+HWP 계열:
+
+- `.hwpx`: 별도 의존성 없이 zip/xml로 본문 추출
+- `.hwp`: `hwpjs` 명령이 설치되어 있으면 본문 추출, 없으면 건너뜀
+- `.doc`: macOS `textutil` 또는 `antiword`가 있으면 본문 추출
 
 ### 파일명 규칙 (메타파싱용)
 
@@ -159,7 +190,7 @@ cd ~/jurisupport-plugins/toolkit/case-records
 지난 3년치 사건 검색해서 정리.
 ```
 
-### 판결문 기반 학습
+### 판결문 기반 학습 (`--doc-scope all`로 판결문까지 인덱싱한 경우)
 
 ```
 환경 분쟁 사건에서 우리가 패소한 사건들 모아서 패소 이유 정리해줘.
@@ -171,7 +202,9 @@ cd ~/jurisupport-plugins/toolkit/case-records
 ## 직접 검색 테스트
 
 ```bash
-~/case-records/scripts/search_case_records.py "보증금 반환" --top-k 3
+~/case-records/scripts/search_case_records.py "보증금 반환" --top-k 3 --doc-category argument
+~/case-records/scripts/search_case_records.py "문서제출명령" --top-k 3 --doc-category application
+~/case-records/scripts/search_case_records.py "소멸시효" --source-kind draft --top-k 5
 ```
 
 직접 HTTP 호출이 필요한 경우:

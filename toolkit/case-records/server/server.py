@@ -136,6 +136,8 @@ def search(req: Req, _: None = Depends(require_api_token)):
     # Filters
     doc_type_f = req.filters.get("doc_type")
     case_id_f = req.filters.get("case_id")
+    source_kind_f = req.filters.get("source_kind")
+    doc_category_f = req.filters.get("doc_category")
 
     cases = {r["case_id"]: dict(r) for r in c.execute("SELECT * FROM cases")}
     docs = {r["doc_id"]: dict(r) for r in c.execute("SELECT * FROM documents")}
@@ -147,6 +149,8 @@ def search(req: Req, _: None = Depends(require_api_token)):
         case = cases.get(row["case_id"], {})
         if doc_type_f and doc.get("doc_type") != doc_type_f: continue
         if case_id_f and case.get("case_id") != case_id_f: continue
+        if source_kind_f and doc.get("source_kind") != source_kind_f: continue
+        if doc_category_f and doc.get("doc_category") != doc_category_f: continue
         results.append({
             "chunk_id": cid, "score": round(score, 4),
             "case_id": case.get("case_id"),
@@ -154,8 +158,11 @@ def search(req: Req, _: None = Depends(require_api_token)):
             "case_status": case.get("status"),
             "case_result": case.get("result"),
             "doc_type": doc.get("doc_type"),
+            "doc_category": doc.get("doc_category"),
+            "source_kind": doc.get("source_kind"),
             "doc_date": doc.get("doc_date"),
             "author_role": doc.get("author_role"),
+            "source_file": doc.get("source_file"),
             "chunk_text": row["chunk_text"],
         })
         if len(results) >= req.top_k: break

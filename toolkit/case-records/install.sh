@@ -121,9 +121,11 @@ CREATE TABLE IF NOT EXISTS documents (
   doc_id TEXT PRIMARY KEY,
   case_id TEXT NOT NULL REFERENCES cases(case_id),
   doc_type TEXT,          -- 소장/답변서/준비서면/판결문 등
+  doc_category TEXT DEFAULT 'other', -- argument/application/other
   doc_date TEXT,
   author_role TEXT,       -- 우리측/상대측/법원/원고/피고
-  source_file TEXT
+  source_file TEXT,
+  source_kind TEXT DEFAULT 'mixed' -- record/draft/mixed
 );
 CREATE TABLE IF NOT EXISTS chunks (
   chunk_id TEXT PRIMARY KEY,
@@ -137,6 +139,12 @@ CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
   content='chunks', content_rowid='rowid', tokenize='unicode61'
 );
 """)
+existing = {r[1] for r in con.execute("PRAGMA table_info(documents)")}
+if "source_kind" not in existing:
+    con.execute("ALTER TABLE documents ADD COLUMN source_kind TEXT DEFAULT 'mixed'")
+if "doc_category" not in existing:
+    con.execute("ALTER TABLE documents ADD COLUMN doc_category TEXT DEFAULT 'other'")
+con.execute("CREATE INDEX IF NOT EXISTS idx_documents_case_source ON documents(case_id, source_kind)")
 con.commit()
 con.close()
 print("DB 초기화 완료")
@@ -228,7 +236,7 @@ cat <<'EOF'
       --case-name "홍○○ 대여금" \
       --status 종결 --result 전부승소
 
-  내부 처리: 사건폴더 안 PDF·DOCX·MD·TXT 텍스트 추출 → 청크 분할 →
+  내부 처리: 사건폴더 안 주장/신청 서면(PDF·DOCX·DOC·HWPX·MD·TXT, HWP는 hwpjs 설치 시) 텍스트 추출 → 청크 분할 →
             SQLite FTS5 인덱스
 
   ⚠ 기본값은 사건 본문을 외부 임베딩 API로 보내지 않습니다.
@@ -247,6 +255,12 @@ cat <<'EOF'
   사건폴더 명명 규약이 '{사건번호}_{이름}_{개요}' 형식이면 일괄 처리 가능:
 
     ~/case-records/scripts/ingest_all.sh --root ~/사건
+
+  사건기록 폴더와 작성서류 폴더가 분리되어 있으면:
+
+    ~/case-records/scripts/sync_records.sh \
+      --record-root ~/사건기록 \
+      --draft-root ~/작성문서
 
   소요 시간: 사건당 1~3분 × 사건 수
     예) 100건 = 약 2~5시간 (백그라운드 진행 가능, 노트북 켜둔 채 외출)
