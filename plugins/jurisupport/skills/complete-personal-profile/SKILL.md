@@ -1,5 +1,5 @@
 ---
-description: Help a lawyer complete a lawyer-readable personal profile from their own work materials, with optional JuriSupport upload after web consent.
+description: 변호사의 사건자료, 작성서류, 설명을 바탕으로 직접 읽고 고쳐 쓸 수 있는 개인 프로필을 완성합니다. 원하면 웹 동의 후 JuriSupport 업로드까지 준비합니다.
 ---
 
 # Complete Personal Profile
