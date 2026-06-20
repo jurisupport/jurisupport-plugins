@@ -517,15 +517,23 @@ JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
 JURI_MCP_URL="https://api.jurisupport.com/mcp"
 JURI_MCP_TRANSPORT="http"
+JURI_MCP_LINE=""
+if ! is_dry_run; then
+  JURI_MCP_LINE="$(claude mcp list 2>&1 | grep "^jurisupport:" || true)"
+fi
 
 if is_dry_run; then
   info_or_plan "JuriSupport MCP 등록 (가입/토큰 발급/MCP add)"
-elif claude mcp list 2>&1 | grep -q "^jurisupport:"; then
-  info "JuriSupport MCP 이미 등록됨"
+elif [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
+  info "JuriSupport MCP 이미 연결됨"
 else
   echo ""
   echo "  JuriSupport SaaS - 사건/문서/기일/할일/증거 통합 관리 (한국 변호사 전용)"
   echo "  [팁] 사건 50건까지 무료. 본격 송무 환경 갖추는 데 부담 없이 시작 가능합니다."
+  if [[ -n "$JURI_MCP_LINE" ]]; then
+    echo "  [주의] 기존 JuriSupport MCP 항목이 있지만 연결 완료 상태가 아닙니다."
+    echo "         토큰을 넣어 다시 등록합니다."
+  fi
   echo ""
   echo "  - 가입 페이지: $JURI_SIGNUP_URL"
   echo "  - 토큰 발급:   $JURI_TOKEN_URL  (가입 후)"
@@ -632,6 +640,9 @@ else
     else
       info "MCP 등록 중..."
       warn "Claude Code CLI는 bearer header 등록 시 --header 인자를 사용합니다. 등록 순간 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다."
+      if [[ -n "$JURI_MCP_LINE" ]]; then
+        claude mcp remove jurisupport >/dev/null 2>&1 || true
+      fi
       if claude mcp add --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
         info "[ok] JuriSupport MCP 등록 완료"
         info "-> 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
@@ -659,10 +670,15 @@ JURI_MCP_TRANSPORT="${JURI_MCP_TRANSPORT:-http}"
 
 if is_dry_run; then
   JURI_MCP_STATUS="DRY-RUN: 등록 여부 확인 안 함"
-elif claude mcp list 2>&1 | grep -q "^jurisupport:"; then
-  JURI_MCP_STATUS="등록됨"
 else
-  JURI_MCP_STATUS="미등록 - 필요하면 아래 명령으로 등록"
+  JURI_MCP_LINE="$(claude mcp list 2>&1 | grep "^jurisupport:" || true)"
+  if [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
+    JURI_MCP_STATUS="등록됨"
+  elif [[ -n "$JURI_MCP_LINE" ]]; then
+    JURI_MCP_STATUS="항목은 있으나 연결 확인 필요 - 토큰으로 재등록 권장"
+  else
+    JURI_MCP_STATUS="미등록 - 토큰을 넣어 아래 명령으로 등록"
+  fi
 fi
 
 cat <<EOF
