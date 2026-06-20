@@ -654,6 +654,16 @@ fi
 # ============================================================
 # MARKETPLACE_PATH 미정의 시 fallback
 MARKETPLACE_PATH="${MARKETPLACE_PATH:-$TOOLKIT_DIR}"
+JURI_MCP_URL="${JURI_MCP_URL:-https://api.jurisupport.com/mcp}"
+JURI_MCP_TRANSPORT="${JURI_MCP_TRANSPORT:-http}"
+
+if is_dry_run; then
+  JURI_MCP_STATUS="DRY-RUN: 등록 여부 확인 안 함"
+elif claude mcp list 2>&1 | grep -q "^jurisupport:"; then
+  JURI_MCP_STATUS="등록됨"
+else
+  JURI_MCP_STATUS="미등록 - 필요하면 아래 명령으로 등록"
+fi
 
 cat <<EOF
 
@@ -661,11 +671,14 @@ cat <<EOF
 $(if is_dry_run; then printf '[ok] DRY-RUN 완료 (실제 변경 없음)'; else printf '[ok] 설치 완료'; fi)
 ========================================
 
+JuriSupport MCP: $JURI_MCP_STATUS
+  claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header "Authorization: Bearer <토큰>"
+
 다음 단계:
   1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
   2. 새 터미널에서 클로드코드 시작:
        claude
-  3. (JuriSupport 등록한 경우) 첫 도구 호출 시 자동으로 브라우저 OAuth 열림
+  3. JuriSupport 사건 연동을 쓸 경우 위 MCP 등록 상태 확인
   4. 시작 명령:
        "안녕. 설치된 스킬과 플러그인 보여줘."
   5. 첫 사건 설정: /jurisupport:cold-start-interview
