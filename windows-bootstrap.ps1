@@ -1149,7 +1149,7 @@ $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
     [수동 fallback C] JuriSupport MCP (사건 50건까지 무료):
       1) https://jurisupport.com 가입
       2) https://jurisupport.com/profile 에서 API 토큰 발급
-      3) $ClaudePowerShellCommand mcp add --transport sse jurisupport https://api.jurisupport.com/mcp/sse ``
+      3) $ClaudePowerShellCommand mcp add --transport http jurisupport https://api.jurisupport.com/mcp ``
            --header "Authorization: Bearer <발급받은_토큰>"
 
 첫 사건 시작:

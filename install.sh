@@ -515,7 +515,8 @@ step 12 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
-JURI_MCP_URL="https://api.jurisupport.com/mcp/sse"
+JURI_MCP_URL="https://api.jurisupport.com/mcp"
+JURI_MCP_TRANSPORT="http"
 
 if is_dry_run; then
   info_or_plan "JuriSupport MCP 등록 (가입/토큰 발급/MCP add)"
@@ -532,7 +533,7 @@ else
   echo ""
   prompt_read ans "JuriSupport 가입/MCP 연동을 진행할까요? [Y/n, 엔터=예] "
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기. 나중에:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+    info "건너뛰기. 나중에:  claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
   else
     echo ""
@@ -576,7 +577,7 @@ else
         break
       fi
 
-      # jurisupport.com 토큰 검증 (SSE 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
+      # jurisupport.com 토큰 검증 (MCP 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
       info "토큰 검증 중..."
       HTTP_CODE=$(
         CURL_CONFIG="$(mktemp)"
@@ -589,7 +590,7 @@ else
           printf 'max-time = 6\n'
           printf 'connect-timeout = 4\n'
           printf 'header = "Authorization: Bearer %s"\n' "$JURI_TOKEN"
-          printf 'header = "Accept: text/event-stream"\n'
+          printf 'header = "Accept: application/json, text/event-stream"\n'
           printf 'url = "%s"\n' "$JURI_MCP_URL"
         } > "$CURL_CONFIG"
         curl --config "$CURL_CONFIG" 2>/dev/null || echo "000"
@@ -597,9 +598,9 @@ else
 
       case "$HTTP_CODE" in
         200|204|000)
-          # 000 = curl timeout: SSE 스트림이 정상 응답하면 keep-alive로 잡힘. 일단 진행.
+          # 000 = curl timeout: MCP 스트림이 정상 응답하면 keep-alive로 잡힘. 일단 진행.
           if [[ "$HTTP_CODE" == "000" ]]; then
-            info "[ok] 토큰 응답 정상 (SSE keep-alive, HTTP 000)"
+            info "[ok] 토큰 응답 정상 (MCP keep-alive, HTTP 000)"
           else
             info "[ok] 토큰 검증 성공 (HTTP $HTTP_CODE)"
           fi
@@ -627,11 +628,11 @@ else
     done
 
     if [[ -z "$JURI_TOKEN" ]]; then
-      info "나중에 등록:  claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+      info "나중에 등록:  claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     else
       info "MCP 등록 중..."
       warn "Claude Code CLI는 bearer header 등록 시 --header 인자를 사용합니다. 등록 순간 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다."
-      if claude mcp add --transport sse jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
+      if claude mcp add --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
         info "[ok] JuriSupport MCP 등록 완료"
         info "-> 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
         echo ""
@@ -641,7 +642,7 @@ else
         echo "    - 사건번호만 있으면 클로드코드 안에서 mcp__jurisupport__create_case 로도 추가 가능."
         echo ""
       else
-        warn "등록 실패. 수동: claude mcp add --transport sse jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+        warn "등록 실패. 수동: claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
       fi
       unset JURI_TOKEN  # 셸 환경에서 토큰 흔적 제거
     fi
