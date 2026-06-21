@@ -1,0 +1,20 @@
+{
+  "name": "jurisupport-plugins",
+  "interface": {
+    "displayName": "JuriSupport Plugins"
+  },
+  "plugins": [
+    {
+      "name": "jurisupport",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jurisupport"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Legal"
+    }
+  ]
+}

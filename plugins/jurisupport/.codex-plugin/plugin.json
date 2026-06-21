@@ -1,0 +1,37 @@
+{
+  "name": "jurisupport",
+  "version": "0.2.10",
+  "description": "JuriSupport 송무 워크플로우와 변호사 개인 프로필 완성 플러그인. 사건기록 분석, 서면 초안 작성, 인용 검증, 정본 등록, PDF 산출, 개인 프로필 완성과 선택적 업로드를 지원합니다.",
+  "author": {
+    "name": "쥬리서포트",
+    "email": "admin@jurisupport.com"
+  },
+  "homepage": "https://jurisupport.com",
+  "repository": "https://github.com/jurisupport/jurisupport-plugins",
+  "license": "MIT",
+  "keywords": [
+    "legal",
+    "litigation",
+    "korea",
+    "jurisupport"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "JuriSupport",
+    "shortDescription": "한국 송무 워크플로우 플러그인",
+    "longDescription": "사건 인테이크, 사건기록 분석, 쟁점 정리, 법령·판례 검증, 준비서면 초안 작성, 정본 보관, PDF 산출, 개인 프로필 완성 흐름을 지원합니다. 법원 전자제출은 사용자가 직접 수행합니다.",
+    "developerName": "쥬리서포트",
+    "category": "Legal",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://jurisupport.com",
+    "defaultPrompt": [
+      "JuriSupport 콜드스타트를 시작해줘",
+      "준비서면 작성 프로토콜을 실행해줘",
+      "제출 전 모의변론으로 점검해줘"
+    ],
+    "brandColor": "#0F766E"
+  }
+}
