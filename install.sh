@@ -661,6 +661,87 @@ else
 fi
 
 # ============================================================
+# Recommended: lawyer profile plugin + legal-terminal
+# ============================================================
+env_truthy() {
+  case "${1:-}" in
+    1|true|TRUE|yes|YES|y|Y|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+lawyer_profile_plugin_installed() {
+  claude plugin list 2>/dev/null | grep -q 'jurisupport-lawyer-profile'
+}
+
+install_lawyer_profile_plugin() {
+  if env_truthy "${JURISUPPORT_SKIP_LAWYER_PROFILE:-}"; then
+    info "변호사 강점찾기 플러그인 추천 설치를 건너뜁니다."
+    return
+  fi
+
+  if is_dry_run; then
+    info_or_plan "변호사 강점찾기 플러그인 추천 설치"
+    return
+  fi
+
+  if lawyer_profile_plugin_installed; then
+    info "변호사 강점찾기 플러그인이 이미 설치된 것으로 보여 건너뜁니다."
+    return
+  fi
+
+  echo ""
+  echo "  - 변호사의 사건자료와 업무 이력을 바탕으로 개인 프로필/강점 카드를 준비하는 플러그인입니다."
+  echo "  - 설치 후 /jurisupport-lawyer-profile:complete-personal-profile 로 시작합니다."
+  prompt_read ans "변호사 강점찾기 플러그인을 설치할까요? [Y/n, 엔터=예] "
+  if [[ "$ans" =~ ^[Nn]$ ]]; then
+    info "건너뛰기. 나중에: curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/install.sh | bash"
+    return
+  fi
+
+  curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/install.sh \
+    | JURISUPPORT_LAWYER_PROFILE_SKIP_JURISUPPORT=1 JURISUPPORT_LAWYER_PROFILE_SKIP_LEGAL_TERMINAL=1 JURISUPPORT_CONNECT_MCP=0 bash
+}
+
+install_legal_terminal_app() {
+  if env_truthy "${JURISUPPORT_SKIP_LEGAL_TERMINAL:-}"; then
+    info "legal-terminal 추천 설치를 건너뜁니다."
+    return
+  fi
+
+  if [[ "$PLATFORM" == "linux" ]]; then
+    info "legal-terminal은 현재 macOS/Windows 배포만 있어 Linux에서는 추천 설치를 건너뜁니다."
+    return
+  fi
+
+  if is_dry_run; then
+    info_or_plan "legal-terminal 추천 설치"
+    return
+  fi
+
+  echo ""
+  echo "  - legal-terminal은 사건 폴더, 전자소송기록, 서면 에디터, Claude/Codex 작업 탭을 한 화면에 묶습니다."
+  prompt_read ans "legal-terminal 앱을 설치할까요? [Y/n, 엔터=예] "
+  if [[ "$ans" =~ ^[Nn]$ ]]; then
+    info "건너뛰기. 나중에: https://github.com/jurisupport/legal-terminal/releases/latest"
+    return
+  fi
+
+  case "$PLATFORM" in
+    mac)
+      curl -fsSL https://raw.githubusercontent.com/jurisupport/legal-terminal/main/install-mac.sh \
+        | LEGAL_TERMINAL_INSTALL_JURI_SUPPORT=0 LEGAL_TERMINAL_INSTALL_LAWYER_PROFILE=0 bash
+      ;;
+    windows)
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '$env:LEGAL_TERMINAL_INSTALL_JURI_SUPPORT="0"; $env:LEGAL_TERMINAL_INSTALL_LAWYER_PROFILE="0"; irm https://raw.githubusercontent.com/jurisupport/legal-terminal/main/install.ps1 | iex'
+      ;;
+  esac
+}
+
+install_lawyer_profile_plugin
+install_legal_terminal_app
+
+# ============================================================
 # Done
 # ============================================================
 # MARKETPLACE_PATH 미정의 시 fallback
