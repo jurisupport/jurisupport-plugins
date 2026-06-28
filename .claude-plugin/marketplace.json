@@ -12,6 +12,16 @@
       "category": "legal",
       "source": "./plugins/jurisupport",
       "homepage": "https://jurisupport.com"
+    },
+    {
+      "name": "legal-polish-public",
+      "description": "한국어 법률문서(준비서면·답변서·의견서·상소이유서·소장 등) 윤문가이드 — 의미는 보존한 채 문장·표현·구성만 다듬는다. 탐지→윤문→충실도감사 3단계. 국립국어원 공공 어문규범 기반 오리지널 자료(공개·배포 가능).",
+      "category": "legal",
+      "source": {
+        "source": "github",
+        "repo": "jurisupport/legal-polish-public"
+      },
+      "homepage": "https://github.com/jurisupport/legal-polish-public"
     }
   ]
 }
