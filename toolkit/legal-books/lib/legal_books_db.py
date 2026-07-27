@@ -20,12 +20,14 @@ CREATE TABLE IF NOT EXISTS chunks (
   chunk_id TEXT PRIMARY KEY,
   book_id TEXT NOT NULL REFERENCES books(book_id),
   page INTEGER,
+  page_end INTEGER,
   chunk_text TEXT NOT NULL,
   embedding BLOB
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
   chunk_text, chunk_id UNINDEXED, book_id UNINDEXED, page UNINDEXED,
-  content='chunks', content_rowid='rowid', tokenize='unicode61'
+  content='chunks', content_rowid='rowid', tokenize='unicode61',
+  prefix='2 3 4'
 );
 """
 

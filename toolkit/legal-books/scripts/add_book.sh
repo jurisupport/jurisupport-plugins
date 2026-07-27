@@ -92,7 +92,19 @@ fi
 # shellcheck disable=SC1090
 source "$VENV"
 
-# Allocate book_id from both completed folders and DB rows.
+# Sanitize for folder name
+SAFE_TITLE=$(sanitize_path_segment "$TITLE")
+SAFE_AUTHOR=$(sanitize_path_segment "$AUTHOR")
+SAFE_EDITION=$(sanitize_path_segment "$EDITION")
+
+# Reuse a previous incomplete folder for the same book (keeps finished OCR);
+# otherwise allocate book_id from both completed folders and DB rows.
+INCOMPLETE_MATCH="$(find "$ROOT/books" -maxdepth 1 -type d \
+  -name ".???_${SAFE_AUTHOR}_${SAFE_TITLE}_${SAFE_EDITION}.incomplete" 2>/dev/null | head -n 1)"
+if [[ -n "$INCOMPLETE_MATCH" ]]; then
+  BOOK_ID="$(basename "$INCOMPLETE_MATCH" | sed -E 's/^\.([0-9]{3})_.*/\1/')"
+  echo "[add_book] 이전 중단 지점 발견, 이어서 진행: $INCOMPLETE_MATCH"
+else
 BOOK_ID=$(ROOT="$ROOT" "$PY" <<'PY'
 import os
 import re
@@ -125,21 +137,14 @@ if db_path.exists():
 print(f"{max(ids, default=0) + 1:03d}")
 PY
 )
+fi
 
-# Sanitize for folder name
-SAFE_TITLE=$(sanitize_path_segment "$TITLE")
-SAFE_AUTHOR=$(sanitize_path_segment "$AUTHOR")
-SAFE_EDITION=$(sanitize_path_segment "$EDITION")
 FINAL_BOOK_DIR="$ROOT/books/${BOOK_ID}_${SAFE_AUTHOR}_${SAFE_TITLE}_${SAFE_EDITION}"
 BOOK_DIR="$ROOT/books/.${BOOK_ID}_${SAFE_AUTHOR}_${SAFE_TITLE}_${SAFE_EDITION}.incomplete"
 
 if [[ -e "$FINAL_BOOK_DIR" ]]; then
   echo "[add_book] target folder already exists: $FINAL_BOOK_DIR" >&2
   exit 1
-fi
-if [[ -e "$BOOK_DIR" ]]; then
-  echo "[add_book] removing stale incomplete folder: $BOOK_DIR" >&2
-  rm -rf "$BOOK_DIR"
 fi
 mkdir -p "$BOOK_DIR"
 
@@ -149,11 +154,12 @@ echo "[add_book] Folder:  $FINAL_BOOK_DIR"
 cleanup_failed_book_dir() {
   local status=$?
   if [[ "$status" -ne 0 && -n "${BOOK_DIR:-}" && -d "$BOOK_DIR" ]]; then
-    if [[ "${LEGAL_BOOKS_KEEP_FAILED:-0}" == "1" ]]; then
-      echo "[add_book] failed; keeping incomplete folder for debugging: $BOOK_DIR" >&2
-    else
+    if [[ "${LEGAL_BOOKS_CLEAN_FAILED:-0}" == "1" ]]; then
       echo "[add_book] failed; removing incomplete folder: $BOOK_DIR" >&2
       rm -rf "$BOOK_DIR"
+    else
+      echo "[add_book] 실패. OCR 결과는 보존됩니다: $BOOK_DIR" >&2
+      echo "[add_book] 같은 명령을 다시 실행하면 OCR을 건너뛰고 이어서 진행합니다." >&2
     fi
   fi
 }
@@ -161,11 +167,16 @@ trap cleanup_failed_book_dir EXIT
 
 # Step 1: OCR (if PDF doesn't already have text layer)
 OCR_PDF="$BOOK_DIR/${BOOK_ID}.pdf"
-echo "[add_book] Step 1/3: OCR (Korean + English, this may take 5–20 min)"
-ocrmypdf --skip-text --language kor+eng --output-type pdf "$PDF" "$OCR_PDF" || {
-  echo "OCR failed. If the PDF already has text, try --force-ocr flag." >&2
-  exit 1
-}
+if [[ -s "$OCR_PDF" ]]; then
+  echo "[add_book] Step 1/3: 이전 OCR 결과 재사용, OCR 건너뜀"
+else
+  echo "[add_book] Step 1/3: OCR (Korean + English, this may take 5–20 min)"
+  ocrmypdf --skip-text --language kor+eng --output-type pdf "$PDF" "$OCR_PDF.tmp" || {
+    echo "OCR failed. If the PDF already has text, try --force-ocr flag." >&2
+    exit 1
+  }
+  mv "$OCR_PDF.tmp" "$OCR_PDF"
+fi
 
 # Step 2: Convert to markdown + chunk + embed
 echo "[add_book] Step 2/3: Extracting text and chunking"

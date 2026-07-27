@@ -5,12 +5,13 @@ Ingest a single OCRed PDF into legal-books DB.
 Steps:
 1. Extract text from PDF (page-by-page)
 2. Write markdown (1 file per book)
-3. Chunk text (~1000 chars, 200 overlap)
+3. Chunk text (~1000 chars, 200 overlap, chunks may span page breaks)
 4. Generate Gemini embeddings (batched, retrying transient failures)
 5. Insert into SQLite (books + chunks + FTS5)
 """
 
 import argparse
+import bisect
 import json
 import os
 import pathlib
@@ -33,7 +34,8 @@ SECRETS = Path(os.path.expanduser("~/.jurisupport/secrets.env"))
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
-EMBEDDING_MODEL = "text-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-2"
+EMBEDDING_DIM = 768
 DEFAULT_EMBED_BATCH_SIZE = 100
 DEFAULT_EMBED_MAX_RETRIES = 5
 
@@ -59,17 +61,40 @@ def extract_pages(pdf_path: Path):
             yield i, ""
 
 
-def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
-    """Greedy sliding-window chunker."""
-    text = text.strip()
-    if not text:
-        return []
+def chunk_book(pages, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
+    """Sliding-window chunker over the whole book as one text stream.
+
+    Chunks may span page breaks so a sentence continuing onto the next page
+    stays quotable in one chunk. Returns dicts with the start page (`page`)
+    and end page (`page_end`) of each chunk.
+    """
+    parts = []
+    page_starts = []   # char offset where each page begins in the joined text
+    page_numbers = []
+    pos = 0
+    for page_no, text in pages:
+        parts.append(text)
+        page_starts.append(pos)
+        page_numbers.append(page_no)
+        pos += len(text) + 1  # "\n" separator between pages
+    full = "\n".join(parts)
+
+    def page_at(char_idx: int) -> int:
+        k = bisect.bisect_right(page_starts, char_idx) - 1
+        return page_numbers[max(k, 0)]
+
     chunks = []
     i = 0
-    while i < len(text):
-        end = min(i + size, len(text))
-        chunks.append(text[i:end])
-        if end == len(text):
+    while i < len(full):
+        end = min(i + size, len(full))
+        piece = full[i:end]
+        if piece.strip():
+            chunks.append({
+                "chunk_text": piece,
+                "page": page_at(i),
+                "page_end": page_at(end - 1),
+            })
+        if end == len(full):
             break
         i += size - overlap
     return chunks
@@ -78,6 +103,7 @@ def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
 def embed_batch(texts: list[str]) -> list[list[float]]:
     """Get Gemini embeddings from Gemini with bounded retries."""
     from google import genai
+    from google.genai import types as genai_types
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -85,17 +111,27 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
             "GEMINI_API_KEY not set. Add to ~/.jurisupport/secrets.env"
         )
     client = genai.Client(api_key=api_key)
+    embed_config = genai_types.EmbedContentConfig(
+        task_type="RETRIEVAL_DOCUMENT",
+        output_dimensionality=EMBEDDING_DIM,
+    )
     batch_size = env_int("LEGAL_BOOKS_EMBED_BATCH_SIZE", DEFAULT_EMBED_BATCH_SIZE)
     max_retries = env_int("LEGAL_BOOKS_EMBED_MAX_RETRIES", DEFAULT_EMBED_MAX_RETRIES)
     out = []
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
         batch_no = (i // batch_size) + 1
+        # list[str] would be merged into ONE content by the SDK; wrap each
+        # text in its own Content so we get one embedding per chunk.
+        batch_contents = [
+            genai_types.Content(parts=[genai_types.Part(text=t)]) for t in batch
+        ]
         for attempt in range(1, max_retries + 1):
             try:
                 result = client.models.embed_content(
                     model=EMBEDDING_MODEL,
-                    contents=batch,
+                    contents=batch_contents,
+                    config=embed_config,
                 )
                 batch_embeddings = [e.values for e in result.embeddings]
                 if len(batch_embeddings) != len(batch):
@@ -162,17 +198,17 @@ def main():
     with open(args.book_dir / f"{args.book_id}.meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
-    # Chunk
+    # Chunk (whole book as one stream; chunks may span page breaks)
     print("  [ingest] Chunking...", flush=True)
     all_chunks = []
-    for page_no, text in pages:
-        for j, c in enumerate(chunk_text(text)):
-            all_chunks.append({
-                "chunk_id": f"{args.book_id}_{page_no:04d}_{j:03d}",
-                "book_id": args.book_id,
-                "page": page_no,
-                "chunk_text": c,
-            })
+    for seq, c in enumerate(chunk_book(pages)):
+        all_chunks.append({
+            "chunk_id": f"{args.book_id}_{seq:05d}",
+            "book_id": args.book_id,
+            "page": c["page"],
+            "page_end": c["page_end"],
+            "chunk_text": c["chunk_text"],
+        })
     print(f"  [ingest] {len(all_chunks)} chunks", flush=True)
 
     if not all_chunks:
@@ -219,12 +255,22 @@ def main():
             ),
         )
         for c, emb in zip(all_chunks, embeddings):
-            emb_blob = np.array(emb, dtype=np.float32).tobytes()
+            vec = np.array(emb, dtype=np.float32)
+            norm = np.linalg.norm(vec)
+            if norm > 0:
+                vec = vec / norm  # truncated-dim embeddings are not guaranteed unit-norm
             con.execute(
                 "INSERT INTO chunks "
-                "(chunk_id, book_id, page, chunk_text, embedding) "
-                "VALUES (?,?,?,?,?)",
-                (c["chunk_id"], c["book_id"], c["page"], c["chunk_text"], emb_blob),
+                "(chunk_id, book_id, page, page_end, chunk_text, embedding) "
+                "VALUES (?,?,?,?,?,?)",
+                (
+                    c["chunk_id"],
+                    c["book_id"],
+                    c["page"],
+                    c["page_end"],
+                    c["chunk_text"],
+                    vec.tobytes(),
+                ),
             )
         con.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
         con.commit()

@@ -205,7 +205,7 @@ else
     "uvicorn>=0.31,<1" \
     "pydantic>=2.12.5,<3" \
     "sqlite-utils>=3.37" \
-    "google-genai>=0.3" \
+    "google-genai>=2.14" \
     "pypdf>=5,<6" \
     "numpy>=1.26,<3" \
     "python-dotenv>=1"

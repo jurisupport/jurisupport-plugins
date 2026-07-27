@@ -47,16 +47,19 @@
 
 legal-books DB는 "책 파일이 있다"가 아니라 "검색 API가 청크를 다시 찾을 수 있다"가 기준입니다. 직접 스키마를 바꾸거나 다른 인덱서를 만들 때도 아래 조건을 지켜야 합니다.
 
-- `chunks` 테이블은 청크 1개당 1행이어야 하며, 최소 `chunk_id`, `book_id`, `page`, `chunk_text`, `embedding` 컬럼을 유지합니다.
+- `chunks` 테이블은 청크 1개당 1행이어야 하며, 최소 `chunk_id`, `book_id`, `page`, `chunk_text`, `embedding` 컬럼을 유지합니다. 청크가 페이지 경계를 넘을 수 있으므로 `page`는 시작 페이지, `page_end`는 끝 페이지입니다.
 - `chunk_text`는 검색 결과에서 그대로 인용 검증에 쓰이는 원문 조각입니다. 요약문, 메타데이터 JSON, 페이지 전체 경로만 넣으면 안 됩니다.
 - `chunks_fts`는 `chunks`를 external content로 참조하는 FTS5 인덱스여야 합니다. 현재 기준:
 
 ```sql
 CREATE VIRTUAL TABLE chunks_fts USING fts5(
   chunk_text, chunk_id UNINDEXED, book_id UNINDEXED, page UNINDEXED,
-  content='chunks', content_rowid='rowid', tokenize='unicode61'
+  content='chunks', content_rowid='rowid', tokenize='unicode61',
+  prefix='2 3 4'
 );
 ```
+
+- 검색 API는 각 검색어를 접두어 질의(`"소멸시효"*`)로 변환합니다. 한국어는 조사가 붙은 형태("소멸시효를")로 색인되므로, 접두어 매칭이 없으면 키워드 재현율이 크게 떨어집니다. `prefix='2 3 4'`는 이 접두어 질의를 빠르게 하기 위한 것입니다.
 
 - 청크를 삽입·재인덱싱한 뒤에는 반드시 `INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')`를 실행해 FTS 인덱스와 `chunks` 행을 다시 맞춥니다.
 - 검색 API는 FTS5 키워드 검색을 항상 먼저 돌리고, Gemini 쿼리 임베딩이 가능할 때 의미 검색 점수를 섞습니다. Gemini가 일시 실패해도 FTS 결과는 반환되어야 합니다.
@@ -160,7 +163,7 @@ curl -s http://localhost:8766/health
 4. Gemini로 임베딩 생성
 5. DB에 삽입
 
-중간에 Gemini rate limit이나 네트워크 오류가 나면 같은 명령을 다시 실행하면 됩니다. 실패한 임시 폴더는 기본적으로 정리되고, DB 반영은 마지막 단계에서만 이루어집니다.
+중간에 Gemini rate limit이나 네트워크 오류가 나면 같은 명령을 다시 실행하면 됩니다. 완료된 OCR 결과는 임시 폴더에 보존되므로 재실행 시 OCR(10~20분)을 건너뛰고 임베딩부터 이어서 진행합니다. DB 반영은 마지막 단계에서만 이루어집니다. (실패 폴더를 자동 삭제하려면 `LEGAL_BOOKS_CLEAN_FAILED=1`)
 
 진행 시간 (대략):
 - 500쪽 책: OCR 10분 + 임베딩 5분 = 15분
@@ -244,7 +247,7 @@ ls ~/.claude/skills/legal-books/SKILL.md
 ## 데이터 보호
 
 - 책 PDF·추출 텍스트·청크 파일·SQLite DB는 로컬 `~/legal-books/`에 저장됩니다.
-- 책 추가/인덱싱 단계에서는 책 본문 청크가 Gemini 임베딩 API로 전송됩니다.
+- 책 추가/인덱싱 단계에서는 책 본문 청크가 Gemini 임베딩 API(`gemini-embedding-2`, 768차원)로 전송됩니다.
 - 검색 단계에서는 검색 쿼리만 Gemini API로 임베딩 변환됩니다.
 - Gemini 검색 임베딩이 실패하면 서버는 로컬 FTS5 검색 결과만 반환합니다. 이 경우 응답에 `warnings`가 포함될 수 있습니다.
 - Gemini 학습 옵트인 OFF 여부를 확인하세요.

@@ -32,6 +32,8 @@ FTS_WEIGHT = 0.30
 COSINE_WEIGHT = 0.70
 FTS_CANDIDATE_LIMIT = 100
 TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣_]+")
+EMBEDDING_MODEL = "gemini-embedding-2"
+EMBEDDING_DIM = 768
 
 
 def get_db():
@@ -44,29 +46,61 @@ def get_db():
 def embed_query(q: str) -> np.ndarray:
     """Get single embedding from Gemini."""
     from google import genai
+    from google.genai import types as genai_types
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(500, "GEMINI_API_KEY not set")
     client = genai.Client(api_key=api_key)
     result = client.models.embed_content(
-        model="text-embedding-004",
+        model=EMBEDDING_MODEL,
         contents=[q],
+        config=genai_types.EmbedContentConfig(
+            task_type="RETRIEVAL_QUERY",
+            output_dimensionality=EMBEDDING_DIM,
+        ),
     )
     return np.array(result.embeddings[0].values, dtype=np.float32)
 
 
-def cosine(a: np.ndarray, b: np.ndarray) -> float:
-    na = np.linalg.norm(a)
-    nb = np.linalg.norm(b)
-    if na == 0 or nb == 0:
-        return 0.0
-    return float(np.dot(a, b) / (na * nb))
-
-
 def build_fts_query(query: str) -> str:
-    """Build a safe high-recall FTS5 query from user text."""
+    """Build a safe high-recall FTS5 query from user text.
+
+    Each token is a prefix query ("소멸시효"*) so that Korean words with a
+    trailing particle in the indexed text (e.g. "소멸시효를") still match.
+    """
     tokens = TOKEN_RE.findall(query)
-    return " OR ".join(f'"{token}"' for token in tokens[:32])
+    return " OR ".join(f'"{token}"*' for token in tokens[:32])
+
+
+# In-memory embedding cache, reloaded only when the DB file changes.
+_EMB_CACHE = {"mtime": None, "chunk_ids": [], "matrix": None, "rows": {}, "skipped": 0}
+
+
+def load_embedding_cache(con: sqlite3.Connection) -> dict:
+    try:
+        mtime = os.path.getmtime(DB_PATH)
+    except OSError:
+        mtime = None
+    if _EMB_CACHE["mtime"] == mtime and _EMB_CACHE["matrix"] is not None:
+        return _EMB_CACHE
+    chunk_ids, vectors, rows, skipped = [], [], {}, 0
+    for row in con.execute(
+        "SELECT chunk_id, book_id, page, page_end, chunk_text, embedding "
+        "FROM chunks WHERE embedding IS NOT NULL"
+    ):
+        emb = np.frombuffer(row["embedding"], dtype=np.float32)
+        if emb.size != EMBEDDING_DIM:
+            skipped += 1
+            continue
+        norm = np.linalg.norm(emb)
+        chunk_ids.append(row["chunk_id"])
+        vectors.append(emb / norm if norm > 0 else emb)
+        rows[row["chunk_id"]] = dict(row)
+    matrix = np.vstack(vectors) if vectors else np.empty((0, EMBEDDING_DIM), dtype=np.float32)
+    _EMB_CACHE.update(
+        mtime=mtime, chunk_ids=chunk_ids, matrix=matrix, rows=rows, skipped=skipped
+    )
+    return _EMB_CACHE
 
 
 def normalize_bm25(rows) -> dict[str, float]:
@@ -131,7 +165,7 @@ def search(req: SearchReq):
     fts_rows = fetch_fts_candidates(con, req.query)
     fts_score_map = normalize_bm25(fts_rows)
 
-    # 2) Cosine similarity over all chunks, when query embedding is available.
+    # 2) Cosine similarity via the in-memory embedding cache.
     cos_score_map = {}
     chunk_map = {}
     try:
@@ -140,24 +174,20 @@ def search(req: SearchReq):
         qemb = None
         warnings.append(f"semantic embedding unavailable; used FTS only: {exc}")
     if qemb is not None:
-        all_chunks = con.execute(
-            "SELECT chunk_id, book_id, page, chunk_text, embedding "
-            "FROM chunks WHERE embedding IS NOT NULL"
-        ).fetchall()
-        cos_scores = []
-        for row in all_chunks:
-            emb = np.frombuffer(row["embedding"], dtype=np.float32)
-            if emb.shape != qemb.shape:
-                warnings.append(f"embedding dimension mismatch skipped: {row['chunk_id']}")
-                continue
-            s = cosine(qemb, emb)
-            cos_scores.append((row["chunk_id"], s, row))
-        cos_scores.sort(key=lambda x: x[1], reverse=True)
-
-        # Take top cosine candidates only; FTS-only hits are fetched below.
-        top_cos = cos_scores[:FTS_CANDIDATE_LIMIT]
-        cos_score_map = {cid: s for cid, s, _ in top_cos}
-        chunk_map = {row["chunk_id"]: row for _, _, row in top_cos}
+        cache = load_embedding_cache(con)
+        if cache["skipped"]:
+            warnings.append(
+                f"embedding dimension mismatch: {cache['skipped']} chunk(s) skipped; reindex needed"
+            )
+        if cache["chunk_ids"]:
+            qnorm = np.linalg.norm(qemb)
+            qunit = qemb / qnorm if qnorm > 0 else qemb
+            sims = cache["matrix"] @ qunit
+            # Take top cosine candidates only; FTS-only hits are fetched below.
+            for i in np.argsort(sims)[::-1][:FTS_CANDIDATE_LIMIT]:
+                cid = cache["chunk_ids"][int(i)]
+                cos_score_map[cid] = float(sims[int(i)])
+                chunk_map[cid] = cache["rows"][cid]
 
     # 3) Combine
     all_ids = set(fts_score_map.keys()) | set(cos_score_map.keys())
@@ -167,7 +197,7 @@ def search(req: SearchReq):
     if missing:
         placeholders = ",".join("?" * len(missing))
         for r in con.execute(
-            f"SELECT chunk_id, book_id, page, chunk_text FROM chunks WHERE chunk_id IN ({placeholders})",
+            f"SELECT chunk_id, book_id, page, page_end, chunk_text FROM chunks WHERE chunk_id IN ({placeholders})",
             tuple(missing),
         ):
             chunk_map[r["chunk_id"]] = r
@@ -202,6 +232,7 @@ def search(req: SearchReq):
             "edition": book.get("edition"),
             "year": book.get("year"),
             "page": row["page"],
+            "page_end": row["page_end"],
             "chunk_text": row["chunk_text"],
         })
     con.close()
