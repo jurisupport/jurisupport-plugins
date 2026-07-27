@@ -244,6 +244,7 @@ if [[ -d "$HOME/legal-books" ]]; then
       bash "$HOME/legal-books/scripts/server.sh" stop 2>/dev/null || true
     fi
     do_rm "$HOME/legal-books"
+    [[ -d "$HOME/.jurisupport/legal-books-src" ]] && do_rm "$HOME/.jurisupport/legal-books-src"
   fi
 else
   info "  · 없음"

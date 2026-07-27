@@ -420,9 +420,20 @@ else
   echo ""
   read -r -p "지금 설치할까요? [Y/n, 엔터=예] " ans
   if [[ ! "$ans" =~ ^[Nn]$ ]]; then
-    bash "$TOOLKIT_DIR/toolkit/legal-books/install.sh" || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
+    LEGAL_BOOKS_REPO="https://github.com/jurisupport/legal-books"
+    LEGAL_BOOKS_SRC="$HOME/.jurisupport/legal-books-src"
+    if [[ -d "$LEGAL_BOOKS_SRC/.git" ]]; then
+      git -C "$LEGAL_BOOKS_SRC" pull --ff-only 2>/dev/null || warn "legal-books 저장소 갱신 실패. 기존 버전으로 진행."
+    else
+      git clone --depth 1 "$LEGAL_BOOKS_REPO" "$LEGAL_BOOKS_SRC" || warn "legal-books 저장소 clone 실패."
+    fi
+    if [[ -f "$LEGAL_BOOKS_SRC/toolkit/install.sh" ]]; then
+      bash "$LEGAL_BOOKS_SRC/toolkit/install.sh" --with-skill || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
+    else
+      warn "수동 설치: git clone $LEGAL_BOOKS_REPO && bash legal-books/toolkit/install.sh --with-skill"
+    fi
   else
-    info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/legal-books/install.sh"
+    info "건너뛰기. 나중에 설치: git clone https://github.com/jurisupport/legal-books && bash legal-books/toolkit/install.sh --with-skill"
   fi
 fi
 

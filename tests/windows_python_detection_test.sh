@@ -72,7 +72,6 @@ SH
 
 expect_windows_launcher_survives_empty_sys_executable
 
-expect_contains "legal-books uses shared Python detection" "toolkit/legal-books/install.sh" 'source "$TOOLKIT_DIR/../../lib/python-detect.sh"'
 expect_contains "case-records uses shared Python detection" "toolkit/case-records/install.sh" 'source "$TOOLKIT_DIR/../../lib/python-detect.sh"'
 expect_contains "beopgoeul uses shared Python detection" "toolkit/beopgoeul/install.sh" 'source "$TOOLKIT_DIR/../../lib/python-detect.sh"'
 expect_contains "court-forms uses shared Python detection" "toolkit/court-forms/install.sh" 'source "$TOOLKIT_DIR/../../lib/python-detect.sh"'

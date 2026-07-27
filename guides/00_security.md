@@ -23,7 +23,7 @@ ChatGPT·Gemini·Claude 등 AI 회사가 "사용자 데이터를 모델 학습�
 
 DeepL, Papago 무료 웹, Google Translate, ilovepdf, Smallpdf 등 **브라우저 기반 무료 서비스는 업로드된 파일을 자체 학습·통계에 사용**할 수 있습니다.
 
-대체: 본 패키지의 [legal-books toolkit](../toolkit/legal-books/)에 포함된 **OCRmyPDF (오프라인)**, 또는 Adobe Acrobat 유료 버전 (오프라인 모드)을 사용하세요.
+대체: 본 패키지의 [legal-books toolkit](https://github.com/jurisupport/legal-books)에 포함된 **OCRmyPDF (오프라인)**, 또는 Adobe Acrobat 유료 버전 (오프라인 모드)을 사용하세요.
 
 ### ❌ 1.3. 의뢰인 정보가 포함된 폴더를 외부 클라우드 공유링크로 만들지 말 것
 

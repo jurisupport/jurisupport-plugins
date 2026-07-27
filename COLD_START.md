@@ -35,7 +35,7 @@ cd jurisupport-plugins
 | case-records 검색 서버 설치 | **첫날은 No** (과거 사건 인덱싱이 안 끝났으므로) |
 | court-forms 법원 양식 DB 설치 | **Yes** (가볍고 바로 유용) |
 
-→ legal-books·case-records는 둘째 주 이후 추가 설치 가능 (가이드 02·03 참조).
+→ legal-books·case-records는 둘째 주 이후 추가 설치 가능 (legal-books 저장소 가이드·가이드 03 참조).
 
 ### 설치 후 확인
 
@@ -193,7 +193,7 @@ korean-law MCP로 모두 재확인해줘.
 | 추가 작업 | 가이드 |
 |---|---|
 | 자주 쓰는 법원 양식 검색·다운로드 | `~/court-forms/scripts/court_forms.py search "주소보정"` |
-| 책 스캔하여 legal-books DB 구축 시작 | `guides/02_book_scanning.md` |
+| 책 스캔하여 legal-books DB 구축 시작 | [legal-books docs/book-scanning.md](https://github.com/jurisupport/legal-books/blob/main/docs/book-scanning.md) |
 | 과거 종결 사건 인덱싱 | `guides/03_case_records.md` |
 | 2세션 병렬 시도 (다른 사건 2개 동시) | 시연스크립트 참조 |
 | 사무소 CLAUDE.md 다듬기 | `~/사건/CLAUDE.md` 직접 편집 |

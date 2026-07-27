@@ -140,7 +140,7 @@ claude
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 검색. 스킬은 기본 설치, 자동 검색 toolkit은 선택 설치 | Chrome + Python 3.9+ |
 | **court-forms toolkit** | 대한민국 법원 전자소송포털 공개 양식모음 로컬 DB·검색·공식 HWP/PDF 다운로드 | Python 3.9+ |
-| **legal-books 스킬 + toolkit** | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 (책 1권당 5~30분, 점진 추가) |
+| **legal-books 플러그인** ([별도 저장소](https://github.com/jurisupport/legal-books)) | 사무소 보유 법률서적(교과서) 검색 | 사용자 보유 서적 스캔·OCR·임베딩 (책 1권당 5~30분, 점진 추가) |
 | **case-records 스킬 + toolkit** | 사무소 과거 사건 검색 | 기본 FTS 인덱싱. Gemini 임베딩은 명시 동의 시만 사용 |
 | **clean-legal-db 스킬 + toolkit** | 저작권 청정 법령·판례 DB(18,150여 건) **오프라인** 키워드 검색 | Python 3.8+ (DB 약 235MB 1회 다운로드, API 키·인터넷 불필요) |
 | **사건정보 관리표 템플릿** | JuriSupport 미사용 시 엑셀/CSV 사건관리 | 없음 |
@@ -227,7 +227,7 @@ bash toolkit/court-forms/install.sh
 | legal-books | 책 1권 5~30분 (스캔·OCR) | 1주차 자주 보는 책 3권 → 6개월 핵심본 거의 전부 |
 | case-records | 사건 1건 1~3분 (자동 인덱싱) | 1주차 최근 종결 5~10건 → 6개월 누적 사건 대부분 |
 
-자세한 가이드: [02_book_scanning.md](guides/02_book_scanning.md), [03_case_records.md](guides/03_case_records.md). install.sh가 toolkit 설치 직후 동일한 안내를 출력합니다.
+자세한 가이드: [legal-books docs/book-scanning.md](https://github.com/jurisupport/legal-books/blob/main/docs/book-scanning.md), [03_case_records.md](guides/03_case_records.md). install.sh가 toolkit 설치 직후 동일한 안내를 출력합니다.
 
 ---
 
@@ -239,7 +239,6 @@ bash toolkit/court-forms/install.sh
 |---|---|
 | [00_security.md](guides/00_security.md) | 의뢰인 정보 보호 원칙 (필독) |
 | [01_jurisupport_alt.md](guides/01_jurisupport_alt.md) | JuriSupport 미사용 — CSV 사건정보표 + Obsidian 권장 |
-| [02_book_scanning.md](guides/02_book_scanning.md) | 법률서적 스캔·OCR·임베딩 (legal-books) |
 | [03_case_records.md](guides/03_case_records.md) | 과거 사건폴더 정리·DB화 (case-records) |
 | [04_lbox_workflow.md](guides/04_lbox_workflow.md) | lbox.kr 검색 워크플로우 |
 | [05_beopgoeul_workflow.md](guides/05_beopgoeul_workflow.md) | 법고을 직접 검색 워크플로우 (수동) |

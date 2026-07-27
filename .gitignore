@@ -27,7 +27,6 @@ token.json
 *.local.*
 
 # 사용자 로컬 데이터 (DB 본체는 ~/legal-books/, ~/case-records/, ~/court-forms/에 따로 생성)
-toolkit/legal-books/db/
 toolkit/case-records/db/
 toolkit/court-forms/db/
 .playwright-cli/

@@ -22,6 +22,16 @@
         "repo": "jurisupport/legal-polish-public"
       },
       "homepage": "https://github.com/jurisupport/legal-polish-public"
+    },
+    {
+      "name": "legal-books",
+      "description": "사무소 보유 법률서적(교과서)을 스캔·OCR·임베딩하여 로컬 하이브리드 검색(SQLite FTS5 + Gemini 임베딩)으로 출처와 함께 인용 — 저자·서명·판·페이지 표기, 직접인용 원문 검증. 검색 서버는 저장소의 toolkit/install.sh로 별도 설치.",
+      "category": "legal",
+      "source": {
+        "source": "github",
+        "repo": "jurisupport/legal-books"
+      },
+      "homepage": "https://github.com/jurisupport/legal-books"
     }
   ]
 }

@@ -70,13 +70,14 @@ claude plugin install korean-law@korean-law-marketplace
 ## legal-books 검색만
 
 ```bash
-bash toolkit/legal-books/install.sh
+git clone https://github.com/jurisupport/legal-books ~/.jurisupport/legal-books-src
+bash ~/.jurisupport/legal-books-src/toolkit/install.sh --with-skill
 ```
 
 설치 후:
 - 검색 서버 (포트 8766) 자동 시작
 - 책 한 권 추가 → `~/legal-books/scripts/add_book.sh ...`
-- 가이드: `guides/02_book_scanning.md`
+- 가이드: https://github.com/jurisupport/legal-books/blob/main/docs/book-scanning.md
 
 ---
 

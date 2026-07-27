@@ -5,7 +5,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL="$ROOT/install.sh"
-LEGAL_BOOKS_INSTALL="$ROOT/toolkit/legal-books/install.sh"
 
 failures=0
 
@@ -85,7 +84,6 @@ expect_not_contains() {
 }
 
 expect_failed_browser_is_nonfatal "install.sh" "$INSTALL"
-expect_failed_browser_is_nonfatal "legal-books install.sh" "$LEGAL_BOOKS_INSTALL"
 
 expect_contains \
   "korean-law Open API URL is defined" \
@@ -126,16 +124,6 @@ expect_contains \
   "resilient secret prompt reads controlling terminal" \
   "$INSTALL" \
   'read -r -s value < /dev/tty || value=""'
-
-expect_contains \
-  "Gemini API key URL is defined" \
-  "$LEGAL_BOOKS_INSTALL" \
-  'GEMINI_API_KEY_URL="https://aistudio.google.com/apikey"'
-
-expect_contains \
-  "Gemini key flow opens browser" \
-  "$LEGAL_BOOKS_INSTALL" \
-  'open_url "$GEMINI_API_KEY_URL"'
 
 if [[ "$failures" -gt 0 ]]; then
   exit 1
