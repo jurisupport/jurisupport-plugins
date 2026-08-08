@@ -83,7 +83,7 @@ claude --model fable --effort high
 
 현재 세션 안에서 effort를 자주 바꾸지 않는다. 자세한 내용은 [Claude Code 모델 설정](https://code.claude.com/docs/en/model-config)과 [effort 문서](https://platform.claude.com/docs/en/build-with-claude/effort)를 참조한다.
 
-## 실무 플레이북 (Template/Instance 분리)
+## 사무소별 로컬 플레이북 (Template/Instance 분리)
 
 이 플러그인은 **공개 배포 템플릿**과 **사용자 로컬 인스턴스**를 분리한다:
 
@@ -100,6 +100,8 @@ claude --model fable --effort high
 - 출처 표기 필수 (저자, 서명, 페이지)
 - 소송서류 MD는 사람이 읽기 쉬운 본문을 우선하며, 필요 시 상단 `<!-- jurisupport ... -->` 힌트 태그로 서면유형·출력형식·JuriSupport 등록 의사를 적는다. 이는 개발 문법 요구가 아니라 변환 보조 정보다.
 - 서면 제출은 사용자 명시 허락 후 (전자서명·전자제출 직전 정지)
+
+`~/.jurisupport/playbook.md`는 플러그인 저장소 밖에 두는 일반 로컬 파일이며 암호화된 보안 저장소는 아니다. 운영체제 계정과 디스크의 접근 권한을 그대로 따른다.
 
 ## 설치
 
