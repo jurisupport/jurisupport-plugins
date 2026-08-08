@@ -9,6 +9,13 @@ WINDOWS_BOOTSTRAP="$ROOT/windows-bootstrap.ps1"
 
 failures=0
 
+if [[ "$(od -An -tx1 -N3 "$WINDOWS_BOOTSTRAP" | tr -d ' \n')" == "efbbbf" ]]; then
+  printf 'ok - Windows bootstrap has a UTF-8 BOM for Windows PowerShell 5.1\n'
+else
+  printf 'not ok - Windows bootstrap needs a UTF-8 BOM for Windows PowerShell 5.1\n' >&2
+  failures=$((failures + 1))
+fi
+
 fail() {
   printf 'not ok - %s\n' "$1" >&2
   failures=$((failures + 1))

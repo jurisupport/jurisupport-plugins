@@ -1,4 +1,4 @@
-# jurisupport-plugins bootstrap (Windows native)
+﻿# jurisupport-plugins bootstrap (Windows native)
 #
 # Windows 10 22H2+ / Windows 11에서 jurisupport-plugins 통합 패키지의
 # 모든 사전 의존성과 본 패키지를 자동 설치합니다.
