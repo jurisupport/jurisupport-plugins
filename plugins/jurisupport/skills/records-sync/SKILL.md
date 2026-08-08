@@ -11,6 +11,8 @@ metadata:
 
 사건기록 폴더(받은 자료)와 작성서류 폴더(우리 서면)를 `case-records` 로컬 DB에 함께 인덱싱한다.
 
+시작할 때 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 Read한다. 없으면 `/jurisupport:cold-start-interview`를 먼저 실행한다.
+
 ## 원칙
 
 - 원본 파일은 복사하지 않는다.
@@ -21,7 +23,7 @@ metadata:
 ## 실행
 
 1. `~/case-records/scripts/sync_records.sh` 존재 확인. 없으면 `bash toolkit/case-records/install.sh` 또는 `~/jurisupport-plugins/toolkit/case-records/install.sh` 실행 안내.
-2. 경로는 `CLAUDE.md §5`의 사건기록 디렉토리와 작성문서 디렉토리를 우선 사용한다.
+2. 경로는 플레이북 §5의 사건기록 디렉토리와 작성문서 디렉토리를 우선 사용한다.
 3. 경로가 없으면 사용자에게 두 경로만 짧게 물어본다.
 4. 실행:
 

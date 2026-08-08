@@ -2,12 +2,12 @@
 
 > 📋 이 파일은 **공개 배포용 예시 템플릿**(`CLAUDE.md.example`)이다. 실제 사용 전 다음 단계를 거친다:
 >
-> 1. `cp CLAUDE.md.example CLAUDE.md`
-> 2. `/jurisupport:cold-start-interview` 실행 → 인터뷰로 placeholder 자동 채움
-> 3. `CLAUDE.md`는 개인정보를 담으므로 git에 커밋되지 않음 (`.gitignore`로 차단됨)
-> 4. **이 파일(`CLAUDE.md.example`) 자체는 절대 직접 수정하지 말 것.** 모든 변경은 `CLAUDE.md`에만.
+> 1. `/jurisupport:cold-start-interview` 실행
+> 2. 스킬이 템플릿을 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)로 복사하고 인터뷰로 placeholder를 채움
+> 3. 사용자 플레이북은 플러그인 저장소 밖에 두며 git에 커밋하지 않음
+> 4. **이 파일 자체는 절대 직접 수정하지 말 것.** 모든 변경은 사용자 플레이북에만.
 
-이 파일은 JuriSupport 플러그인이 활성화된 상태에서 모든 송무 관련 작업에 적용되는 사무소 표준 규칙이다.
+이 파일의 사용자 복사본은 플레이북이 필요한 JuriSupport 스킬이 시작할 때 명시적으로 읽는 사무소 표준 규칙이다.
 
 ---
 

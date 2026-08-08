@@ -1,4 +1,5 @@
 ---
+name: upload-to-jurisupport
 description: 변호사가 확인한 완성 프로필을 웹 동의 확인 후 JuriSupport 검토 대기 상태로 올립니다. 공개 승인이나 노출은 하지 않습니다.
 ---
 

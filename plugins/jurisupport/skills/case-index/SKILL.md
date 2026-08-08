@@ -11,6 +11,8 @@ metadata:
 
 JuriSupport MCP가 없는 사용자도 가볍게 사건 목록을 관리할 수 있도록 CSV 한 파일로 사건 인덱스를 유지한다. 엑셀로 열어 직접 편집할 수도 있고, 본 스킬의 헬퍼 스크립트로 조작할 수도 있다.
 
+시작할 때 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 Read한다. 없으면 `/jurisupport:cold-start-interview`를 먼저 실행한다.
+
 ## When to use
 
 - 사용자가 JuriSupport MCP를 쓰지 않을 때 사건 목록·다음기일을 추적해야 하는 모든 상황
@@ -45,8 +47,8 @@ JuriSupport MCP가 연동되어 있으면 JuriSupport가 정본이고 이 스킬
 플러그인 내 `case_index.py`. CSV 경로는 매번 `--csv` 로 지정.
 
 ```bash
-PY=/Users/$USER/.claude/plugins/cache/jurisupport-plugins/jurisupport/0.2.4/skills/case-index/case_index.py
-CSV=<클라우드 사건폴더 경로>/_index.csv   # CLAUDE.md §5에 저장된 경로 사용
+PY=/Users/$USER/.claude/plugins/cache/jurisupport-plugins/jurisupport/<version>/skills/case-index/case_index.py
+CSV=<클라우드 사건폴더 경로>/_index.csv   # 플레이북 §5에 저장된 경로 사용
 
 # 빈 인덱스 생성
 python3 "$PY" --csv "$CSV" init
@@ -109,14 +111,14 @@ OneDrive·iCloud 등 동기화 폴더에 두면 여러 PC·세션이 동시에 �
 
 ```bash
 # 1. 템플릿 복사 (헤더만 들어있는 빈 CSV)
-cp /Users/$USER/.claude/plugins/cache/jurisupport-plugins/jurisupport/0.2.4/templates/_index.csv \
+cp /Users/$USER/.claude/plugins/cache/jurisupport-plugins/jurisupport/<version>/templates/_index.csv \
    <클라우드 사건폴더 경로>/_index.csv
 
 # 또는 헬퍼로 직접 생성
 python3 "$PY" --csv <경로>/_index.csv init
 ```
 
-CLAUDE.md §5에 경로를 기록한다. 콜드스타트 인터뷰에서 묻는다.
+플레이북 §5에 경로를 기록한다. 콜드스타트 인터뷰에서 묻는다.
 
 ## 한계
 

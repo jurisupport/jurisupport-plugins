@@ -1,6 +1,6 @@
 ---
 name: cold-start-interview
-description: JuriSupport 플러그인 최초 1회 설정 - 사무소 플레이북(CLAUDE.md)을 인터뷰로 채운다. 의뢰인 호칭 규칙, 인용 정책, 파일 포맷 정책, 사건기록 저장 위치 등을 학습.
+description: JuriSupport 플러그인 최초 1회 설정 - 사용자 플레이북을 인터뷰로 채운다. 의뢰인 호칭 규칙, 인용 정책, 파일 포맷 정책, 사건기록 저장 위치 등을 학습.
 license: MIT
 metadata:
   category: legal
@@ -12,7 +12,7 @@ metadata:
 
 ## What this skill does
 
-JuriSupport 플러그인을 처음 설치한 변호사에게 사무소 운영 정책을 묻고, 그 답변으로 `CLAUDE.md`(실무 플레이북)를 갱신한다. 이후 모든 송무 작업에 이 플레이북이 적용된다.
+JuriSupport 플러그인을 처음 설치한 변호사에게 사무소 운영 정책을 묻고, 그 답변으로 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 갱신한다. 기존 플러그인 루트 `CLAUDE.md`는 레거시 마이그레이션 원본으로만 취급한다.
 
 ## When to use
 
@@ -23,21 +23,24 @@ JuriSupport 플러그인을 처음 설치한 변호사에게 사무소 운영 �
 
 ### Step 0: Template/Instance 상태 확인
 
-플러그인 디렉토리 구조:
-```
-<plugin-dir>/
-├── CLAUDE.md.example    ← 공개 배포 템플릿 (placeholder)
-└── CLAUDE.md             ← 사용자 로컬 인스턴스 (.gitignore됨, 개인정보 포함)
-```
+플러그인 템플릿과 사용자 플레이북은 분리한다. 템플릿은 `CLAUDE.md.example`, canonical 플레이북은 `~/.jurisupport/playbook.md`다.
 
 다음 순서로 점검:
 
-**Case A: CLAUDE.md 없음 + CLAUDE.md.example 있음** (신규 설치)
-1. `cp CLAUDE.md.example CLAUDE.md` 자동 실행
-2. 사용자에게 안내: "템플릿을 복사해서 로컬 인스턴스를 생성했습니다. 이제 인터뷰로 채우겠습니다."
+먼저 플레이북 디렉토리를 만든다. macOS/Linux는 `mkdir -p ~/.jurisupport`, Windows PowerShell은 `New-Item -ItemType Directory -Force "$env:USERPROFILE\.jurisupport"`를 사용한다.
+
+**Case A: canonical playbook 없음 + 레거시 `CLAUDE.md` 있음** (마이그레이션)
+1. 레거시 파일을 canonical 경로로 복사한다. macOS/Linux는 `cp <plugin-dir>/CLAUDE.md ~/.jurisupport/playbook.md`, Windows PowerShell은 `Copy-Item <plugin-dir>\CLAUDE.md "$env:USERPROFILE\.jurisupport\playbook.md"`를 사용한다.
+2. 레거시 파일은 그대로 둔다. 삭제하지 않는다.
+3. 사용자에게 안내: "기존 플레이북을 canonical 경로로 복사했습니다. 이제 인터뷰로 확인하겠습니다."
+4. Step 1로 진행
+
+**Case B: canonical playbook 없음 + `CLAUDE.md.example` 있음** (신규 설치)
+1. 템플릿을 canonical 경로로 복사한다. macOS/Linux는 `cp <plugin-dir>/CLAUDE.md.example ~/.jurisupport/playbook.md`, Windows PowerShell은 `Copy-Item <plugin-dir>\CLAUDE.md.example "$env:USERPROFILE\.jurisupport\playbook.md"`를 사용한다.
+2. 사용자에게 안내: "템플릿을 복사해서 로컬 플레이북을 생성했습니다. 이제 인터뷰로 채우겠습니다."
 3. Step 1로 진행
 
-**Case B: CLAUDE.md 있음 + 채워진 값 있음** (재실행)
+**Case C: canonical playbook 있음** (재실행)
 1. 현재 채워진 값 요약 출력
 2. 선택지 제공:
    - "기존 값 유지 + 비어있는 부분만 채우기" (기본)
@@ -45,10 +48,17 @@ JuriSupport 플러그인을 처음 설치한 변호사에게 사무소 운영 �
    - "특정 섹션만 갱신" (섹션 번호 지정)
 3. 사용자 선택대로 진행
 
-**Case C: 두 파일 모두 없음** (비정상)
+**Case D: 템플릿과 canonical playbook 모두 없음** (비정상)
 - 플러그인 설치가 손상됨. 사용자에게 재설치 권장 후 종료.
 
-⚠️ **절대 CLAUDE.md.example를 직접 수정하지 말 것.** template는 공개 배포본이며, 모든 변경은 사용자 인스턴스(CLAUDE.md)에만 가해진다.
+플러그인 디렉토리 구조:
+```
+<plugin-dir>/
+├── CLAUDE.md.example    ← 공개 배포 템플릿 (placeholder)
+└── CLAUDE.md             ← 레거시 로컬 인스턴스(.gitignore됨, 있으면 마이그레이션 원본)
+```
+
+⚠️ **절대 CLAUDE.md.example를 직접 수정하지 말 것.** template는 공개 배포본이며, 모든 변경은 canonical 플레이북에만 가한다.
 
 ### Step 1: 사무소 정보
 
@@ -75,7 +85,7 @@ JuriSupport 플러그인을 처음 설치한 변호사에게 사무소 운영 �
 ```
 
 기존 메모리(`project_client_*`)에서 자동 추출하여 표로 정리.
-override 없는 의뢰인은 CLAUDE.md §2에 등록 안 함 — 기본 규칙이 자동 적용됨.
+override 없는 의뢰인은 플레이북 §2에 등록 안 함 — 기본 규칙이 자동 적용됨.
 
 ### Step 3: 인용·검증 정책
 
@@ -164,7 +174,7 @@ override 없는 의뢰인은 CLAUDE.md §2에 등록 안 함 — 기본 규칙�
   · 아니오 → 로컬만 사용
 ```
 
-답변 수집 후 CLAUDE.md §5에 두 경로 모두 기록:
+답변 수집 후 `~/.jurisupport/playbook.md §5`에 두 경로 모두 기록:
 - `<사건기록 디렉토리 경로>` → 질문 ① 답
 - `<작성문서 디렉토리 경로>` → 질문 ② 답
 - `<클라우드 사건폴더 경로>` → 질문 ③ 답 (해당 시)
@@ -180,7 +190,7 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
   - **미사용 (JuriSupport 전용자 기본)**: JuriSupport가 정본
 - CSV 경로 확정되면:
   - 파일이 없으면 `python3 <plugin>/skills/case-index/case_index.py --csv <경로> init` 으로 헤더만 생성
-  - CLAUDE.md §5에 경로 기록 (`<CSV 사건 인덱스 경로>` placeholder 치환)
+  - `~/.jurisupport/playbook.md §5`에 경로 기록 (`<CSV 사건 인덱스 경로>` placeholder 치환)
 - 컬럼은 고정: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`
 
 ### Step 6: 법원 제출 정책 안내
@@ -210,7 +220,7 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
 | 8 | em-dash(—) 사용 금지 (콜론·쉼표·접속어로 대체) | ON |
 | 9 | 나무위키/위키백과 인용 금지 (1차 출처 사용) | ON |
 
-사용자가 특정 규칙을 OFF 하면 CLAUDE.md §10에서 해당 항목을 제거한다.
+사용자가 특정 규칙을 OFF 하면 플레이북 §10에서 해당 항목을 제거한다.
 전부 기본값 유지하면 §10 그대로 진행.
 
 ### Step 9: 안전 가드
@@ -222,11 +232,11 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
 - 사건 status 변경
 - 파일 삭제
 
-### Step 10: CLAUDE.md (로컬 인스턴스) 갱신
+### Step 10: canonical 플레이북 갱신
 
-수집한 답변으로 **`CLAUDE.md`** (사용자 인스턴스, .gitignore됨) 섹션을 채운다. Edit 도구로 각 섹션을 수정.
+수집한 답변으로 **`~/.jurisupport/playbook.md`** (Windows `%USERPROFILE%\.jurisupport\playbook.md`) 섹션을 채운다. Edit 도구로 각 섹션을 수정.
 
-**절대 `CLAUDE.md.example`를 수정하지 말 것.** template는 공개 배포본이다.
+레거시 플러그인 루트 `CLAUDE.md`가 있으면 삭제하지 않는다. `CLAUDE.md.example`는 공개 배포본이므로 수정하지 말 것.
 
 치환할 placeholder 예시:
 - `<사무소명>` → 사용자 입력
@@ -239,7 +249,7 @@ JuriSupport를 쓰지 않으면 `case-index` 스킬이 정본. 다음 항목 확
 
 ### Step 11: 메모리 동기화
 
-CLAUDE.md에 새로 들어간 규칙 중 **다른 플러그인에도 적용될 만한 것**은 글로벌 메모리(`~/.claude/projects/-Users-<your-username>/memory/`)에도 저장 여부 확인:
+`~/.jurisupport/playbook.md`에 새로 들어간 규칙 중 **다른 플러그인에도 적용될 만한 것**은 글로벌 메모리(`~/.claude/projects/-Users-<your-username>/memory/`)에도 저장 여부 확인:
 - 의뢰인 호칭 → `project_client_*`
 - 인용 정책 → `feedback_*`
 - 파일 포맷 → `feedback_*`
@@ -248,7 +258,7 @@ CLAUDE.md에 새로 들어간 규칙 중 **다른 플러그인에도 적용될 �
 
 ```
 ✅ JuriSupport 플러그인 설정 완료
-- 플레이북: <플러그인>/CLAUDE.md
+- 플레이북: ~/.jurisupport/playbook.md
 - 메모리 동기화: <건>
 - 다음: /jurisupport:brief-protocol 으로 첫 서면 작성
 ```

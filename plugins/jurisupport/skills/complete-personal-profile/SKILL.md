@@ -1,12 +1,11 @@
 ---
+name: complete-personal-profile
 description: 변호사의 사건자료, 작성서류, 설명을 바탕으로 직접 읽고 고쳐 쓸 수 있는 개인 프로필을 완성합니다. 원하면 웹 동의 후 JuriSupport 업로드까지 준비합니다.
 ---
 
 # Complete Personal Profile
 
-You help a lawyer complete their own personal profile from their work experience and selected materials.
-
-This is primarily a personal profile completion workflow. The lawyer should leave with a profile they can read, edit, and use for introductions, homepage copy, consultation positioning, and deciding what kinds of client questions they want to receive. Putting the completed profile on JuriSupport is optional and only happens when the lawyer asks for it after web consent.
+Complete an editable personal profile from the lawyer's selected materials. It should work for introductions, homepage copy, consultation positioning, and deciding which client questions to invite. JuriSupport upload is optional and requires a separate request after web consent.
 
 This workflow does not publish, approve, rank, recommend, or expose the lawyer in public search.
 
@@ -22,6 +21,7 @@ This workflow does not publish, approve, rank, recommend, or expose the lawyer i
 - Do not put case numbers, party names, opposing party names, addresses, unique facts, private messages, or strategy details into public fields.
 - Treat all local materials as confidential.
 - Ask one short question at a time.
+- Keep progress updates brief and report decisions or missing evidence, not routine self-checks.
 
 ## Workflow
 

@@ -5,7 +5,7 @@
 ## 무엇이 들어있나
 
 ### 스킬 (이 플러그인)
-- **`/jurisupport:cold-start-interview`** - 사무소 플레이북 학습 (최초 1회). 의뢰인 호칭 규칙, 인용 표기 정책, 파일 포맷, 사건기록 저장 위치, CSV 사건 인덱스 경로 등을 인터뷰하여 CLAUDE.md를 채운다.
+- **`/jurisupport:cold-start-interview`** - 사무소 플레이북 학습 (최초 1회). 의뢰인 호칭 규칙, 인용 표기 정책, 파일 포맷, 사건기록 저장 위치, CSV 사건 인덱스 경로 등을 인터뷰하여 `~/.jurisupport/playbook.md`를 채운다.
 - **`/jurisupport:brief-protocol`** - 준비서면 작성 표준 절차 (intake → 사건기록 → 쟁점 → 교과서·판결 검증 → MD 초안 → 정본 등록 → PDF 추출까지의 오케스트레이션).
 - **`/jurisupport:mock-hearing`** - 전문 모의변론. 제출 전 서면·사건이론을 청구권규범·요건사실·입증책임·항변/재항변·판결 유추/구별 순서로 재구성하고, JuriSupport·korean-law·법고을·legal-books·case-records·court-forms 등 가용 자원을 이용해 근거를 검증한 뒤 구조화된 평결(제출가능/보강/재구성/출구)과 보강 과제를 낸다. brief-protocol 인용 검증 통과 후 선택 단계로 연계.
 - **`/jurisupport:case-index`** - CSV 한 파일(`_index.csv`)로 사건 목록·다음기일을 관리. JuriSupport MCP 미사용자용 정본, 또는 연동자의 백업·오프라인 뷰. list/get/add/update/close 명령 제공.
@@ -62,6 +62,27 @@ JuriSupport에 올린 프로필은 의뢰인이 상담 가능한 변호사 목�
 
 > 위 항목들은 사용자가 별도로 설정해야 작동합니다. 플러그인은 이들의 부재를 감지하고 graceful하게 동작합니다.
 
+## 권장 모델 설정
+
+모든 스킬은 현재 Claude Code 세션의 모델과 effort를 그대로 상속한다. 스킬마다 모델을 고정하거나 별도 라우터를 두지 않는다.
+
+Opus 5/high를 기본으로 쓸 때는 사용자 설정 `~/.claude/settings.json`에 아래 키를 **기존 설정과 병합**한다. 플러그인은 이 파일을 자동으로 덮어쓰지 않는다. Opus 5에는 Claude Code 2.1.219 이상이 필요하다.
+
+```json
+{
+  "model": "opus",
+  "effortLevel": "high"
+}
+```
+
+Fable은 가장 어려운 작업을 새 세션에서 한 번만 실행할 때 선택한다.
+
+```bash
+claude --model fable --effort high
+```
+
+현재 세션 안에서 effort를 자주 바꾸지 않는다. 자세한 내용은 [Claude Code 모델 설정](https://code.claude.com/docs/en/model-config)과 [effort 문서](https://platform.claude.com/docs/en/build-with-claude/effort)를 참조한다.
+
 ## 실무 플레이북 (Template/Instance 분리)
 
 이 플러그인은 **공개 배포 템플릿**과 **사용자 로컬 인스턴스**를 분리한다:
@@ -69,9 +90,10 @@ JuriSupport에 올린 프로필은 의뢰인이 상담 가능한 변호사 목�
 | 파일 | 역할 | git 추적 |
 |---|---|---|
 | `CLAUDE.md.example` | 공개 배포본. 모든 개인정보는 `<placeholder>` 형태 | ✅ 커밋됨 |
-| `CLAUDE.md` | 사용자 로컬 인스턴스. 콜드스타트로 채워진 실제 운영 규칙 | ❌ `.gitignore` |
+| `~/.jurisupport/playbook.md` | 콜드스타트로 채운 사용자 운영 규칙 | 플러그인 저장소 밖 |
+| 플러그인 루트 `CLAUDE.md` | 이전 버전의 로컬 인스턴스. 최초 실행 시 복사하는 마이그레이션 원본 | ❌ `.gitignore` |
 
-이 플러그인이 활성화되면 모든 송무 작업에 다음 규칙이 적용된다:
+플러그인 루트 `CLAUDE.md`는 자동 컨텍스트로 로드되지 않는다. 플레이북이 필요한 스킬은 시작할 때 canonical 경로를 명시적으로 읽으며, 없으면 콜드스타트를 먼저 실행한다. 적용 규칙:
 - 법령 인용 시 `korean-law` MCP로 실존 확인 (필수)
 - 판결 인용은 `korean-law` MCP `search_precedents`가 1차 검증, 법고을(`beopgoeul-search`)이 2차 검증
 - 직접인용(" ")은 원문과 글자 단위로 일치, 아니면 간접인용
@@ -95,7 +117,7 @@ JuriSupport에 올린 프로필은 의뢰인이 상담 가능한 변호사 목�
 /plugin marketplace add chrisryugj/korean-law-mcp
 /plugin install korean-law@korean-law-marketplace
 
-# 사무소 플레이북 학습 (콜드스타트가 자동으로 CLAUDE.md.example → CLAUDE.md 복사 후 인터뷰)
+# 사무소 플레이북 학습 (템플릿 또는 레거시 CLAUDE.md를 ~/.jurisupport/playbook.md로 복사 후 인터뷰)
 /jurisupport:cold-start-interview
 ```
 
@@ -103,21 +125,22 @@ JuriSupport에 올린 프로필은 의뢰인이 상담 가능한 변호사 목�
 
 ```bash
 /jurisupport:cold-start-interview
-# → 기존 CLAUDE.md 감지 → "기존 값 유지 / 전체 재설정 / 특정 섹션만 갱신" 선택
+# → 기존 ~/.jurisupport/playbook.md 감지 → "기존 값 유지 / 전체 재설정 / 특정 섹션만 갱신" 선택
 ```
 
 ### 개발자가 git에 push할 때
 
 ```bash
-# CLAUDE.md는 .gitignore되어 자동 제외됨. CLAUDE.md.example만 커밋
+# 공개 템플릿만 커밋
 git add CLAUDE.md.example
 git commit -m "Update template"
 ```
 
-⚠️ **절대 `CLAUDE.md`를 git에 커밋하지 말 것.** 개인정보 노출 위험.
+⚠️ **레거시 `CLAUDE.md`나 `~/.jurisupport/playbook.md`를 git에 커밋하지 말 것.** 개인정보 노출 위험.
 
 ## 버전
 
+0.2.11 - Opus 5/high 세션 상속 안내, canonical 플레이북 경로와 비파괴 마이그레이션, 프롬프트 중복 정리
 0.2.9 - mock-hearing 법적 사고 프로토콜 강화(청구권규범 카드, 입증책임 지도, 항변·재항변 트리, 판결 유추·구별 메모, 보강 절차 연계)
 0.2.8 - OC 발급 전 시연·실습용 오프라인 법령 전문 폴백 추가(헌/민/형/상법, 소송법, 주요 특별형법)
 0.2.7 - 개인 프로필 설명을 사용자 친화적 문구로 정리

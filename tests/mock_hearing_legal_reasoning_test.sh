@@ -9,9 +9,10 @@ QUESTIONS="$ROOT/plugins/jurisupport/skills/mock-hearing/question-bank.md"
 RUBRIC="$ROOT/plugins/jurisupport/skills/mock-hearing/evaluation-rubric.md"
 VOICE="$ROOT/plugins/jurisupport/skills/mock-hearing/adversary-voice.md"
 PLUGIN="$ROOT/plugins/jurisupport/.claude-plugin/plugin.json"
+CODEX_PLUGIN="$ROOT/plugins/jurisupport/.codex-plugin/plugin.json"
 README="$ROOT/plugins/jurisupport/README.md"
 
-for file in "$SKILL" "$QUESTIONS" "$RUBRIC" "$VOICE" "$PLUGIN" "$README"; do
+for file in "$SKILL" "$QUESTIONS" "$RUBRIC" "$VOICE" "$PLUGIN" "$CODEX_PLUGIN" "$README"; do
   [[ -f "$file" ]] || { echo "missing file: $file" >&2; exit 1; }
 done
 
@@ -36,7 +37,19 @@ grep -q "보강 절차 부재" "$RUBRIC"
 grep -q "법적 사고 단위를 유지" "$VOICE"
 grep -q "근거 없이 역할극만 하지 말 것" "$VOICE"
 
-grep -q '"version": "0.2.9"' "$PLUGIN"
-grep -q "0.2.9 - mock-hearing 법적 사고 프로토콜 강화" "$README"
+version="$(python3 - "$PLUGIN" "$CODEX_PLUGIN" <<'PY'
+import json
+import sys
+
+versions = []
+for path in sys.argv[1:]:
+    with open(path, encoding="utf-8") as handle:
+        versions.append(json.load(handle)["version"])
+if len(set(versions)) != 1:
+    raise SystemExit(f"manifest version mismatch: {versions}")
+print(versions[0])
+PY
+)"
+grep -Fq "$version - " "$README"
 
 echo "mock-hearing legal reasoning checks passed"
