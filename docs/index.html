@@ -115,6 +115,27 @@
   .checklist li:before{content:"☐";position:absolute;left:4px;top:0;font-size:17px;color:var(--accent)}
 
 
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 20px}
+  .stat{flex:1;min-width:150px;border:1px solid var(--line);border-radius:10px;
+        padding:16px 12px;text-align:center;background:#faf9f7}
+  .stat b{display:block;font-size:27px;line-height:1.2;color:var(--accent);margin:0 0 4px;letter-spacing:-.02em}
+  .stat span{font-size:13.5px;color:var(--sub)}
+
+  .promo{border:2px solid var(--ink);border-radius:12px;padding:22px 24px;background:#faf9f7;margin:0 0 22px}
+  .promo h3{margin:0 0 10px;font-size:19px}
+  .promo p:last-child{margin-bottom:0}
+
+  .cta{display:inline-block;background:var(--accent);color:#fff;-webkit-text-fill-color:#fff;
+       text-decoration:none;font-weight:700;font-size:15px;padding:11px 20px;border-radius:8px;
+       margin:6px 8px 6px 0}
+  .cta:hover{background:#6d1616}
+  .cta.ghost{background:#fff;color:var(--ink);-webkit-text-fill-color:var(--ink);border:2px solid var(--ink)}
+  .cta.ghost:hover{background:#f2f1ee}
+
+  .bizcard{border:1px solid var(--line);border-radius:10px;padding:16px 20px;background:#fff;
+           font-size:14.5px;line-height:1.9;color:var(--sub)}
+  .bizcard b{color:var(--ink)}
+
   footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
 
   @media (max-width:640px){
@@ -171,6 +192,8 @@
     <li><a href="#s13">지우고 싶을 때</a></li>
     <li><a href="#s14">용어 미니사전</a></li>
     <li><a href="#s15">자료 출처</a></li>
+    <li><a href="#s16">변호사시험 만점 검증</a></li>
+    <li><a href="#s17">쥬리서포트 · 도입 컨설팅</a></li>
   </ol>
 </nav>
 
@@ -840,6 +863,101 @@ cd ~/jurisupport-plugins &amp;&amp; ./install.sh</pre></div>
     <tr><td>사건관리 SaaS</td><td><a href="https://jurisupport.com">jurisupport.com</a> (사건 50건까지 무료)</td></tr>
   </table>
   <p>실습 프롬프트 전체와 업무별 템플릿은 강의 저장소의 <code>핸드아웃/실습_명령어_핸드아웃.html</code> 파일을 내려받아 브라우저로 열면 됩니다. 각 프롬프트마다 복사 버튼이 있습니다.</p>
+</section>
+
+<!-- 16 -->
+<section id="s16">
+  <h2 class="step"><span class="num">16</span>지금 설치한 도구가 받은 성적표</h2>
+
+  <p>이 안내서로 설치한 <strong>리서치 도구</strong>를 붙인 AI가 <strong>제15회 변호사시험 선택형 150문항에서 전 과목 만점</strong>을 받았습니다. 과목별 3회씩 실행해 <strong>9회 전부 만점</strong>이었습니다.</p>
+
+  <div class="stats">
+    <div class="stat"><b>150/150</b><span>선택형 전 문항 정답</span></div>
+    <div class="stat"><b>9회</b><span>전부 만점 (과목별 3회)</span></div>
+    <div class="stat"><b>0회</b><span>도구 뗀 대조군의 만점</span></div>
+  </div>
+
+  <p>중요한 것은 <strong>모델이 잘한 결과가 아니라는 점</strong>입니다. 같은 모델에서 법령·판례·교재 검색 도구만 떼어낸 대조군은 전 과목에서 한 번도 만점에 이르지 못했습니다.</p>
+
+  <table>
+    <tr><th>과목</th><th>모델</th><th>도구 사용 · 3회</th><th>도구 없음 · 3회</th></tr>
+    <tr><td>공법 40문항</td><td>GPT-5.6 Sol</td><td><strong>40/40</strong> × 3</td><td>33 · 34 · 32 (평균 33)</td></tr>
+    <tr><td>민사법 70문항</td><td>Claude Opus 5</td><td><strong>70/70</strong> × 3</td><td>65/70 × 3</td></tr>
+    <tr><td>형사법 40문항</td><td>Claude Opus 5</td><td><strong>40/40</strong> × 3</td><td>37 · 35 · 36</td></tr>
+  </table>
+  <p style="font-size:14.5px;color:var(--sub);margin-top:-8px">채점 기준: 법무부 공고 정답. 공법은 평균 33/40에서 40/40으로 7문항이 개선됐습니다.</p>
+
+  <h3>믿어 달라는 주장이 아니라, 검증할 수 있는 기록</h3>
+  <p>유리한 결과만 골라 공개하지 않도록 <strong>실행 전에 절차를 고정</strong>하고, 답안과 로그를 봉인한 뒤 채점했습니다.</p>
+  <ol>
+    <li><strong>사전등록</strong> — 모델·조건·실행 순서·채점 규칙과 조건 파일 해시를 실행 전에 고정</li>
+    <li><strong>정답표 차단·봉인</strong> — 풀이 환경에서 정답표를 차단하고 답안·로그의 SHA-256 해시를 회차마다 봉인</li>
+    <li><strong>도구 유·무 교차 실행</strong> — 과목별로 도구 사용 조건과 대조군을 각각 3회</li>
+    <li><strong>자유 재생 암기 검증</strong> — 문항을 주지 않고 정답·지문을 기억만으로 재생하도록 요청 → <strong>재생 주장 0건</strong></li>
+  </ol>
+
+  <div class="box warn">
+    <p class="t">결과 해석 시 유의사항</p>
+    <p>선택형(5지선다)에 한정된 결과이며, <strong>사례형·기록형 답안 작성 능력을 의미하지 않습니다.</strong> 실제 시험의 시간 제한 조건과도 다릅니다. 상세 한계와 사전등록 문서·회차별 결과·봉인 해시·재계산 스크립트는 모두 공개돼 있습니다.</p>
+  </div>
+
+  <p><a class="cta" href="https://jurisupport.com/bar-exam-eval">검증 결과 전체 보기</a></p>
+
+  <div class="box tip">
+    <p class="t">그래서 이 안내서가 중요한 이유</p>
+    <p>만점을 만든 것은 <strong>모델에 붙인 리서치 도구</strong>였습니다. 그 도구가 바로 방금 설치한 <code>jurisupport-plugins</code>와 <code>legal-books</code>입니다. 실무에서도 같은 원리가 작동합니다 — 근거를 찾아 읽히면 정확해지고, 안 읽히면 지어냅니다.</p>
+  </div>
+</section>
+
+<!-- 17 -->
+<section id="s17">
+  <h2 class="step"><span class="num">17</span>더 멀리 가려면 — 쥬리서포트</h2>
+
+  <p>여기까지가 <strong>무료 공개 도구</strong>입니다. 사무소 단위로 더 쓰시려면 두 갈래가 있습니다.</p>
+
+  <div class="promo">
+    <h3>① JuriSupport — 사건을 아는 상태에서 서면이 나옵니다</h3>
+    <p>ChatGPT에 사건 내용을 복사·붙여넣지 않습니다. <strong>당사자·기일·증거·이전 서면을 이미 알고 있는 상태</strong>에서 초안이 나옵니다. 클로드코드와는 MCP로 연결되어, 클로드가 서버의 사건기록을 직접 읽고 초안을 만들어 다시 저장합니다.</p>
+    <table style="margin-bottom:14px">
+      <tr><th style="width:32%">기능</th><th>내용</th></tr>
+      <tr><td>사건·당사자 관리</td><td>중복 당사자 확인, 심급별 진행, 관련 사건 연결</td></tr>
+      <tr><td>소송문서 전용 에디터</td><td>호증번호 자동 부여·재정렬, 증거목록 동기화, 버전 이력, <strong>HWPX 내보내기</strong></td></tr>
+      <tr><td>기일·할일</td><td>구글 캘린더 자동 동기화, 칸반 업무관리, 기일 메모</td></tr>
+      <tr><td>콘텐츠 스튜디오</td><td>보유 자료로 블로그·카드뉴스·썸네일 생성</td></tr>
+      <tr><td>MCP 도구 115개</td><td>Claude Code 권장 · Claude Desktop·Cursor·Codex도 같은 토큰으로 연결</td></tr>
+      <tr><td>서식 14종</td><td>위임장·수임계약서·내용증명·합의서 외</td></tr>
+    </table>
+    <p style="font-size:14.5px;color:var(--sub)">입력한 사건 데이터를 자체 AI 모델 학습용으로 재사용하지 않습니다. 주민등록번호·계좌번호는 AES-256-GCM으로 암호화해 저장하고, 전체 번호를 열람하면 그 기록이 남습니다.</p>
+    <p>
+      <a class="cta" href="https://jurisupport.com/signup">무료로 시작하기</a>
+      <a class="cta ghost" href="https://jurisupport.com/pricing">요금제 보기</a>
+    </p>
+    <p style="font-size:14.5px;color:var(--sub);margin-top:4px">카드등록 불필요 · 14일 무료 체험 · 언제든 해지 · 해지해도 데이터 보존</p>
+  </div>
+
+  <div class="promo">
+    <h3>② AX 솔루션 — 사무소 업무 흐름에 맞춰 붙여 드립니다</h3>
+    <p>혼자 설치해서 쓰는 것과, <strong>사무소 전체의 일하는 방식을 바꾸는 것</strong>은 다른 문제입니다. 쥬리서포트는 공개한 플러그인과 송무 작업환경을 바탕으로, 사건관리·문서작성·자료정리·내부 지식 활용에 Claude Code와 Codex를 맞춰 붙이는 AX 솔루션을 제공합니다.</p>
+    <p><strong>새 시스템을 크게 얹지 않습니다.</strong> 지금 쓰는 업무 흐름을 먼저 읽고, 필요한 도구만 연결합니다.</p>
+    <table style="margin-bottom:14px">
+      <tr><th style="width:32%">이런 경우</th><th>이렇게 붙입니다</th></tr>
+      <tr><td>사무소 자료가 흩어져 있다</td><td>보유 서적·과거 사건기록을 로컬 검색DB로 — 변호사시험 만점을 만든 것과 같은 리서치 인프라</td></tr>
+      <tr><td>서면 문체·형식이 제각각이다</td><td>사무소 플레이북과 표준 서면 흐름을 학습시켜 일관성 확보</td></tr>
+      <tr><td>구성원마다 AI 활용 수준이 다르다</td><td>실무 교육과 프롬프트 자산화, 사고가 나는 지점을 막는 검수 절차 설계</td></tr>
+      <tr><td>보안 때문에 도입이 망설여진다</td><td>로컬·사내 환경 기준 구성과 데이터 보호 장치 설계</td></tr>
+    </table>
+    <p>
+      <a class="cta" href="mailto:admin@jurisupport.com?subject=%EC%86%94%EB%A3%A8%EC%85%98%20%EC%A0%9C%EA%B3%B5%20%EB%AC%B8%EC%9D%98">솔루션 도입 문의</a>
+      <a class="cta ghost" href="https://jurisupport.com/about">회사 소개 보기</a>
+    </p>
+  </div>
+
+  <div class="bizcard">
+    <b>쥬리서포트 주식회사</b> (JuriSupport Co., Ltd.) · 대표 하희봉<br>
+    서울 서초구 반포대로30길 81, 1115C호(서초동, 웅진타워)<br>
+    <b>admin@jurisupport.com</b> · 070-4800-6311<br>
+    사업자등록번호 831-87-03251 · 통신판매업신고 제2026-서울서초-0306호
+  </div>
 </section>
 
 <footer>
