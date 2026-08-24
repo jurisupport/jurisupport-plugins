@@ -37,6 +37,7 @@ JuriSupport는 초기 프로토타입 이후, 설치 안정성·송무 작성 �
 
 | 문서 | 소요 시간 | 내용 |
 |---|---|---|
+| **[클로드코드 시작 안내서 (웹)](https://jurisupport.github.io/jurisupport-plugins/)** | 30분 | 클로드코드를 처음 쓰는 분용 — 설치부터 가상사건 실습까지 클릭·복사만으로 |
 | **[guides/00_security.md](guides/00_security.md)** | 5분 | 의뢰인 정보 보호 원칙 (필독) |
 | **[COLD_START.md](COLD_START.md)** | 30분 | 설치 → 첫 사건까지 한 페이지 가이드 |
 

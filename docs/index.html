@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>클로드코드 설치부터 실습까지 — 변호사용 안내서 | 쥬리서포트</title>
+<meta name="description" content="클로드코드를 처음 쓰는 변호사를 위한 설치 안내서. 클로드 Pro 가입부터 jurisupport-plugins·legal-terminal 설치, 가상사건 준비서면 실습까지 복사·붙여넣기로 따라 하는 한국어 가이드.">
+<meta name="author" content="쥬리서포트 주식회사">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="jurisupport-plugins">
+<meta property="og:title" content="클로드코드 설치부터 실습까지 — 변호사용 안내서">
+<meta property="og:description" content="컴퓨터를 잘 몰라도 됩니다. 순서대로 복사·붙여넣기만 하면 설치를 끝내고 사건기록 13개를 읽히는 실습까지 마칠 수 있습니다.">
+<meta property="og:url" content="https://jurisupport.github.io/jurisupport-plugins/">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://jurisupport.github.io/jurisupport-plugins/">
+<style>
+  :root{
+    color-scheme:light;
+    --ink:#1a1a1a; --sub:#5a5a5a; --line:#e2e2e2; --bg:#ffffff;
+    --accent:#8b1d1d; --accent-soft:#fdf3f3;
+    --tip:#0f5132; --tip-bg:#eff7f2;
+    --warn:#8a5300; --warn-bg:#fdf6e8;
+    --danger:#8b1d1d; --danger-bg:#fdf0f0;
+    --code-bg:#f4f3f0; --code-ink:#101215; --code-line:#b9b6af;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:#f6f5f3; color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,-apple-system,sans-serif;
+    font-size:16.5px; line-height:1.75; word-break:keep-all;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 100px;background:var(--bg);
+        box-shadow:0 0 0 1px rgba(0,0,0,.05)}
+  header.cover{padding:56px 0 32px;border-bottom:3px solid var(--ink);margin-bottom:36px}
+  header.cover .eyebrow{font-size:13px;letter-spacing:.18em;color:var(--accent);font-weight:700;margin:0 0 14px}
+  header.cover h1{font-size:34px;line-height:1.3;margin:0 0 14px;letter-spacing:-.02em}
+  header.cover p.lead{font-size:17px;color:var(--sub);margin:0 0 22px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:13px;background:#f2f1ee;border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--sub)}
+
+  nav.toc{background:#faf9f7;border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin:0 0 44px}
+  nav.toc h2{font-size:14px;letter-spacing:.1em;color:var(--sub);margin:0 0 12px;font-weight:700}
+  nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:32px}
+  nav.toc li{margin:0 0 6px;break-inside:avoid}
+  nav.toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+  nav.toc a:hover{border-bottom-color:var(--accent);color:var(--accent)}
+
+  section{margin:0 0 52px;scroll-margin-top:20px}
+  h2.step{font-size:24px;margin:0 0 18px;padding-top:14px;border-top:1px solid var(--line);letter-spacing:-.01em}
+  h2.step .num{display:inline-block;min-width:34px;height:34px;line-height:34px;text-align:center;
+    background:var(--ink);color:#fff;border-radius:8px;font-size:16px;margin-right:10px;vertical-align:2px}
+  h3{font-size:18px;margin:30px 0 10px}
+  h4{font-size:15.5px;margin:22px 0 8px;color:var(--sub)}
+  p{margin:0 0 14px}
+  ul,ol{margin:0 0 16px;padding-left:24px}
+  li{margin:0 0 7px}
+  strong{font-weight:700}
+  a{color:var(--accent)}
+  code{background:#f2f1ee;border:1px solid var(--line);border-radius:4px;padding:1px 5px;
+       font-family:"SFMono-Regular",Consolas,"D2Coding",monospace;font-size:.88em}
+
+  .cmd{position:relative;background:var(--code-bg);color:var(--code-ink);
+       border:1px solid var(--code-line);border-left:5px solid var(--accent);border-radius:8px;
+       padding:14px 74px 14px 16px;margin:0 0 18px;overflow-x:auto}
+  .cmd pre{margin:0;font-family:"SFMono-Regular",Consolas,"D2Coding","Courier New",monospace;
+           font-size:14.5px;font-weight:600;line-height:1.7;letter-spacing:.01em;
+           color:var(--code-ink);-webkit-text-fill-color:var(--code-ink);
+           white-space:pre-wrap;word-break:break-all}
+  .cmd .copy{position:absolute;top:10px;right:10px;background:var(--ink);color:#fff;
+             -webkit-text-fill-color:#fff;border:0;border-radius:6px;padding:6px 11px;
+             font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .cmd .copy:hover{background:var(--accent)}
+  .cmd .copy.done{background:#1e6b4b}
+  .cmd .label{display:inline-block;background:var(--accent);color:#fff;-webkit-text-fill-color:#fff;
+              font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:4px;
+              letter-spacing:.04em;margin:0 0 9px}
+
+  /* 프롬프트(클로드에게 말 거는 문장) — 명령어와 시각적으로 구분 */
+  .prompt{position:relative;background:#f3f6fa;border:1px solid #b9c6d6;border-left:5px solid #1f4e79;
+          border-radius:8px;padding:14px 74px 14px 16px;margin:0 0 18px}
+  .prompt pre{margin:0;font-family:inherit;font-size:15.5px;font-weight:500;line-height:1.75;
+              color:#0e1a26;-webkit-text-fill-color:#0e1a26;white-space:pre-wrap;word-break:keep-all}
+  .prompt .copy{position:absolute;top:10px;right:10px;background:#1f4e79;color:#fff;
+                -webkit-text-fill-color:#fff;border:0;border-radius:6px;padding:6px 11px;
+                font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .prompt .copy:hover{background:#0e2f4d}
+  .prompt .copy.done{background:#1e6b4b}
+  .prompt .label{display:inline-block;background:#1f4e79;color:#fff;-webkit-text-fill-color:#fff;
+                 font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:4px;
+                 letter-spacing:.04em;margin:0 0 9px}
+
+  .box{border-left:4px solid var(--line);background:#faf9f7;padding:14px 18px;margin:0 0 18px;border-radius:0 8px 8px 0}
+  .box p:last-child{margin-bottom:0}
+  .box .t{font-weight:700;margin:0 0 6px;font-size:15px}
+  .box.tip{border-color:var(--tip);background:var(--tip-bg)} .box.tip .t{color:var(--tip)}
+  .box.warn{border-color:var(--warn);background:var(--warn-bg)} .box.warn .t{color:var(--warn)}
+  .box.danger{border-color:var(--danger);background:var(--danger-bg)} .box.danger .t{color:var(--danger)}
+
+  table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:15px}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:#f6f5f3;font-weight:700}
+  td code{font-size:.85em}
+
+  .tabs{display:flex;gap:8px;margin:0 0 18px}
+  .tabs button{flex:1;padding:12px 10px;font-size:16px;font-weight:700;font-family:inherit;
+    background:#f2f1ee;border:1px solid var(--line);border-radius:10px;cursor:pointer;color:var(--sub)}
+  .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .pane{display:none} .pane.on{display:block}
+
+  .checklist{list-style:none;padding-left:0}
+  .checklist li{padding-left:30px;position:relative}
+  .checklist li:before{content:"☐";position:absolute;left:4px;top:0;font-size:17px;color:var(--accent)}
+
+
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
+
+  @media (max-width:640px){
+    body{font-size:16px}
+    nav.toc ol{columns:1}
+    header.cover h1{font-size:27px}
+    .wrap{padding:0 16px 60px}
+  }
+  @media print{
+    body{background:#fff;font-size:11pt}
+    .wrap{box-shadow:none;max-width:none}
+    .cmd{background:#f2f2f0;color:#000;border:1px solid #999;border-left:4px solid #000}
+    .cmd pre{color:#000;-webkit-text-fill-color:#000}
+    .prompt{background:#f4f6f8;border:1px solid #999;border-left:4px solid #333}
+    .cmd .copy,.prompt .copy{display:none}
+    .pane{display:block !important}
+    .tabs{display:none}
+    h2.step{page-break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="cover">
+  <p class="eyebrow">변호사를 위한 설치·실습 안내서</p>
+  <h1>클로드코드 설치부터<br>가상사건 실습까지</h1>
+  <p class="lead">컴퓨터를 잘 몰라도 됩니다. 이 문서에 나오는 순서대로 복사·붙여넣기만 하면, 설치를 끝내고 실제 사건기록 13개를 읽히는 실습까지 마칠 수 있습니다.</p>
+  <div class="meta">
+    <span class="chip">설치 30분 + 실습 30분</span>
+    <span class="chip">Windows 10·11 / macOS</span>
+    <span class="chip">한 줄 자동설치</span>
+    <span class="chip">실습 가상사건 포함</span>
+    <span class="chip">2026-08-24 기준</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#s0">먼저 알아둘 것</a></li>
+    <li><a href="#s1">준비물 3가지</a></li>
+    <li><a href="#s2">클로드 Pro 가입</a></li>
+    <li><a href="#s3">터미널 여는 법</a></li>
+    <li><a href="#s4">한 줄 설치 (핵심)</a></li>
+    <li><a href="#s5">설치 중 물어보는 것들</a></li>
+    <li><a href="#s6">클로드코드 로그인</a></li>
+    <li><a href="#s7">legal-terminal 앱</a></li>
+    <li><a href="#s8">설치 확인</a></li>
+    <li><a href="#s9">실습 — 가상사건 30분</a></li>
+    <li><a href="#s10">내 사건에 적용하기</a></li>
+    <li><a href="#s11">문제가 생겼을 때</a></li>
+    <li><a href="#s12">보안과 검증 책임</a></li>
+    <li><a href="#s13">지우고 싶을 때</a></li>
+    <li><a href="#s14">용어 미니사전</a></li>
+    <li><a href="#s15">자료 출처</a></li>
+  </ol>
+</nav>
+
+<!-- 0 -->
+<section id="s0">
+  <h2 class="step"><span class="num">0</span>먼저 알아둘 것</h2>
+
+  <p><strong>클로드코드(Claude Code)</strong>는 앤트로픽의 인공지능 클로드를 <em>내 컴퓨터 안에서</em> 쓰는 프로그램입니다. 채팅창에 파일을 하나씩 올리는 대신, 클로드가 내 사건폴더를 <strong>통째로 직접 읽고</strong> 문서를 만들어 저장합니다.</p>
+
+  <p><strong>쥬리서포트 플러그인(jurisupport-plugins)</strong>은 거기에 <em>한국 송무용 기능</em>을 얹는 무료 공개 패키지입니다. 사건기록 정리, 쟁점 추출, 법령·판례 검증, 준비서면 초안 작성이 하나의 표준 절차로 묶여 있습니다.</p>
+
+  <p><strong>legal-terminal</strong>은 그 둘을 <em>검은 창 없이</em> 쓰는 앱입니다. 사건폴더·전자소송기록·준비서면·클로드 채팅을 한 화면에 모아 둔, 변호사용 작업 프로그램입니다.</p>
+
+  <p>이 안내서는 <strong>아무것도 안 깔린 컴퓨터</strong>에서 시작해 위 세 가지를 모두 설치하고, <strong>실습용 가상사건으로 준비서면 초안까지 한 바퀴 돌려 보는 것</strong>을 목표로 합니다.</p>
+
+  <div class="box tip">
+    <p class="t">검은 화면이 무섭게 느껴져도 괜찮습니다</p>
+    <p>설치는 검은 창(터미널)에 <strong>딱 한 줄을 붙여넣고 엔터</strong>를 치는 것이 전부입니다. 나머지는 자동으로 진행되고, 중간에 몇 번 <code>Y</code> 또는 엔터만 누르면 됩니다. 설치가 끝나면 <a href="#s7">legal-terminal 앱</a>을 써서 검은 창을 아예 안 볼 수도 있습니다.</p>
+  </div>
+
+  <h3>설치하면 무엇이 깔리나</h3>
+  <table>
+    <tr><th>구분</th><th>내용</th></tr>
+    <tr><td>기본 도구</td><td>Git, Node.js, Python, 크롬 등 (다른 프로그램에도 쓰이는 표준 도구)</td></tr>
+    <tr><td>클로드코드</td><td>클로드를 내 컴퓨터에서 쓰는 본체</td></tr>
+    <tr><td>쥬리서포트 플러그인</td><td>사건 인테이크 → 준비서면 작성 표준 절차</td></tr>
+    <tr><td>법령·판례 도구</td><td>법제처 법령 조회(korean-law), 법고을·lbox 판례 검색, 법원 양식 DB</td></tr>
+    <tr><td>legal-terminal</td><td>기록을 옆에 띄우고 서면을 쓰는 변호사용 앱</td></tr>
+    <tr><td>데이터 보호 장치</td><td>의뢰인 정보가 외부로 나가려 할 때 감지·차단하는 보조 안전장치</td></tr>
+    <tr><td>실습 자료</td><td>가상사건 기록 13개 PDF + 강의 슬라이드 + 프롬프트 핸드아웃</td></tr>
+  </table>
+</section>
+
+<!-- 1 -->
+<section id="s1">
+  <h2 class="step"><span class="num">1</span>준비물 3가지</h2>
+  <ul class="checklist">
+    <li><strong>클로드 Pro 또는 Max 유료 계정</strong> — 월 20달러부터. 이것만은 사람이 직접 가입·결제해야 하며 자동으로 처리되지 않습니다.</li>
+    <li><strong>인터넷에 연결된 컴퓨터</strong> — Windows 10 22H2 이상 / Windows 11, 또는 macOS.</li>
+    <li><strong>관리자 비밀번호</strong> — 설치 도중 1~2회 물어봅니다. (윈도우는 "이 앱이 변경하도록 허용하시겠습니까?" 팝업에 <strong>예</strong>)</li>
+  </ul>
+
+  <div class="box warn">
+    <p class="t">회사·사무소 보안 프로그램이 강한 PC라면</p>
+    <p>백신이나 사내 보안정책이 설치를 막을 수 있습니다. 그럴 때도 <strong>설치를 건너뛰고 실습자료만 받는 길</strong>이 열려 있습니다(<a href="#s5">5번 단계</a>의 <code>N</code> 선택). 우선 개인 노트북에서 시도해 보시고, 막히면 <a href="#s11">11번 단계</a>를 보세요.</p>
+  </div>
+
+  <h3>있으면 좋지만 지금 없어도 되는 것</h3>
+  <table>
+    <tr><th>항목</th><th>용도</th><th>지금 없으면</th></tr>
+    <tr><td>법제처 Open API 키(OC)</td><td>법령·판례 정식 조회</td><td>엔터로 건너뛰고 나중에 발급. 그동안은 오프라인 법령 자료로 실습 가능</td></tr>
+    <tr><td>jurisupport.com 계정</td><td>사건·기일·증거 통합 관리</td><td>건너뛰기 가능. 사건 50건까지 무료라 나중에 연동 권장</td></tr>
+    <tr><td>구글 Gemini API 키</td><td>보유 서적·과거 사건 검색DB 구축</td><td>건너뛰기 (선택 기능)</td></tr>
+    <tr><td>lbox.kr 계정</td><td>판례 검색</td><td>없어도 됨. 무료인 법고을(法고을) 검색으로 대체</td></tr>
+  </table>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <h2 class="step"><span class="num">2</span>클로드 Pro 가입 (5분)</h2>
+  <ol>
+    <li>브라우저에서 <a href="https://claude.ai/upgrade">claude.ai/upgrade</a> 접속</li>
+    <li>구글 계정이나 이메일로 가입</li>
+    <li><strong>Pro</strong>(월 20달러) 또는 <strong>Max</strong> 요금제를 선택하고 결제</li>
+  </ol>
+  <p>여기서 만든 계정으로 나중에 클로드코드에 로그인합니다. <strong>가입에 쓴 이메일·비밀번호를 기억해 두세요.</strong></p>
+  <div class="box tip">
+    <p class="t">Pro와 Max 차이</p>
+    <p>Pro로 시작해도 충분합니다. 하루에 여러 사건을 길게 돌리다 사용량 제한에 자주 걸리면 그때 Max로 올리면 됩니다.</p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <h2 class="step"><span class="num">3</span>검은 창(터미널) 여는 법</h2>
+  <p>설치 명령을 붙여넣을 창을 먼저 엽니다. 쓰는 컴퓨터에 맞는 탭을 누르세요. <strong>이 선택은 아래 모든 단계에 함께 적용됩니다.</strong></p>
+
+  <div class="tabs" role="tablist">
+    <button id="tab-win" class="on" onclick="pick('win')">🪟 윈도우</button>
+    <button id="tab-mac" onclick="pick('mac')">🍎 맥</button>
+  </div>
+
+  <div class="pane on" data-os="win">
+    <ol>
+      <li>키보드에서 <strong>윈도우 키</strong>를 누릅니다 (또는 화면 왼쪽 아래 시작 버튼 클릭)</li>
+      <li><code>powershell</code> 이라고 입력합니다</li>
+      <li>목록에 뜬 <strong>Windows PowerShell</strong>을 <strong>그냥 클릭</strong>해서 실행합니다<br>
+          <span style="color:var(--sub);font-size:14px">→ '관리자 권한으로 실행'을 고를 필요 없습니다.</span></li>
+      <li>파란색 또는 검은색 창이 열리면 준비 완료입니다</li>
+    </ol>
+  </div>
+
+  <div class="pane" data-os="mac">
+    <ol>
+      <li>키보드에서 <strong>커맨드(⌘) + 스페이스</strong>를 누릅니다</li>
+      <li><code>터미널</code> 또는 <code>terminal</code> 이라고 입력합니다</li>
+      <li>맨 위에 나오는 <strong>터미널</strong>을 엔터로 실행합니다</li>
+      <li>흰색 또는 검은색 창이 열리면 준비 완료입니다</li>
+    </ol>
+  </div>
+
+  <div class="box tip">
+    <p class="t">붙여넣기 방법</p>
+    <p>이 안내서의 상자 오른쪽 위 <strong>복사</strong> 버튼을 누른 뒤, 검은 창에서 <strong>마우스 오른쪽 클릭</strong>(윈도우) 또는 <strong>커맨드+V</strong>(맥)를 하면 붙여집니다. 그다음 <strong>엔터</strong>.</p>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <h2 class="step"><span class="num">4</span>한 줄 설치 — 이 단계가 핵심입니다</h2>
+
+  <p>아래 한 줄이 <strong>점검 → 설치 또는 업데이트 → 실습자료 다운로드</strong>까지 한 번에 처리합니다. 이미 깔려 있으면 건너뛰고, 오래됐으면 최신으로 올리고, 없으면 물어본 뒤 설치합니다.</p>
+
+  <div class="pane on" data-os="win">
+    <div class="cmd">
+      <span class="label">윈도우 · PowerShell</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>irm "https://raw.githubusercontent.com/jurisupport/claudecode-songmu-seminar2/main/setup-check.ps1?cache=legalproc" | iex</pre>
+    </div>
+    <p>실습자료는 <code>Downloads\클로드코드2차자료</code> 에 받아집니다. 전체 15분쯤 걸립니다.</p>
+
+    <div class="box warn">
+      <p class="t">중간에 팝업이 여러 번 뜹니다</p>
+      <p>"이 앱이 디바이스를 변경하도록 허용하시겠습니까?" 창이 나오면 <strong>예</strong>를 누르세요. 여러 번 나올 수 있고, 다른 창 뒤에 가려져 있을 수도 있습니다. 화면이 멈춘 것 같으면 <strong>작업표시줄의 노란 방패 아이콘</strong>을 확인하세요.</p>
+    </div>
+
+    <h4>회사 보안정책에 막혔을 때</h4>
+    <p><code>irm ... | iex</code> 가 차단되면 새 PowerShell 창에 <strong>아래 4줄</strong>을 붙여넣으세요. 스크립트가 열리면 선택지에서 <strong><code>S</code></strong>(보안·진단 모드)를 고릅니다.</p>
+    <div class="cmd">
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>$p = "$env:TEMP\claudecode2-setup-check.ps1"
+iwr "https://raw.githubusercontent.com/jurisupport/claudecode-songmu-seminar2/main/setup-check.ps1?cache=legalproc" -OutFile $p -UseBasicParsing
+Unblock-File $p
+powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File $p</pre>
+    </div>
+    <p>실패해도 바탕화면에 진단 ZIP을 남기고 <strong>실습자료 다운로드는 계속 진행</strong>됩니다.</p>
+  </div>
+
+  <div class="pane" data-os="mac">
+    <div class="cmd">
+      <span class="label">맥 · 터미널</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>bash &lt;(curl -fsSL https://raw.githubusercontent.com/jurisupport/claudecode-songmu-seminar2/main/setup-check.sh)</pre>
+    </div>
+    <p>실습자료는 <code>~/Downloads/클로드코드2차자료</code> 에 받아집니다. 전체 10분쯤 걸립니다.</p>
+
+    <div class="box warn">
+      <p class="t">비밀번호를 물어보면</p>
+      <p>홈브루(Homebrew) 설치 때 <strong>맥 로그인 비밀번호</strong>를 한 번 묻습니다. 입력해도 <strong>화면에는 아무 글자도 보이지 않습니다</strong>. 정상이니 그대로 치고 엔터를 누르세요.</p>
+    </div>
+  </div>
+
+  <div class="box danger">
+    <p class="t">설치가 끝날 때까지 창을 닫지 마세요</p>
+    <p>글자가 빠르게 올라가는 동안은 정상 작동 중입니다. 몇 분간 멈춘 것처럼 보여도 기다리세요. 노트북은 <strong>전원을 연결</strong>하고 절전으로 꺼지지 않게 해 두면 좋습니다.</p>
+  </div>
+
+  <details style="margin:0 0 8px">
+    <summary style="cursor:pointer;font-weight:700;color:var(--sub)">실습자료 없이 프로그램만 깔고 싶다면 (펼치기)</summary>
+    <div style="padding-top:14px">
+      <p>쥬리서포트 플러그인 저장소의 순수 설치 한 줄입니다. 실습 가상사건은 받지 않습니다.</p>
+      <div class="pane on" data-os="win">
+        <div class="cmd"><button class="copy" onclick="cp(this)">복사</button>
+        <pre>irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 | iex</pre></div>
+      </div>
+      <div class="pane" data-os="mac">
+        <div class="cmd"><button class="copy" onclick="cp(this)">복사</button>
+        <pre>bash &lt;(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/bootstrap.sh)</pre></div>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <h2 class="step"><span class="num">5</span>설치 중 물어보는 것들 — 이렇게 답하세요</h2>
+
+  <h3>① 먼저 큰 선택지가 나옵니다</h3>
+  <table>
+    <tr><th style="width:16%">선택</th><th>의미</th><th>이럴 때</th></tr>
+    <tr><td><strong>엔터</strong> 또는 <code>Y</code></td><td>설치 / 최신 업데이트 진행</td><td>기본값. 대부분 이걸 고르면 됩니다</td></tr>
+    <tr><td><code>S</code></td><td>보안·진단 모드 설치 (윈도우)</td><td>회사 PC라 일반 설치가 막힐 때</td></tr>
+    <tr><td><code>N</code></td><td>설치는 건너뛰고 <strong>자료만 받기</strong></td><td>설치가 안 되거나 시간이 없을 때. 슬라이드·핸드아웃은 그대로 볼 수 있습니다</td></tr>
+  </table>
+  <p>플러그인이 깔린 뒤 <strong>legal-terminal 앱도 설치할지</strong> 이어서 물어봅니다. <strong>엔터(예)</strong>를 권합니다.</p>
+
+  <h3>② 이어서 12단계 대화식 설치</h3>
+  <p>처음 설치하는 분 기준의 답을 정리했습니다.</p>
+  <table>
+    <tr><th style="width:44%">질문</th><th>이렇게 답하세요</th></tr>
+    <tr><td>데이터 보호 Hook 설치</td><td><strong>엔터</strong> (예)</td></tr>
+    <tr><td>법제처 Open API 키(OC)를 지금 갖고 있나요?</td><td>없으면 <strong>엔터</strong>로 건너뛰기. 나중에 발급해도 됩니다</td></tr>
+    <tr><td>~/사건 디렉토리 생성하고 CSV 템플릿 복사?</td><td><strong>엔터</strong> (예) — 사건폴더 기본 틀이 만들어집니다</td></tr>
+    <tr><td>legal-books 검색 서버 설치</td><td><strong>n</strong> — 책 스캔이 끝난 뒤 나중에</td></tr>
+    <tr><td>case-records 검색 서버 설치</td><td><strong>n</strong> — 과거 사건 인덱싱 후 나중에</td></tr>
+    <tr><td>court-forms 법원 양식 DB 설치</td><td><strong>엔터</strong> (예) — 가볍고 바로 유용합니다</td></tr>
+    <tr><td>beopgoeul-search 자동검색 도구 설치</td><td><strong>엔터</strong> (예) — 크롬이 함께 설치됩니다</td></tr>
+    <tr><td>clean-legal-db 오프라인 법률DB 설치</td><td>인터넷이 넉넉하면 <strong>엔터</strong> (약 235MB 내려받음)</td></tr>
+    <tr><td>JuriSupport 가입/MCP 연동을 진행할까요?</td><td>계정이 없으면 <strong>n</strong>. 나중에 <a href="#s11">연동 가능</a></td></tr>
+    <tr><td>변호사 강점찾기 플러그인을 설치할까요?</td><td>취향껏. <strong>엔터</strong>(예)여도 무방</td></tr>
+    <tr><td>legal-terminal 앱을 설치할까요?</td><td><strong>엔터</strong> (예) 권장 — <a href="#s7">7번 단계</a> 참조</td></tr>
+  </table>
+
+  <div class="box tip">
+    <p class="t">규칙 하나만 기억하세요</p>
+    <p><code>[Y/n]</code> 이라고 쓰여 있으면 <strong>그냥 엔터</strong>가 "예"입니다. <code>[y/N]</code> 이면 그냥 엔터가 "아니오"입니다. <strong>대문자로 쓰인 쪽이 엔터의 기본값</strong>입니다.</p>
+  </div>
+
+  <div class="box warn">
+    <p class="t">건너뛴 것들은 언제든 다시 설치됩니다</p>
+    <p>지금 <strong>n</strong>으로 넘긴 항목은 나중에 같은 한 줄을 다시 실행하면 됩니다. 처음부터 전부 켤 필요 없습니다.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <h2 class="step"><span class="num">6</span>클로드코드 로그인 (1회만)</h2>
+  <p>설치가 끝나면 완료 메시지가 나옵니다. 이제 클로드 계정과 연결합니다. <strong>legal-terminal을 쓸 계획이어도 이 로그인은 한 번 해 두어야 합니다.</strong></p>
+
+  <div class="pane on" data-os="win">
+    <p>PowerShell 창을 <strong>완전히 닫았다가 새로 연 뒤</strong>, 아래를 입력하고 엔터.</p>
+    <div class="cmd">
+      <span class="label">윈도우 · PowerShell</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>claude.cmd</pre>
+    </div>
+    <div class="box warn">
+      <p class="t">윈도우에서는 <code>claude</code>가 아니라 <code>claude.cmd</code></p>
+      <p>PowerShell에서 그냥 <code>claude</code>를 치면 실행 정책 오류가 날 수 있습니다. <strong>뒤에 <code>.cmd</code>를 붙이세요.</strong> (시작 메뉴의 <strong>Git Bash</strong>에서 쓸 때는 그냥 <code>claude</code>입니다.)</p>
+    </div>
+  </div>
+
+  <div class="pane" data-os="mac">
+    <p>터미널 창을 <strong>완전히 닫았다가 새로 연 뒤</strong>, 아래를 입력하고 엔터.</p>
+    <div class="cmd">
+      <span class="label">맥 · 터미널</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>claude</pre>
+    </div>
+  </div>
+
+  <ol>
+    <li>브라우저가 자동으로 열립니다</li>
+    <li><a href="#s2">2번 단계</a>에서 만든 <strong>클로드 Pro 계정</strong>으로 로그인</li>
+    <li>권한 승인 버튼을 누릅니다</li>
+    <li>검은 창으로 돌아오면 로그인 완료 — <strong>이후로는 다시 로그인할 필요 없습니다</strong></li>
+  </ol>
+
+  <p>클로드코드를 빠져나올 때는 <code>/exit</code>를 입력하거나 <strong>Ctrl+C를 두 번</strong> 누르면 됩니다.</p>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <h2 class="step"><span class="num">7</span>legal-terminal — 검은 창 대신 쓰는 앱</h2>
+
+  <p>개발자에게 VS Code가 있다면 송무 변호사에겐 legal-terminal이 있습니다. <strong>사건폴더 · 전자소송기록 PDF · 준비서면 · 클로드 채팅</strong>을 한 화면에서 다루는 앱입니다.</p>
+
+  <p>처음 쓰는 분께는 <strong>검은 창보다 이쪽을 강하게 권합니다.</strong> 기록 PDF를 왼쪽에 띄워 놓고 오른쪽 채팅창에 바로 물어볼 수 있어, 지금 무엇을 보고 있는지 헷갈리지 않습니다.</p>
+
+  <table>
+    <tr><th>할 수 있는 것</th><th>설명</th></tr>
+    <tr><td>사건 열기</td><td>새 사건 추가 → 폴더 선택 한 번이면 그 사건 기준 작업환경이 됨</td></tr>
+    <tr><td>기록 나란히 보기</td><td>서증 PDF를 왼쪽, 준비서면을 오른쪽에 두고 좌우 분할 편집</td></tr>
+    <tr><td>라이브 프리뷰</td><td>마크다운으로 쓰는데 화면은 서면 모양 그대로</td></tr>
+    <tr><td>한/글 내보내기</td><td>버튼 한 번으로 법원 제출용 HWPX 변환</td></tr>
+    <tr><td>Agent 패널</td><td>사건폴더를 아는 클로드에게 <code>@</code>로 파일 첨부해 질문</td></tr>
+  </table>
+
+  <p><a href="#s4">4번 단계</a>에서 설치 질문에 <strong>엔터(예)</strong>로 답했다면 이미 깔려 있습니다. 따로 설치하려면:</p>
+
+  <div class="pane on" data-os="win">
+    <div class="cmd">
+      <span class="label">윈도우 · PowerShell</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>irm https://github.com/jurisupport/legal-terminal/releases/latest/download/install.ps1 | iex</pre>
+    </div>
+    <p>또는 설치 파일 직접 받기 — <a href="https://github.com/jurisupport/legal-terminal/releases/latest/download/legal-terminal-Setup.exe">legal-terminal-Setup.exe</a> / <a href="https://github.com/jurisupport/legal-terminal/releases/latest/download/legal-terminal-portable.exe">포터블 버전</a></p>
+    <div class="box warn">
+      <p class="t">"Windows의 PC 보호" 창이 뜨면</p>
+      <p><strong>추가 정보</strong> → <strong>실행</strong>을 누릅니다. 그래도 막히면 받은 <code>.exe</code>를 우클릭 → 속성 → <strong>차단 해제</strong> 후 다시 실행하세요.</p>
+    </div>
+  </div>
+
+  <div class="pane" data-os="mac">
+    <div class="cmd">
+      <span class="label">맥 · 터미널</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>curl -fsSL https://github.com/jurisupport/legal-terminal/releases/latest/download/install-mac.sh | bash</pre>
+    </div>
+    <p>또는 직접 받기 — <a href="https://github.com/jurisupport/legal-terminal/releases/latest/download/legal-terminal-mac-arm64.dmg">Apple Silicon(M1~)</a> / <a href="https://github.com/jurisupport/legal-terminal/releases/latest/download/legal-terminal-mac-x64.zip">Intel 맥</a></p>
+  </div>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <h2 class="step"><span class="num">8</span>제대로 깔렸는지 확인</h2>
+  <p>클로드코드가 실행된 상태(입력줄에 <code>&gt;</code> 가 보이는 화면)에서 슬래시(<code>/</code>)만 입력해 보세요. 명령 목록이 뜨는데, 그 안에 <strong><code>/jurisupport:</code> 로 시작하는 항목들</strong>이 보이면 정상입니다.</p>
+
+  <table>
+    <tr><th>보여야 할 명령</th><th>역할</th></tr>
+    <tr><td><code>/jurisupport:cold-start-interview</code></td><td>최초 1회 — 내 사무소 작업방식을 클로드에 학습</td></tr>
+    <tr><td><code>/jurisupport:brief-protocol</code></td><td>준비서면 작성 표준 절차</td></tr>
+    <tr><td><code>/jurisupport:mock-hearing</code></td><td>서면 제출 전 모의변론 검토</td></tr>
+    <tr><td><code>/jurisupport:case-index</code></td><td>CSV 기반 간이 사건관리</td></tr>
+    <tr><td><code>/jurisupport:offline-law-fallback</code></td><td>법제처 키 없을 때 오프라인 법령 조회</td></tr>
+  </table>
+
+  <div class="box tip">
+    <p class="t">안 보인다면</p>
+    <p>클로드코드를 <code>/exit</code>로 끄고 다시 켜 보세요. 그래도 없으면 <a href="#s11">11번 단계</a>의 재등록 명령을 실행하면 됩니다.</p>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <h2 class="step"><span class="num">9</span>실습 — 가상사건으로 30분</h2>
+
+  <div class="box warn">
+    <p class="t">실습 사건은 가상사건입니다</p>
+    <p><strong>김민철 vs 이정숙 · 대여금</strong> 사건으로, 인적사항·금액·계좌·사건번호는 모두 허구이며 실재 인물·사건과 무관합니다.</p>
+  </div>
+
+  <h3>사건 개요</h3>
+  <p>원고가 2013~2015년 4회에 걸쳐 피고에게 합계 <strong>9,000만원</strong>을 빌려줌 → 피고가 1,000만원 일부변제 후 잔액 8,000만원 미회수 → 2024년 차용증을 받았으나 변제기(2025.12.31.) 도과 → 피고는 아파트 매도·주소 이전 정황 → 2026년 소제기. <strong>피고는 소멸시효 완성을 주장</strong>합니다.</p>
+
+  <p><strong>피고의 항변 4가지</strong></p>
+  <ol>
+    <li>송금은 대여가 아니라 사업 투자·동업이었다</li>
+    <li>설령 대여라도 마지막 송금일부터 10년이 지나 소멸시효 완성</li>
+    <li>일부변제는 명절·생일 인사일 뿐 채무승인이 아니다</li>
+    <li>2024년 차용증은 시효 완성을 모른 채 작성 → 시효이익 포기 아니다</li>
+  </ol>
+  <p><strong>미션 — 여러분은 원고(김민철)의 소송대리인입니다.</strong> 위 4가지 항변을 반박하는 준비서면 1~2페이지를 클로드코드로 작성합니다.</p>
+
+  <h3>0단계. 사건폴더 열기</h3>
+  <p><a href="#s4">4번 단계</a>의 한 줄을 실행했다면 <code>Downloads/클로드코드2차자료</code> 안에 <strong><code>실습사건_세션1_대여금</code></strong> 폴더가 있습니다. PDF 13개(소장·갑1~5호증·답변서·을1호증·변론준비기일조서)가 들어 있습니다.</p>
+
+  <p><strong>권장 — legal-terminal에서 열기</strong>: 앱에서 <em>새 사건</em> → <em>작성서류 폴더</em>를 누르고 <code>실습사건_세션1_대여금</code> 폴더를 선택하면, 그 사건 기준 Claude Agent 탭이 열립니다. 이후 모든 프롬프트는 Agent 채팅창에 붙여넣습니다.</p>
+
+  <p><strong>대안 — 터미널에서 열기</strong>: 한 줄 스크립트가 끝나면 이미 실습 폴더로 이동되어 있습니다. 그 상태에서 아래를 입력하세요. 권한 질문이 나오면 내용 확인 후 <em>Yes</em>.</p>
+  <div class="pane on" data-os="win">
+    <div class="cmd"><button class="copy" onclick="cp(this)">복사</button><pre>claude.cmd</pre></div>
+  </div>
+  <div class="pane" data-os="mac">
+    <div class="cmd"><button class="copy" onclick="cp(this)">복사</button><pre>claude</pre></div>
+  </div>
+
+  <div class="box danger">
+    <p class="t">여기서부터는 '명령어'가 아니라 '프롬프트'입니다</p>
+    <p>아래 파란 상자는 <strong>검은 창이 아니라 클로드 채팅창</strong>에 붙여넣는 한국말 지시입니다. 클로드코드를 실행한 뒤 <code>&gt;</code> 입력줄에 그대로 붙여넣고 엔터를 치세요.</p>
+  </div>
+
+  <h3>프롬프트 1 · 사건기록 전체 읽고 정리</h3>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>이 폴더의 사건기록 전체를 읽고, 사실관계를 시간순으로 정리한 다음
+양 당사자의 핵심 주장과 쟁점을 알려줘.</pre>
+  </div>
+  <div class="box tip">
+    <p class="t">여기가 웹 클로드와의 결정적 차이입니다</p>
+    <p>파일을 하나도 업로드하지 않았는데 클로드가 <strong>13개 PDF를 전부 읽습니다.</strong> 이 한 가지 때문에 클로드코드를 쓰는 것입니다.</p>
+  </div>
+
+  <h3>프롬프트 2 · 양측 주장 표로 정리</h3>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>피고 답변서의 항변 4가지를 표로 정리하고, 각 항변에 대해
+원고 측에서 쓸 수 있는 반박 방향을 한 줄씩 붙여줘.</pre>
+  </div>
+
+  <h3>프롬프트 3 · 법령 확인</h3>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>소멸시효(민법 제162조), 시효중단 사유로서의 채무승인(민법 제168조 제3호),
+시효이익의 포기에 관한 조문을 korean-law MCP로 가져와서
+이 사건에 어떻게 적용되는지 설명해줘.</pre>
+  </div>
+  <p style="font-size:15px;color:var(--sub)">법제처 OC 키를 아직 발급받지 않았다면, 위 문장 끝에 "<code>korean-law가 없으면 jurisupport의 offline-law-fallback을 써줘</code>"를 덧붙이세요.</p>
+
+  <h3>프롬프트 4 · 준비서면 초안 작성</h3>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>지금까지 정리한 내용을 바탕으로, 원고 소송대리인 입장에서
+피고 답변서에 대한 반박 준비서면 초안을 작성해줘.
+- 쟁점별로 항을 나눠줘: ① 대여 여부 ② 소멸시효 중단(채무승인)
+  ③ 시효이익 포기 ④ 피고의 재산처분·주소이전 정황
+- 분량은 1~2페이지
+- 준비서면.md 파일로 저장해줘</pre>
+  </div>
+
+  <h3>프롬프트 5 · 자기검증 — 가장 중요한 단계</h3>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>방금 작성한 준비서면에서 인용한 법령 조문과 판결번호를
+korean-law MCP로 전부 재확인하고, 확인 안 되는 인용이 있으면
+표시해줘.</pre>
+  </div>
+  <div class="box danger">
+    <p class="t">판결번호 환각이 가장 큰 위험입니다</p>
+    <p>인공지능은 그럴듯한 사건번호를 지어낼 수 있습니다. 이 자기검증 단계를 <strong>습관으로 만드세요.</strong> 작업 프롬프트와 검수 프롬프트를 분리하는 것 — 이것이 실무에서 가장 많이 반복된 교훈입니다.</p>
+    <p style="margin-top:8px;font-weight:700">초안은 AI, 검증은 변호사.</p>
+  </div>
+
+  <h3>프롬프트 6 · 모의변론으로 제출 전 약점 점검</h3>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>jurisupport의 mock-hearing 방식으로 방금 작성한 준비서면을 검토해줘.
+- 청구권규범 카드
+- 요건사실 매트릭스
+- 입증책임 지도
+- 항변·재항변 트리
+- 유리한 판결과 불리한 판결의 유추·구별 메모
+- 제출가능 / 보강 / 재구성 / 출구 중 평결
+- 1~2주 안에 할 수 있는 보강 과제
+를 순서대로 제시해줘.
+근거가 확인되지 않은 부분은 "미확인"이라고 표시하고, 낙관적으로 뭉개지 마.</pre>
+  </div>
+
+  <h3>시간이 부족하면</h3>
+  <table>
+    <tr><th style="width:20%">시간</th><th>순서</th><th>목표</th></tr>
+    <tr><td>10분</td><td>프롬프트 1 → 5</td><td>사건 파악 + 인용 검수 습관 만들기</td></tr>
+    <tr><td>30분</td><td>프롬프트 1 → 2 → 3 → 4 → 5</td><td>쟁점·근거·초안·검수까지 한 바퀴</td></tr>
+    <tr><td>여유 있을 때</td><td>+ 프롬프트 6</td><td>모의변론으로 깨본 뒤 제출 판단</td></tr>
+  </table>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+  <h2 class="step"><span class="num">10</span>내 사건에 적용하기</h2>
+
+  <h3>잘 부탁하는 3원칙</h3>
+  <p>위 프롬프트들이 왜 그렇게 구체적인지 — 이 세 가지가 박혀 있기 때문입니다.</p>
+  <table>
+    <tr><th style="width:14%">원칙</th><th>내용</th></tr>
+    <tr><td><strong>맥락</strong></td><td>사건폴더를 먼저 읽힌다</td></tr>
+    <tr><td><strong>입장</strong></td><td>"원고 대리인 입장에서"라고 못박는다</td></tr>
+    <tr><td><strong>형식</strong></td><td>표·분량·저장할 파일명을 지정한다</td></tr>
+  </table>
+
+  <h3>최초 1회 — 사무소 작업방식 학습 (15분)</h3>
+  <div class="cmd">
+    <span class="label">클로드코드 안에서</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>/jurisupport:cold-start-interview</pre>
+  </div>
+  <p>의뢰인 호칭("○○님"인지 "원고"인지), 인용 표기 방식, 사건기록 저장 위치 같은 것을 물어봅니다. 답하고 나면 그 내용이 저장되어 <strong>이후 모든 서면 작업에 자동 적용</strong>됩니다.</p>
+
+  <h3>내 사건 하나를 표준절차로 돌리기</h3>
+  <p>바로 초안부터 쓰게 하지 않고, 인테이크 → 쟁점표 → 근거확인 → <strong>목차 승인</strong> → 초안 → 인용검증 순서로 진행시키는 방식입니다.</p>
+  <div class="prompt">
+    <span class="label">클로드 채팅창에 · 대괄호만 바꿔서</span>
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>jurisupport의 brief-protocol 흐름으로 [사건번호/사건명] 준비서면을 작성하자.
+순서는 다음처럼 진행해줘.
+1. 사건번호, 서면 유형, 제출기한, 특별 지시사항 인테이크
+2. JuriSupport MCP가 있으면 사건 메타를 먼저 확인하고, 없으면 case-index 또는 사건 폴더에서 확인
+3. 사건기록을 읽고 쟁점표와 증거 대응표 작성
+4. legal-books, korean-law, beopgoeul-search 순서로 근거 확인
+5. 본문을 쓰기 전에 목차만 제안하고 내 승인을 기다리기
+6. 승인 후 Markdown 초안 작성
+7. 법령·판결번호·직접인용을 검증 리포트로 따로 점검
+각 단계가 끝나면 다음 단계로 넘어가기 전에 요약하고 멈춰줘.</pre>
+  </div>
+
+  <h3>사고가 나는 지점 잠그기</h3>
+  <p>실제 업무에서 반복적으로 사고가 났던 지점들입니다. 각각을 막는 프롬프트를 그대로 쓰세요.</p>
+
+  <h4>① 판례 환각 골라내기</h4>
+  <div class="prompt">
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>방금 네가 인용한 판례를 모두 표로 정리해줘.
+- 열: 사건번호 / 선고일 / 쟁점 / 네가 쓴 법리 / 실제 조회 여부 / 원문 확인 필요 부분
+- 실제로 조회하지 못한 판례는 절대 단정하지 말고 "미확인"이라고 써줘.
+- 주문과 판시사항이 네 설명과 맞는지도 따로 표시해줘.</pre>
+  </div>
+
+  <h4>② 발신인·수신인 뒤바뀜 방지 (내용증명 수정 시 빈발)</h4>
+  <div class="prompt">
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>수정 전에 당사자 구도부터 확인해줘.
+- 발신인/작성 주체: A
+- 수신인/상대방: B
+- 우리 입장: B의 채무불이행을 이유로 이행을 촉구한다
+- 유지할 톤: 단정적이되 감정적 표현은 피한다
+위 구도를 표로 먼저 확인한 뒤, 기존 문서에서 이 구도와 어긋나는 문장만 찾아 수정안을 제시해줘.</pre>
+  </div>
+
+  <h4>③ 최신본 덮어쓰기 방지</h4>
+  <div class="prompt">
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>파일을 수정하기 전에 반드시 디스크의 최신본을 다시 읽어줘.
+- 파일명, 수정시각, 전체 구조를 먼저 요약
+- 내가 직접 수정한 문단은 보존
+- 요청받은 부분만 최소 수정
+- 수정 후 변경된 문단과 보존한 문단을 나눠 보고
+- 확실하지 않으면 덮어쓰지 말고 충돌 가능성을 먼저 알려줘.</pre>
+  </div>
+
+  <h4>④ 사실주장 원자료 대조</h4>
+  <div class="prompt">
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>초안의 사실주장을 모두 점검해줘.
+- 열: 초안 문장 / 근거 파일 또는 호증 / 원문 위치 / 확실·불확실·근거없음 / 수정안
+- 자백, 반성, 승인, 고의, 기망, 악의, 변제 약속 같은 민감한 표현은 특히 엄격하게 봐줘.
+- 근거 없는 문장은 삭제하거나 "주장할 수 있음" 수준으로 낮춰줘.</pre>
+  </div>
+
+  <h4>⑤ AI 말투 줄이기</h4>
+  <div class="prompt">
+    <button class="copy" onclick="cp(this)">복사</button>
+    <pre>아래 문단을 의미는 유지하면서 준비서면답게 다듬어줘.
+- 과장된 비유, 긴 대시, "중요합니다/핵심입니다" 같은 LLM 말투 금지
+- 화살표나 도식 대신 문장으로 쓸 것
+- 상대방을 불필요하게 자극하는 표현은 낮출 것
+- 수정 이유를 3줄 이내로 설명할 것</pre>
+  </div>
+
+  <p style="font-size:15px;color:var(--sub)">이 밖에 견적 누락 방지, 증거설명서 표 만들기, 스타일가이드 자산화 등 더 많은 프롬프트는 <a href="#s15">실습 명령어 핸드아웃</a>에 들어 있습니다.</p>
+</section>
+
+<!-- 11 -->
+<section id="s11">
+  <h2 class="step"><span class="num">11</span>문제가 생겼을 때</h2>
+
+  <table>
+    <tr><th style="width:38%">증상</th><th>해결</th></tr>
+    <tr><td>설치 도중 빨간 글씨가 나오며 멈춤</td><td>창을 닫고 <a href="#s4">4번 단계</a>의 한 줄을 다시 실행. 이미 깔린 것은 건너뛰므로 다시 해도 안전합니다</td></tr>
+    <tr><td>한 줄 실행 자체가 차단됨 (윈도우)</td><td><a href="#s4">4번 단계</a>의 <strong>4줄 우회 명령</strong> 실행 → 선택지에서 <code>S</code></td></tr>
+    <tr><td>설치가 도저히 안 됨</td><td>선택지에서 <code>N</code> — 설치를 건너뛰고 <strong>실습자료·슬라이드·핸드아웃만</strong> 받습니다</td></tr>
+    <tr><td>화면이 멈춘 것 같음 (윈도우)</td><td>작업표시줄의 노란 방패 아이콘 또는 뒤에 가려진 UAC 창에서 <strong>예</strong></td></tr>
+    <tr><td>윈도우에서 <code>claude</code>가 실행 안 됨</td><td><code>claude.cmd</code> 로 입력 (뒤에 <code>.cmd</code>)</td></tr>
+    <tr><td><code>claude</code> 명령을 못 찾는다고 나옴</td><td>검은 창을 <strong>완전히 닫았다가 새로 열기</strong></td></tr>
+    <tr><td><code>/jurisupport:</code> 명령이 안 보임</td><td>아래 재등록 명령 실행</td></tr>
+    <tr><td>ZIP으로 받았더니 한글 폴더명이 깨짐</td><td>윈도우에서 흔한 문제입니다. <a href="#s4">4번 단계</a>의 한 줄로 다시 받으세요</td></tr>
+    <tr><td>클로드가 영어로 답함</td><td>"한국어로 답해주세요"라고 한 번 말하면 됩니다</td></tr>
+    <tr><td>법령 조회가 안 됨</td><td>법제처 OC 키 미발급 상태. <code>/jurisupport:offline-law-fallback</code> 사용</td></tr>
+    <tr><td>legal-terminal 설치만 막힘</td><td><a href="#s7">7번 단계</a>의 설치 파일을 직접 내려받아 실행</td></tr>
+  </table>
+
+  <h4>플러그인 재등록 (명령이 안 보일 때)</h4>
+  <div class="pane on" data-os="win">
+    <div class="cmd">
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>cd $env:USERPROFILE\jurisupport-plugins
+git fetch origin main
+git reset --hard origin/main
+claude.cmd plugin marketplace update jurisupport-plugins
+claude.cmd plugin uninstall --keep-data -y jurisupport
+claude.cmd plugin install jurisupport@jurisupport-plugins</pre>
+    </div>
+  </div>
+  <div class="pane" data-os="mac">
+    <div class="cmd">
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>cd ~/jurisupport-plugins
+git pull
+./install.sh</pre>
+    </div>
+  </div>
+
+  <h4>나중에 JuriSupport 사건관리와 연동하려면</h4>
+  <ol>
+    <li><a href="https://jurisupport.com">jurisupport.com</a> 가입 (사건 50건까지 무료)</li>
+    <li><a href="https://jurisupport.com/profile">jurisupport.com/profile</a> 에서 API 토큰 발급</li>
+    <li>설치 프로그램을 다시 실행하면 토큰 입력 단계에서 자동 등록됩니다
+      <div class="pane on" data-os="win" style="margin-top:10px">
+        <div class="cmd"><button class="copy" onclick="cp(this)">복사</button><pre>시작 메뉴 → Git Bash 실행 후:
+cd ~/jurisupport-plugins &amp;&amp; ./install.sh</pre></div>
+      </div>
+      <div class="pane" data-os="mac" style="margin-top:10px">
+        <div class="cmd"><button class="copy" onclick="cp(this)">복사</button><pre>cd ~/jurisupport-plugins &amp;&amp; ./install.sh</pre></div>
+      </div>
+    </li>
+  </ol>
+
+  <h4>조직 정책이 winget·PowerShell을 아예 막는 경우</h4>
+  <p>사용자 권한으로는 해결되지 않습니다. 사무실 IT 담당자에게 <strong>Git, Node.js LTS, Python 3.12, Google Chrome, jq, Git Bash, Claude Code, legal-terminal</strong> 설치 허용을 요청하거나, WSL2가 허용되는 PC라면 그쪽 경로를 쓰세요.</p>
+
+  <div class="box tip">
+    <p class="t">막히면 클로드코드에게 물어보세요</p>
+    <p>설치만 끝나 있다면, 검은 창에 나온 오류 메시지를 그대로 복사해 클로드코드에 붙여넣고 <strong>"이 오류 어떻게 고쳐?"</strong>라고 물으면 됩니다. 그것이 이 도구의 사용법입니다.</p>
+    <p style="margin-top:8px">그래도 해결이 안 되면 — <a href="https://github.com/jurisupport/jurisupport-plugins/issues">GitHub Issues</a> 또는 <a href="mailto:admin@jurisupport.com">admin@jurisupport.com</a></p>
+  </div>
+</section>
+
+<!-- 12 -->
+<section id="s12">
+  <h2 class="step"><span class="num">12</span>보안과 검증 책임</h2>
+
+  <h3>지켜야 할 5가지</h3>
+  <p>변호사 비밀유지의무와 직결됩니다. 설치 후 <code>jurisupport-plugins/guides/00_security.md</code> 를 한 번 정독하시길 권합니다.</p>
+  <ol>
+    <li>인공지능 서비스의 <strong>"내 대화를 학습에 사용" 동의는 거부</strong></li>
+    <li>무료 번역기·무료 OCR 사이트에 <strong>사건자료 업로드 금지</strong></li>
+    <li>사건폴더를 <strong>외부 공유링크로 열지 않기</strong></li>
+    <li>클로드코드에 <strong>"이 자료 외부로 보내줘"라고 시키지 않기</strong></li>
+    <li>일반 카톡·텔레그램으로 <strong>사건자료 주고받지 않기</strong></li>
+  </ol>
+  <div class="box warn">
+    <p class="t">데이터 보호 장치는 보조 수단입니다</p>
+    <p>의뢰인 정보가 외부로 나가려 할 때 감지·차단하는 장치가 들어 있지만, <strong>완전한 유출 방지를 보장하지 않습니다.</strong> 최종 판단은 사용하는 변호사의 몫입니다.</p>
+  </div>
+
+  <div class="box danger">
+    <p class="t">가장 중요한 한 가지 — 초안은 AI, 검증은 변호사</p>
+    <p>인용한 <strong>판결번호·법령 조문은 제출 전 반드시 직접 재확인</strong>하세요. 결과물의 정확성·법적 적합성 검증, 의뢰인 정보 보호, 법원·의뢰인 제출 전 최종 검토는 모두 사용 변호사 본인의 책임입니다.</p>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="s13">
+  <h2 class="step"><span class="num">13</span>지우고 싶을 때</h2>
+  <p>깔끔하게 되돌릴 수 있습니다. <strong>사건폴더와 작성한 문서는 지워지지 않습니다.</strong></p>
+  <div class="pane on" data-os="win">
+    <div class="cmd">
+      <span class="label">윈도우 · PowerShell</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-uninstall.ps1 | iex</pre>
+    </div>
+  </div>
+  <div class="pane" data-os="mac">
+    <div class="cmd">
+      <span class="label">맥 · 터미널</span>
+      <button class="copy" onclick="cp(this)">복사</button>
+      <pre>cd ~/jurisupport-plugins
+./uninstall.sh</pre>
+    </div>
+    <p>미리 보기만 하려면 <code>./uninstall.sh --dry-run</code>.</p>
+  </div>
+</section>
+
+<!-- 14 -->
+<section id="s14">
+  <h2 class="step"><span class="num">14</span>용어 미니사전</h2>
+  <table>
+    <tr><th style="width:26%">용어</th><th>뜻</th></tr>
+    <tr><td>터미널 / PowerShell</td><td>명령어를 글자로 입력하는 검은 창. 이 안내서에서는 설치할 때만 씁니다</td></tr>
+    <tr><td>Git Bash</td><td>윈도우에 함께 깔리는 리눅스식 검은 창. 설치 프로그램을 다시 돌릴 때 씁니다</td></tr>
+    <tr><td>클로드코드</td><td>내 컴퓨터 폴더를 직접 읽고 파일을 만드는 클로드</td></tr>
+    <tr><td>legal-terminal</td><td>기록·서면·클로드를 한 화면에 모은 변호사용 앱</td></tr>
+    <tr><td>플러그인</td><td>클로드코드에 얹는 기능 묶음. 쥬리서포트 플러그인이 여기 해당</td></tr>
+    <tr><td>스킬 / 슬래시 명령</td><td><code>/</code>로 시작하는 미리 짜인 작업 절차</td></tr>
+    <tr><td>프롬프트</td><td>클로드에게 시키는 한국말 지시문. 이 안내서의 파란 상자</td></tr>
+    <tr><td>MCP</td><td>클로드가 외부 서비스(법제처 법령DB, JuriSupport 등)에 접속하는 연결 규격</td></tr>
+    <tr><td>Hook</td><td>특정 동작 직전에 자동으로 끼어드는 검사 장치. 여기서는 의뢰인 정보 유출 감시용</td></tr>
+    <tr><td>OC 키</td><td>법제처 Open API 인증키. 정식 법령·판례 조회에 필요하며 무료 신청</td></tr>
+    <tr><td>환각(hallucination)</td><td>AI가 없는 판결번호·조문을 그럴듯하게 지어내는 현상</td></tr>
+  </table>
+</section>
+
+<!-- 15 -->
+<section id="s15">
+  <h2 class="step"><span class="num">15</span>자료 출처</h2>
+  <table>
+    <tr><th style="width:34%">자료</th><th>주소</th></tr>
+    <tr><td>실습자료·슬라이드·핸드아웃</td><td><a href="https://github.com/jurisupport/claudecode-songmu-seminar2">github.com/jurisupport/claudecode-songmu-seminar2</a></td></tr>
+    <tr><td>쥬리서포트 플러그인 (본체)</td><td><a href="https://github.com/jurisupport/jurisupport-plugins">github.com/jurisupport/jurisupport-plugins</a></td></tr>
+    <tr><td>legal-terminal 앱</td><td><a href="https://github.com/jurisupport/legal-terminal">github.com/jurisupport/legal-terminal</a></td></tr>
+    <tr><td>윈도우 설치 문제 해결</td><td><a href="https://github.com/jurisupport/claudecode-songmu-seminar2/blob/main/WINDOWS_INSTALL_HELP.md">WINDOWS_INSTALL_HELP.md</a></td></tr>
+    <tr><td>사건관리 SaaS</td><td><a href="https://jurisupport.com">jurisupport.com</a> (사건 50건까지 무료)</td></tr>
+  </table>
+  <p>실습 프롬프트 전체와 업무별 템플릿은 강의 저장소의 <code>핸드아웃/실습_명령어_핸드아웃.html</code> 파일을 내려받아 브라우저로 열면 됩니다. 각 프롬프트마다 복사 버튼이 있습니다.</p>
+</section>
+
+<footer>
+  <p><strong>쥬리서포트 플러그인</strong>과 <strong>legal-terminal</strong>은 쥬리서포트 주식회사가 한국 송무 변호사에게 공개 배포하는 MIT 라이선스 오픈소스입니다.<br>
+  문의: <a href="mailto:admin@jurisupport.com">admin@jurisupport.com</a></p>
+  <p><strong>면책</strong> — 클로드코드가 생성한 결과물의 정확성·법적 적합성 검증, 의뢰인 정보 보호, 법원·의뢰인 제출 전 최종 검토는 모두 사용 변호사 본인의 책임입니다. 실습사건은 강의용 가상사건이며 실재 인물·사건과 무관합니다.</p>
+  <p style="margin-top:14px;color:#999;font-size:13px">본 안내서는 2026-08-24 기준 공개 저장소 문서(jurisupport-plugins · claudecode-songmu-seminar2 · legal-terminal)를 바탕으로 작성되었습니다. 설치 절차는 갱신될 수 있으므로 차이가 있으면 각 저장소의 README를 우선하세요.</p>
+</footer>
+
+</div>
+
+<script>
+function pick(os){
+  document.querySelectorAll('.pane').forEach(function(p){
+    p.classList.toggle('on', p.dataset.os === os);
+  });
+  document.getElementById('tab-win').classList.toggle('on', os === 'win');
+  document.getElementById('tab-mac').classList.toggle('on', os === 'mac');
+  try{ localStorage.setItem('jsp-os', os); }catch(e){}
+}
+try{
+  var saved = localStorage.getItem('jsp-os');
+  if(saved) pick(saved);
+}catch(e){}
+
+function cp(btn){
+  var t = btn.parentElement.querySelector('pre').innerText;
+  var done = function(){
+    var old = btn.textContent;
+    btn.textContent = '복사됨 ✓'; btn.classList.add('done');
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done, function(){ fallback(t, done); });
+  } else { fallback(t, done); }
+}
+function fallback(t, done){
+  var ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){}
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
