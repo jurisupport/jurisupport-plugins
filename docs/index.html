@@ -41,6 +41,12 @@
   .meta{display:flex;flex-wrap:wrap;gap:8px}
   .chip{font-size:13px;background:#f2f1ee;border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--sub)}
 
+  section.why{background:#fbf7f7;border:2px solid var(--accent);border-radius:12px;
+              padding:26px 26px 8px;margin:0 0 40px}
+  section.why h2{font-size:25px;margin:0 0 8px;letter-spacing:-.02em;border:0;padding:0}
+  section.why .kicker{font-size:13px;letter-spacing:.16em;color:var(--accent);font-weight:700;margin:0 0 10px}
+  section.why h3{font-size:17px;margin:26px 0 10px}
+
   nav.toc{background:#faf9f7;border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin:0 0 44px}
   nav.toc h2{font-size:14px;letter-spacing:.1em;color:var(--sub);margin:0 0 12px;font-weight:700}
   nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:32px}
@@ -173,9 +179,56 @@
   </div>
 </header>
 
+<section class="why" id="why">
+  <p class="kicker">시작하기 전에 · 왜 이걸 설치하나</p>
+  <h2>AI에 법률 검색 도구를 붙였더니<br>변호사시험 선택형이 만점이 됐습니다</h2>
+
+  <p>제15회 변호사시험 선택형 <strong>공법·민사법·형사법 150문항 전 과목 만점</strong>. 과목별 3회씩 실행해 <strong>9회가 모두 만점</strong>이었습니다. 이 안내서에서 설치할 바로 그 도구를 붙인 결과입니다.</p>
+
+  <div class="stats">
+    <div class="stat"><b>150/150</b><span>선택형 전 문항 정답</span></div>
+    <div class="stat"><b>9회</b><span>전부 만점 (과목별 3회)</span></div>
+    <div class="stat"><b>0회</b><span>도구 뗀 대조군의 만점</span></div>
+  </div>
+
+  <p><strong>모델이 잘한 결과가 아닙니다.</strong> 같은 모델에서 법령·판례·교재 검색 도구만 떼어낸 대조군은 전 과목에서 한 번도 만점에 이르지 못했습니다.</p>
+
+  <table>
+    <tr><th>과목</th><th>모델</th><th>도구 사용 · 3회</th><th>도구 없음 · 3회</th></tr>
+    <tr><td>공법 40문항</td><td>GPT-5.6 Sol</td><td><strong>40/40</strong> × 3</td><td>33 · 34 · 32 (평균 33)</td></tr>
+    <tr><td>민사법 70문항</td><td>Claude Opus 5</td><td><strong>70/70</strong> × 3</td><td>65/70 × 3</td></tr>
+    <tr><td>형사법 40문항</td><td>Claude Opus 5</td><td><strong>40/40</strong> × 3</td><td>37 · 35 · 36</td></tr>
+  </table>
+  <p style="font-size:14.5px;color:var(--sub);margin-top:-8px">채점 기준: 법무부 공고 정답. 공법은 평균 33/40에서 40/40으로 7문항이 개선됐습니다.</p>
+
+  <h3>믿어 달라는 주장이 아니라, 검증할 수 있는 기록</h3>
+  <p>유리한 결과만 골라 공개하지 않도록 <strong>실행 전에 절차를 고정</strong>하고, 답안과 로그를 봉인한 뒤 채점했습니다.</p>
+  <ol>
+    <li><strong>사전등록</strong> — 모델·조건·실행 순서·채점 규칙과 조건 파일 해시를 실행 전에 고정</li>
+    <li><strong>정답표 차단·봉인</strong> — 풀이 환경에서 정답표를 차단하고 답안·로그의 SHA-256 해시를 회차마다 봉인</li>
+    <li><strong>도구 유·무 교차 실행</strong> — 과목별로 도구 사용 조건과 대조군을 각각 3회</li>
+    <li><strong>자유 재생 암기 검증</strong> — 문항을 주지 않고 정답·지문을 기억만으로 재생하도록 요청 → <strong>재생 주장 0건</strong></li>
+  </ol>
+
+  <div class="box warn">
+    <p class="t">결과 해석 시 유의사항</p>
+    <p>선택형(5지선다)에 한정된 결과이며, <strong>사례형·기록형 답안 작성 능력을 의미하지 않습니다.</strong> 실제 시험의 시간 제한 조건과도 다릅니다. 상세 한계와 사전등록 문서·회차별 결과·봉인 해시·재계산 스크립트는 모두 공개돼 있습니다.</p>
+  </div>
+
+  <div class="box tip">
+    <p class="t">그래서 무엇을 설치하는가</p>
+    <p>만점을 만든 것은 모델이 아니라 <strong>모델에 붙인 리서치 도구</strong>였습니다. 그 도구가 바로 이 안내서에서 설치할 <code>jurisupport-plugins</code>와 <code>legal-books</code>입니다. 실무에서도 같은 원리가 작동합니다 — <strong>근거를 찾아 읽히면 정확해지고, 안 읽히면 지어냅니다.</strong> 사건기록을 읽히는 것도 같은 이야기입니다.</p>
+  </div>
+
+  <p>
+    <a class="cta" href="#s1">설치 시작하기</a>
+    <a class="cta ghost" href="https://jurisupport.com/bar-exam-eval">검증 결과 전체 보기</a>
+  </p>
+</section>
+
 <nav class="toc">
   <h2>목차</h2>
-  <ol>
+  <ol start="0">
     <li><a href="#s0">먼저 알아둘 것</a></li>
     <li><a href="#s1">준비물 3가지</a></li>
     <li><a href="#s2">클로드 Pro 가입</a></li>
@@ -192,8 +245,7 @@
     <li><a href="#s13">지우고 싶을 때</a></li>
     <li><a href="#s14">용어 미니사전</a></li>
     <li><a href="#s15">자료 출처</a></li>
-    <li><a href="#s16">변호사시험 만점 검증</a></li>
-    <li><a href="#s17">쥬리서포트 · 도입 컨설팅</a></li>
+    <li><a href="#s16">쥬리서포트 · 도입 컨설팅</a></li>
   </ol>
 </nav>
 
@@ -867,51 +919,7 @@ cd ~/jurisupport-plugins &amp;&amp; ./install.sh</pre></div>
 
 <!-- 16 -->
 <section id="s16">
-  <h2 class="step"><span class="num">16</span>지금 설치한 도구가 받은 성적표</h2>
-
-  <p>이 안내서로 설치한 <strong>리서치 도구</strong>를 붙인 AI가 <strong>제15회 변호사시험 선택형 150문항에서 전 과목 만점</strong>을 받았습니다. 과목별 3회씩 실행해 <strong>9회 전부 만점</strong>이었습니다.</p>
-
-  <div class="stats">
-    <div class="stat"><b>150/150</b><span>선택형 전 문항 정답</span></div>
-    <div class="stat"><b>9회</b><span>전부 만점 (과목별 3회)</span></div>
-    <div class="stat"><b>0회</b><span>도구 뗀 대조군의 만점</span></div>
-  </div>
-
-  <p>중요한 것은 <strong>모델이 잘한 결과가 아니라는 점</strong>입니다. 같은 모델에서 법령·판례·교재 검색 도구만 떼어낸 대조군은 전 과목에서 한 번도 만점에 이르지 못했습니다.</p>
-
-  <table>
-    <tr><th>과목</th><th>모델</th><th>도구 사용 · 3회</th><th>도구 없음 · 3회</th></tr>
-    <tr><td>공법 40문항</td><td>GPT-5.6 Sol</td><td><strong>40/40</strong> × 3</td><td>33 · 34 · 32 (평균 33)</td></tr>
-    <tr><td>민사법 70문항</td><td>Claude Opus 5</td><td><strong>70/70</strong> × 3</td><td>65/70 × 3</td></tr>
-    <tr><td>형사법 40문항</td><td>Claude Opus 5</td><td><strong>40/40</strong> × 3</td><td>37 · 35 · 36</td></tr>
-  </table>
-  <p style="font-size:14.5px;color:var(--sub);margin-top:-8px">채점 기준: 법무부 공고 정답. 공법은 평균 33/40에서 40/40으로 7문항이 개선됐습니다.</p>
-
-  <h3>믿어 달라는 주장이 아니라, 검증할 수 있는 기록</h3>
-  <p>유리한 결과만 골라 공개하지 않도록 <strong>실행 전에 절차를 고정</strong>하고, 답안과 로그를 봉인한 뒤 채점했습니다.</p>
-  <ol>
-    <li><strong>사전등록</strong> — 모델·조건·실행 순서·채점 규칙과 조건 파일 해시를 실행 전에 고정</li>
-    <li><strong>정답표 차단·봉인</strong> — 풀이 환경에서 정답표를 차단하고 답안·로그의 SHA-256 해시를 회차마다 봉인</li>
-    <li><strong>도구 유·무 교차 실행</strong> — 과목별로 도구 사용 조건과 대조군을 각각 3회</li>
-    <li><strong>자유 재생 암기 검증</strong> — 문항을 주지 않고 정답·지문을 기억만으로 재생하도록 요청 → <strong>재생 주장 0건</strong></li>
-  </ol>
-
-  <div class="box warn">
-    <p class="t">결과 해석 시 유의사항</p>
-    <p>선택형(5지선다)에 한정된 결과이며, <strong>사례형·기록형 답안 작성 능력을 의미하지 않습니다.</strong> 실제 시험의 시간 제한 조건과도 다릅니다. 상세 한계와 사전등록 문서·회차별 결과·봉인 해시·재계산 스크립트는 모두 공개돼 있습니다.</p>
-  </div>
-
-  <p><a class="cta" href="https://jurisupport.com/bar-exam-eval">검증 결과 전체 보기</a></p>
-
-  <div class="box tip">
-    <p class="t">그래서 이 안내서가 중요한 이유</p>
-    <p>만점을 만든 것은 <strong>모델에 붙인 리서치 도구</strong>였습니다. 그 도구가 바로 방금 설치한 <code>jurisupport-plugins</code>와 <code>legal-books</code>입니다. 실무에서도 같은 원리가 작동합니다 — 근거를 찾아 읽히면 정확해지고, 안 읽히면 지어냅니다.</p>
-  </div>
-</section>
-
-<!-- 17 -->
-<section id="s17">
-  <h2 class="step"><span class="num">17</span>더 멀리 가려면 — 쥬리서포트</h2>
+  <h2 class="step"><span class="num">16</span>더 멀리 가려면 — 쥬리서포트</h2>
 
   <p>여기까지가 <strong>무료 공개 도구</strong>입니다. 사무소 단위로 더 쓰시려면 두 갈래가 있습니다.</p>
 
