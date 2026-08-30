@@ -970,38 +970,37 @@ cd ~/jurisupport-plugins &amp;&amp; ./install.sh</pre></div>
 
   <div class="promo">
     <h3>① 직접 구축</h3>
-    <p>책을 사서 스캔하고 <code>add_book.sh</code>로 한 권씩 넣습니다. <strong>책 1권당 5~30분</strong>이 걸리며, 재단·스캔 장비 또는 스캔 대행이 필요하고 임베딩용 Gemini API 키가 있어야 합니다.</p>
+    <p>책을 사서 스캔하고 <code>add_book.sh</code>로 한 권씩 넣습니다. <strong>책 1권당 5~30분</strong>이 걸리며, 재단·스캔 장비가 필요하고 임베딩용 Gemini API 키가 있어야 합니다.</p>
     <p>전권을 한 번에 할 필요는 없습니다. <strong>1주차에 자주 보는 3권</strong>부터 넣고 점진적으로 늘리는 편이 현실적입니다.</p>
   </div>
 
   <div class="promo">
-    <h3>② 쥬리서포트에 맡기기 — 교재DB 구축 대행</h3>
-    <p>변호사님은 <strong>책 구입비와 권당 스캔비만 부담</strong>하시면, 쥬리서포트가 스캔·OCR·청킹·임베딩을 거쳐 <strong>바로 검색되는 교재DB</strong>로 만들어 드립니다.</p>
+    <h3>② 쥬리서포트의 도움 받기 — 도서 구입 대행 · 구축 지원</h3>
+    <p>쥬리서포트가 두 가지를 도와드립니다. <strong>도서 구입 대행</strong>(정가 실비 청구, 대행 수수료·배송비 없음)과, 구입하신 책을 검색되는 교재DB로 만드는 과정의 <strong>구축·설치 지원</strong>(OCR·청킹·임베딩 파이프라인 구성, 검색 서버 원격 설치, 사용법 안내)입니다.</p>
 
-    <h4 style="margin-top:18px">전권(18권)을 맡길 경우</h4>
+    <h4 style="margin-top:18px">전권(18권)을 갖출 경우 도서 비용</h4>
     <table>
       <tr><th style="width:38%">항목</th><th style="width:32%">계산</th><th>금액</th></tr>
       <tr><td>서적 구입비</td><td>17권 정가 합계<br><span style="color:var(--sub);font-size:14px">공법 241,000 + 민사 359,000 + 형사 203,000</span></td><td><strong>803,000원</strong></td></tr>
-      <tr><td>스캔비</td><td>18권 × 5,000원</td><td><strong>90,000원</strong></td></tr>
-      <tr><td><strong>합계</strong></td><td>—</td><td><strong style="font-size:18px;color:var(--accent)">893,000원</strong></td></tr>
+      <tr><td>구축·설치 지원</td><td>구성·권수에 따라 개별 견적</td><td><strong>문의</strong></td></tr>
     </table>
     <div class="stats">
       <div class="stat"><b>18권</b><span>만점 실험 교재 전권</span></div>
       <div class="stat"><b>803,000원</b><span>서적 정가 합계<br>(17권 · 실비)</span></div>
-      <div class="stat"><b>90,000원</b><span>스캔비<br>(18권 × 5,000원)</span></div>
+      <div class="stat"><b>개별 견적</b><span>구축·설치 지원<br>(구성에 따라 문의)</span></div>
     </div>
     <p style="font-size:14.5px;color:var(--sub)">헌법재판실무제요는 헌법재판소 발간물이라 서점에서 팔지 않으므로 구입비 합계에서 뺐습니다. 서적 구입비는 정가 기준 실비이며, 서점 할인·개정에 따라 달라집니다.</p>
 
-    <p>전권이 아니어도 됩니다. 주력 분야만 골라 맡기셔도 되고(예: 민사법 8권이면 스캔비 40,000원), 이미 갖고 계신 책으로 하셔도 됩니다. <strong>구성·기간 등 자세한 조건은 문의해 주세요.</strong></p>
+    <p>전권이 아니어도 됩니다. 주력 분야만 먼저 갖추셔도 되고, 이미 갖고 계신 책으로 시작하셔도 됩니다. <strong>구성·기간·비용 등 자세한 조건은 문의해 주세요.</strong></p>
     <p>
-      <a class="cta" href="mailto:admin@jurisupport.com?subject=%EA%B5%90%EC%9E%AC%20DB%20%EA%B5%AC%EC%B6%95%20%EB%8C%80%ED%96%89%20%EB%AC%B8%EC%9D%98">교재DB 구축 문의</a>
+      <a class="cta" href="mailto:admin@jurisupport.com?subject=%EA%B5%90%EC%9E%AC%20DB%20%EA%B5%AC%EC%B6%95%20%EC%A7%80%EC%9B%90%20%EB%AC%B8%EC%9D%98">교재DB 구축 지원 문의</a>
       <a class="cta ghost" href="https://github.com/jurisupport/legal-books">legal-books 저장소 보기</a>
     </p>
   </div>
 
   <div class="box danger">
     <p class="t">저작권 — 반드시 지켜야 할 선</p>
-    <p><strong>본인이 구입한 책을 사무소 내부에서 쓰는 용도로만</strong> 사용하십시오. 교재DB의 외부 공유·재배포는 금지됩니다. 계약상 외부 API 전송이 곤란한 서적은 넣지 마세요. 책 본문 조각은 임베딩 생성을 위해 Gemini API로 전송되므로, <strong>학습 옵트인이 꺼져 있는지 확인</strong>하셔야 합니다.</p>
+    <p>스캔 등 복제 작업은 책을 구입한 본인이 직접 하는 것이 원칙입니다. <strong>본인이 구입한 책을 사무소 내부에서 쓰는 용도로만</strong> 사용하십시오. 교재DB의 외부 공유·재배포는 금지됩니다. 계약상 외부 API 전송이 곤란한 서적은 넣지 마세요. 책 본문 조각은 임베딩 생성을 위해 Gemini API로 전송되므로, <strong>학습 옵트인이 꺼져 있는지 확인</strong>하셔야 합니다.</p>
   </div>
 </section>
 
@@ -1037,7 +1036,7 @@ cd ~/jurisupport-plugins &amp;&amp; ./install.sh</pre></div>
     <p><strong>새 시스템을 크게 얹지 않습니다.</strong> 지금 쓰는 업무 흐름을 먼저 읽고, 필요한 도구만 연결합니다.</p>
     <table style="margin-bottom:14px">
       <tr><th style="width:32%">이런 경우</th><th>이렇게 붙입니다</th></tr>
-      <tr><td>사무소 자료가 흩어져 있다</td><td>보유 서적·과거 사건기록을 로컬 검색DB로 — 변호사시험 만점을 만든 것과 같은 리서치 인프라</td></tr>
+      <tr><td>사무소 자료가 흩어져 있다</td><td>보유 서적·과거 사건기록을 사무소 장비 안에서 로컬 검색DB로 — 변호사시험 만점을 만든 것과 같은 리서치 인프라</td></tr>
       <tr><td>서면 문체·형식이 제각각이다</td><td>사무소 플레이북과 표준 서면 흐름을 학습시켜 일관성 확보</td></tr>
       <tr><td>구성원마다 AI 활용 수준이 다르다</td><td>실무 교육과 프롬프트 자산화, 사고가 나는 지점을 막는 검수 절차 설계</td></tr>
       <tr><td>보안 때문에 도입이 망설여진다</td><td>로컬·사내 환경 기준 구성과 데이터 보호 장치 설계</td></tr>
