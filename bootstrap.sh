@@ -9,7 +9,7 @@
 # 자동 설치 항목:
 #   1. Homebrew (없으면)
 #   2. jq, git, python3, node, rclone
-#   3. Claude Code (npm install -g)
+#   3. 선택한 CLI (Claude / Codex)
 #   4. jurisupport-plugins git clone
 #   5. install.sh 자동 실행
 #
@@ -36,6 +36,17 @@ if [[ ! -f "$_DRYRUN_LIB" ]]; then
     > "$_DRYRUN_LIB" || { echo "ERROR: lib/dry-run.sh 다운로드 실패" >&2; exit 1; }
 fi
 source "$_DRYRUN_LIB" "$@"
+_HOST_LIB="$_SCRIPT_DIR/lib/install-host.sh"
+_HOST_TMP=""
+if [[ ! -f "$_HOST_LIB" ]]; then
+  _HOST_TMP="$(mktemp)"
+  _HOST_LIB="$_HOST_TMP"
+  curl -fsSL "https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/lib/install-host.sh" \
+    > "$_HOST_LIB" || { echo "ERROR: lib/install-host.sh 다운로드 실패" >&2; exit 1; }
+fi
+trap '[[ -z "$_DRYRUN_TMP" ]] || rm -f "$_DRYRUN_TMP"; [[ -z "$_HOST_TMP" ]] || rm -f "$_HOST_TMP"' EXIT
+source "$_HOST_LIB"
+jurisupport_select_host "$@"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
@@ -53,17 +64,17 @@ cat <<'BANNER'
 
 ================================================================
   jurisupport-plugins bootstrap
-  변호사용 클로드코드 통합 패키지 자동 설치
+  변호사용 Claude / Codex 통합 패키지 자동 설치
 ----------------------------------------------------------------
   진행 단계:
     1. Homebrew (없으면 자동)
-    2. jq / git / python / node / rclone
-    3. Claude Code (npm install -g)
+    2. git / node (Claude 선택 시 jq / python / rclone 추가)
+    3. 선택한 CLI (Claude / Codex)
     4. jurisupport-plugins git clone
     5. install.sh 자동 실행
 
   [주의] 관리자 비밀번호 1회 필요 (Homebrew 설치용)
-  [주의] Claude Pro 미가입자는 https://claude.ai/upgrade 먼저
+  [안내] 선택한 앱의 계정으로 로그인합니다.
 
   소요 시간: 약 5~10분
 ================================================================
@@ -76,7 +87,7 @@ case "$OS" in
   Linux*)  PLATFORM="linux" ;;
   *) error "Unsupported OS: $OS. Mac/Linux only. Windows: WSL2 사용 (https://github.com/jurisupport/jurisupport-plugins/blob/main/WINDOWS_WSL.md)" ;;
 esac
-info "플랫폼: $PLATFORM"
+info "플랫폼: $PLATFORM / 설치 대상: $JURISUPPORT_HOST"
 
 # ============================================================
 # 1. sudo pre-auth + background keepalive
@@ -85,7 +96,7 @@ step "1. 관리자 권한 인증 (1회만, 이후 자동 갱신)"
 
 if is_dry_run; then
   info_or_plan "sudo 인증 건너뜀"
-  [[ -n "$_DRYRUN_TMP" ]] && trap "rm -f '$_DRYRUN_TMP'" EXIT
+  : # 임시 라이브러리는 공통 EXIT trap에서 정리
 else
   echo ""
   echo "  Homebrew 및 시스템 패키지 설치를 위해 비밀번호 1회 입력이 필요합니다."
@@ -103,7 +114,7 @@ else
       kill -0 "$$" 2>/dev/null || exit
     done ) &
   SUDO_KEEPALIVE_PID=$!
-  trap "kill $SUDO_KEEPALIVE_PID 2>/dev/null || true; [[ -n \"\$_DRYRUN_TMP\" ]] && rm -f \"\$_DRYRUN_TMP\"" EXIT
+  trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true; [[ -z "$_DRYRUN_TMP" ]] || rm -f "$_DRYRUN_TMP"; [[ -z "$_HOST_TMP" ]] || rm -f "$_HOST_TMP"' EXIT
 fi
 
 # ============================================================
@@ -155,14 +166,16 @@ install_pkg() {
   fi
 }
 
-install_pkg "jq"      "jq"          "jq"
 install_pkg "git"     "git"         "git"
-install_pkg "python3" "python@3.11" "python3"
 install_pkg "node"    "node"        "nodejs"
-install_pkg "rclone"  "rclone"      "rclone"
+if jurisupport_has_host claude; then
+  install_pkg "jq"      "jq"          "jq"
+  install_pkg "python3" "python@3.11" "python3"
+  install_pkg "rclone"  "rclone"      "rclone"
+fi
 
 # Ubuntu/Debian은 python3-venv 별도 패키지
-if [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
+if jurisupport_has_host claude && [[ "$PLATFORM" == "linux" ]] && ! python3 -c "import ensurepip" 2>/dev/null; then
   info_or_plan "python3-venv 설치"
   if is_dry_run; then
     echo "PLAN: sudo apt-get install -y python3.XX-venv python3-venv"
@@ -186,19 +199,29 @@ fi
 # ============================================================
 # 4. Claude Code (npm install -g)
 # ============================================================
-step "4. Claude Code 설치"
+step "4. 선택한 CLI 설치 ($JURISUPPORT_HOST)"
 
-if command -v claude >/dev/null 2>&1; then
-  info "[ok] Claude Code 이미 설치됨: $(claude --version 2>&1 | head -1 || echo 'version unknown')"
-else
-  info_or_plan "Claude Code 설치 (npm install -g @anthropic-ai/claude-code)"
-  if [[ "$PLATFORM" == "mac" ]]; then
-    run_or_plan npm install -g @anthropic-ai/claude-code
-  else
-    # Linux: npm global이 보통 /usr/lib/node_modules — sudo 필요
-    run_or_plan sudo npm install -g @anthropic-ai/claude-code
+for client in claude codex; do
+  jurisupport_has_host "$client" || continue
+  if command -v "$client" >/dev/null 2>&1; then
+    if [[ "$client" == claude ]]; then
+      info "[ok] $client 이미 설치됨"
+      continue
+    fi
+    info_or_plan 'Codex CLI 최신 버전으로 갱신 (새 모델/플러그인 지원)'
   fi
-fi
+  if [[ "$client" == codex ]]; then
+    package='@openai/codex'
+  else
+    package='@anthropic-ai/claude-code'
+  fi
+  info_or_plan "$client 설치 (npm install -g $package)"
+  if [[ "$PLATFORM" == mac ]]; then
+    run_or_plan npm install -g "$package"
+  else
+    run_or_plan sudo npm install -g "$package"
+  fi
+done
 
 # ============================================================
 # 5. jurisupport-plugins 패키지
@@ -231,7 +254,7 @@ info_or_plan "$CLONE_DIR 준비됨"
 step "6. install.sh 자동 실행"
 
 if is_dry_run; then
-  echo "PLAN: cd $CLONE_DIR && ./install.sh"
+  echo "PLAN: cd $CLONE_DIR && ./install.sh --host $JURISUPPORT_HOST"
 cat <<'EOF'
 
 ================================================================
@@ -241,11 +264,11 @@ cat <<'EOF'
 EOF
 else
   echo ""
-  echo "  install.sh가 곧 시작됩니다. 데이터 보호 Hook, jurisupport,"
-  echo "  korean-law MCP/JS 플러그인, 스킬, JuriSupport MCP 등록까지"
-  echo "  같은 흐름에서 진행합니다."
+  echo "  install.sh가 곧 시작됩니다. 선택한 호스트: $JURISUPPORT_HOST"
+  echo "  Codex는 기본 플러그인/스킬을 설치하고 선택 도구 연결을 안내합니다."
+  echo "  Claude는 Hook과 선택 toolkit/MCP 대화식 설정을 진행합니다."
   echo ""
-  (cd "$CLONE_DIR" && ./install.sh) || error "install.sh 실행 실패. 수동 재실행: cd $CLONE_DIR && ./install.sh"
+  (cd "$CLONE_DIR" && ./install.sh --host "$JURISUPPORT_HOST") || error "install.sh 실행 실패. 수동 재실행: cd $CLONE_DIR && ./install.sh --host $JURISUPPORT_HOST"
 
   step "7. 마무리"
 cat <<EOF
@@ -254,12 +277,9 @@ cat <<EOF
 [ok] Bootstrap + install.sh 완료.
 ================================================================
 
-[1/1] Claude Code 로그인
-새 터미널에서 다음 실행 (브라우저 OAuth 1회):
-
-    claude
-
--> Claude Pro/Max 계정으로 로그인. "안녕하세요" 입력해서 한국어 답 확인.
+선택한 앱으로 로그인: $JURISUPPORT_HOST
+새 작업에서 “JuriSupport 콜드스타트를 시작해줘”라고 요청하세요.
+Codex만 선택했다면 Claude 설치나 로그인은 필요하지 않습니다.
 
 자세한 가이드:
   - 콜드스타트:        ~/jurisupport-plugins/COLD_START.md

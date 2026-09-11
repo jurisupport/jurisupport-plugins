@@ -9,6 +9,8 @@ metadata:
 
 # 주요 법령 전문 오프라인 폴백
 
+먼저 [공통 실행 규칙](../../references/runtime.md)을 읽고 현재 호스트에서 사용 가능한 기능으로 수행한다.
+
 법제처 Open API 키(`LAW_OC`)가 아직 발급되지 않았거나 네트워크가 막힌 환경에서 **시연·강의·기능 실습**을 계속하기 위한 폴백이다. 별도 설치 없이 JuriSupport 플러그인에 포함된 `references/statutes/` 전문 스냅샷을 읽어 사용한다.
 
 ## When to use

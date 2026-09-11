@@ -13,6 +13,8 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TOOLKIT_DIR/../../lib/dry-run.sh" "$@"
+source "$TOOLKIT_DIR/../../lib/install-host.sh"
+jurisupport_select_host "$@"
 
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
@@ -225,27 +227,27 @@ fi
 # ============================================================
 info_or_plan "클로드코드/Codex 스킬 설치 중"
 SKILL_SRC="$TOOLKIT_DIR/../../skills/beopgoeul-search/SKILL.md"
-for SKILLS_ROOT in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
-  SKILL_DST="$SKILLS_ROOT/beopgoeul-search"
-  run_or_plan mkdir -p "$SKILL_DST"
-  run_or_plan cp "$SKILL_SRC" "$SKILL_DST/SKILL.md"
-done
-run_or_plan mkdir -p "$HOME/.claude/commands"
-run_or_plan cp "$SKILL_SRC" "$HOME/.claude/commands/beopgoeul-search.md"
+jurisupport_copy_skill "$(dirname "$SKILL_SRC")" beopgoeul-search
+if jurisupport_has_host claude; then
+  run_or_plan mkdir -p "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands")"
+  run_or_plan cp "$SKILL_SRC" "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/beopgoeul-search.md")"
+fi
 
 # Remove old beopgoeul-guide if exists (replaced by beopgoeul-search)
-for OLD_SKILL_DIR in "$HOME/.claude/skills/beopgoeul-guide" "$HOME/.codex/skills/beopgoeul-guide"; do
+while IFS= read -r SKILLS_ROOT; do
+  OLD_SKILL_DIR="$SKILLS_ROOT/beopgoeul-guide"
   if [[ -d "$OLD_SKILL_DIR" ]]; then
     run_or_plan rm -rf "$OLD_SKILL_DIR"
     info_or_plan "옛 beopgoeul-guide 스킬 제거 (beopgoeul-search로 교체됨): $OLD_SKILL_DIR"
   fi
-done
-for OLD_COMMAND in "$HOME/.claude/commands/beopgoeul-guide.md"; do
+done < <(jurisupport_skill_roots)
+if jurisupport_has_host claude; then
+  OLD_COMMAND="$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/beopgoeul-guide.md")"
   if [[ -f "$OLD_COMMAND" ]]; then
     run_or_plan rm -f "$OLD_COMMAND"
     info_or_plan "옛 beopgoeul-guide 명령 제거 (beopgoeul-search로 교체됨): $OLD_COMMAND"
   fi
-done
+fi
 
 # ============================================================
 # Smoke test

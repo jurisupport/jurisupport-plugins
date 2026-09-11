@@ -9,6 +9,8 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TOOLKIT_DIR/../../lib/dry-run.sh" "$@"
+source "$TOOLKIT_DIR/../../lib/install-host.sh"
+jurisupport_select_host "$@"
 
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
@@ -47,13 +49,11 @@ fi
 
 info_or_plan "클로드코드/Codex 스킬 설치 중"
 SKILL_SRC="$TOOLKIT_DIR/../../skills/court-forms/SKILL.md"
-for SKILLS_ROOT in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
-  SKILL_DST="$SKILLS_ROOT/court-forms"
-  run_or_plan mkdir -p "$SKILL_DST"
-  run_or_plan cp "$SKILL_SRC" "$SKILL_DST/SKILL.md"
-done
-run_or_plan mkdir -p "$HOME/.claude/commands"
-run_or_plan cp "$SKILL_SRC" "$HOME/.claude/commands/court-forms.md"
+jurisupport_copy_skill "$(dirname "$SKILL_SRC")" court-forms
+if jurisupport_has_host claude; then
+  run_or_plan mkdir -p "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands")"
+  run_or_plan cp "$SKILL_SRC" "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/court-forms.md")"
+fi
 
 if is_dry_run; then
   info_or_plan "공개 양식 메타데이터 동기화: $ROOT/scripts/court_forms.py sync"

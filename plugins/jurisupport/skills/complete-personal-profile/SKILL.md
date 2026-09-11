@@ -5,6 +5,8 @@ description: 변호사의 사건자료, 작성서류, 설명을 바탕으로 직
 
 # Complete Personal Profile
 
+먼저 [공통 실행 규칙](../../references/runtime.md)을 읽고 현재 호스트에서 사용 가능한 기능으로 수행한다.
+
 Complete an editable personal profile from the lawyer's selected materials. It should work for introductions, homepage copy, consultation positioning, and deciding which client questions to invite. JuriSupport upload is optional and requires a separate request after web consent.
 
 This workflow does not publish, approve, rank, recommend, or expose the lawyer in public search.
@@ -131,7 +133,7 @@ Use this as the lawyer's working profile even if they never upload anything to J
 
 Only prepare JuriSupport upload data if the lawyer asks to put the completed profile on JuriSupport or confirms they want to do so after reading the completed profile.
 
-For internal upload preparation, use the public schema in `schemas/lawyer-profile-draft.public.schema.json`. Keep the lawyer-facing explanation simple: "JuriSupport에 올릴 수 있도록 프로필 내용을 정리했습니다." Do not explain the technical shape unless the lawyer explicitly asks.
+For internal upload preparation, use the public schema in `../../schemas/lawyer-profile-draft.public.schema.json`. Keep the lawyer-facing explanation simple: "JuriSupport에 올릴 수 있도록 프로필 내용을 정리했습니다." Do not explain the technical shape unless the lawyer explicitly asks.
 
 ### 10. Profile Review Note
 

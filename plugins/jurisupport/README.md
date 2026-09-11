@@ -1,6 +1,6 @@
 # JuriSupport
 
-한국 송무 워크플로우와 변호사 개인 프로필 완성 플러그인. 사건 인테이크부터 서면 정본 등록·PDF 추출까지 일관된 절차로 처리하고, 본인의 업무 경험과 자료를 바탕으로 스스로 읽고 활용할 수 있는 개인 프로필을 완성해 원하면 JuriSupport에도 올릴 수 있게 돕는다. 법원 전자제출 자체는 자동화하지 않으며, 사용자가 직접 수행한다.
+**Claude Code와 Codex에서 사용하는** 한국 송무 워크플로우와 변호사 개인 프로필 완성 플러그인. 사건 인테이크부터 서면 정본 등록·PDF 추출까지 일관된 절차로 처리하고, 본인의 업무 경험과 자료를 바탕으로 스스로 읽고 활용할 수 있는 개인 프로필을 완성해 원하면 JuriSupport에도 올릴 수 있게 돕는다. 법원 전자제출 자체는 자동화하지 않으며, 사용자가 직접 수행한다.
 
 ## 무엇이 들어있나
 
@@ -17,14 +17,14 @@
 ### 참조하는 공개 인프라
 - **korean-law MCP** - 법령·판결 실존 확인 (정식 1차 검증 경로, 법제처 OC 필요)
   - `search_law`, `get_law_text` - 법령
-  - `search_precedents`, `get_precedent_text` - 판결
+  - `search_decisions(domain="precedent")`, `get_decision_text` - 판결. 구형 서버는 실제 제공되는 도구의 스키마에 맞춰 같은 검증을 수행
 - **offline-law-fallback** - OC 발급 전에도 설치·강의·실습을 진행하기 위한 플러그인 내장 법령 전문 스냅샷. 판례는 포함하지 않으며, 실제 사건 제출 전에는 `korean-law` MCP 또는 국가법령정보센터로 최신 조문을 재검증한다.
 - **beopgoeul-search 스킬** - 법고을(대법원도서관 lx.scourt.go.kr) 무료 공식 판결 검색 (2차 검증, korean-law에서 못 찾았을 때)
 - **로컬 파일 시스템** - 초안·정본 모두 Markdown 파일로 저장 (기본값)
 
 ### 경량 대안: CSV 사건 인덱스 (배포본 포함)
 
-JuriSupport를 쓰지 않는 사용자는 `case-index` 스킬로 CSV 한 파일에 사건 목록을 유지할 수 있습니다. 컬럼: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`. 엑셀로 직접 열어 편집해도 되고, 헬퍼 스크립트로 add/update/close 가능. 콜드스타트에서 경로를 설정합니다 (기본 제안: `<클라우드 사건폴더 경로>/_index.csv`).
+JuriSupport를 쓰지 않는 사용자는 `case-index` 스킬로 CSV 한 파일에 사건 목록을 유지할 수 있습니다. 컬럼: `사건번호,법원,사건명,의뢰인,상대방,진행단계,다음기일,비고`. 엑셀로 직접 열어 편집해도 되고, Python 3이 있으면 헬퍼 스크립트로 add/update/close 가능. 콜드스타트에서 경로를 설정합니다 (기본 제안: `<로컬 동기화 폴더>/_index.csv` 또는 `~/사건/_index.csv`).
 
 ### 개인 프로필 완성
 
@@ -52,19 +52,21 @@ JuriSupport에 올린 프로필은 의뢰인이 상담 가능한 변호사 목�
 | 등록 후 편집 | MD 파일 (계속) | **JuriSupport에서 직접 편집** (`inline_edit_legal_document` 등). MD에서 별도 수정 금지 |
 | PDF 추출 | 사용자 수동 | `export_document_pdf` 자동 |
 
-연동 방법: [jurisupport.com](https://jurisupport.com) 가입 → MCP 토큰 발급 → Claude 설정에 추가.
+연동 방법: [jurisupport.com](https://jurisupport.com) 가입 → MCP 토큰 발급 → 사용하는 호스트의 MCP 설정에 추가. 토큰은 개인 설정에만 저장하고 배포 파일에 넣지 않습니다.
 
 ### 사용자 로컬 확장 (Optional, 배포본에 포함 안 됨)
 사용자 개인 계정·DB에 묶인 자원. **설치되어 있으면 자동 활용, 없으면 자동 스킵**:
 - **case-records** (글로벌 스킬) - 과거 사건 DB 하이브리드 검색
-- **legal-books** (글로벌 스킬) - 교과서 DB 검색 (사용자 보유 서적)
-- **google-workspace MCP** - 개인 캘린더·Gmail
+- **[legal-books](https://github.com/jurisupport/legal-books)** (별도 플러그인) - 교과서 DB 검색. 설치 방법과 호스트 지원은 별도 저장소에서 확인
+- **Google Workspace CLI 또는 연결 도구** - 사용자가 선택한 계정의 캘린더·Gmail·Drive. 이 플러그인의 설치 필수 조건은 아님
 
 > 위 항목들은 사용자가 별도로 설정해야 작동합니다. 플러그인은 이들의 부재를 감지하고 graceful하게 동작합니다.
 
 ## 권장 모델 설정
 
-모든 스킬은 현재 Claude Code 세션의 모델과 effort를 그대로 상속한다. 스킬마다 모델을 고정하거나 별도 라우터를 두지 않는다.
+모든 스킬은 현재 **Claude Code 또는 Codex** 세션의 모델과 추론 설정을 그대로 상속한다. 스킬마다 모델을 고정하거나 별도 라우터를 두지 않는다.
+
+### Claude Code
 
 Opus 5/high를 기본으로 쓸 때는 사용자 설정 `~/.claude/settings.json`에 아래 키를 **기존 설정과 병합**한다. 플러그인은 이 파일을 자동으로 덮어쓰지 않는다. Opus 5에는 Claude Code 2.1.219 이상이 필요하다.
 
@@ -83,6 +85,14 @@ claude --model fable --effort high
 
 현재 세션 안에서 effort를 자주 바꾸지 않는다. 자세한 내용은 [Claude Code 모델 설정](https://code.claude.com/docs/en/model-config)과 [effort 문서](https://platform.claude.com/docs/en/build-with-claude/effort)를 참조한다.
 
+### Codex
+
+Codex에서 선택한 GPT-6 Astra 또는 GPT-5.6 Sol과 추론 설정을 그대로 사용한다. Claude 설치·계정·모델은 필요하지 않으며, 플러그인이 사용자 기본 모델을 변경하지 않는다. 두 모델의 세션별 가용 여부는 해당 계정과 Codex 버전에서 확인한다.
+
+모든 스킬은 [공통 실행 규칙](references/runtime.md)을 먼저 읽는다. 질문 도구·파일 경로·MCP 도구는 현재 호스트의 실제 기능에 맞추며, 이미 승인된 초안·검증·출력 작업은 중간 승인을 반복하지 않고 진행한다. 대화형 모의변론과 단계별 검토를 요청한 경우에는 질문과 답변 순서를 유지한다.
+
+설치/계정 연결 성공과 모델별 업무 완료 검증은 별개다. 검증 방법과 한계는 [호환성 검사](#호환성-검사)를 참조한다.
+
 ## 사무소별 로컬 플레이북 (Template/Instance 분리)
 
 이 플러그인은 **공개 배포 템플릿**과 **사용자 로컬 인스턴스**를 분리한다:
@@ -93,9 +103,9 @@ claude --model fable --effort high
 | `~/.jurisupport/playbook.md` | 콜드스타트로 채운 사용자 운영 규칙 | 플러그인 저장소 밖 |
 | 플러그인 루트 `CLAUDE.md` | 이전 버전의 로컬 인스턴스. 최초 실행 시 복사하는 마이그레이션 원본 | ❌ `.gitignore` |
 
-플러그인 루트 `CLAUDE.md`는 자동 컨텍스트로 로드되지 않는다. 플레이북이 필요한 스킬은 시작할 때 canonical 경로를 명시적으로 읽으며, 없으면 콜드스타트를 먼저 실행한다. 적용 규칙:
+플러그인 루트 `CLAUDE.md`는 자동 컨텍스트로 로드되지 않는다. 플레이북이 필요한 스킬은 시작할 때 canonical 경로를 명시적으로 읽으며, 없으면 필요한 설정만 확인하거나 콜드스타트를 실행한다. 명시적인 단발성 작업에 불필요한 전체 인터뷰를 강제하지 않는다. 적용 규칙:
 - 법령 인용 시 `korean-law` MCP로 실존 확인 (필수)
-- 판결 인용은 `korean-law` MCP `search_precedents`가 1차 검증, 법고을(`beopgoeul-search`)이 2차 검증
+- 판결 인용은 `korean-law` MCP의 현재 판결 검색 도구가 1차 검증, 법고을(`beopgoeul-search`)이 2차 검증
 - 직접인용(" ")은 원문과 글자 단위로 일치, 아니면 간접인용
 - 출처 표기 필수 (저자, 서명, 페이지)
 - 소송서류 MD는 사람이 읽기 쉬운 본문을 우선하며, 필요 시 상단 `<!-- jurisupport ... -->` 힌트 태그로 서면유형·출력형식·JuriSupport 등록 의사를 적는다. 이는 개발 문법 요구가 아니라 변환 보조 정보다.
@@ -105,7 +115,7 @@ claude --model fable --effort high
 
 ## 설치
 
-### 최초 설치
+### Claude Code에서 플러그인만 설치
 
 ```bash
 # 마켓플레이스 등록
@@ -123,6 +133,75 @@ claude --model fable --effort high
 /jurisupport:cold-start-interview
 ```
 
+### Codex에서 플러그인만 설치
+
+Codex CLI가 설치된 환경에서 저장소 루트를 등록한다. 이미 저장소를 내려받았다면 첫 두 줄은 생략한다.
+
+```bash
+git clone https://github.com/jurisupport/jurisupport-plugins.git
+cd jurisupport-plugins
+codex plugin marketplace add .
+codex plugin add jurisupport@jurisupport-plugins
+```
+
+새 Codex 작업에서 다음처럼 요청한다:
+
+> JuriSupport 콜드스타트로 사무소 플레이북을 설정해줘.
+
+> JuriSupport 준비서면 작성 프로토콜로 이 자료의 초안을 작성하고 인용 검증까지 해줘.
+
+플러그인에는 8개 스킬, 공통 실행 규칙, 플레이북 템플릿, CSV 사건 인덱스 프로그램, 오프라인 법령 스냅샷이 포함된다. **플러그인 설치는 저장소의 `install.sh`를 자동 실행하지 않는다.** 외부 MCP·보조 검색 프로그램·서적/사건 DB는 별도다. 없어도 로컬 자료로 가능한 작업은 진행하지만, 확인하지 못한 법률 근거를 검증 완료로 표시하지 않는다.
+
+### 보조 스킬과 함께 설치
+
+저장소 루트에서 선택한 호스트로 설치한다:
+
+```bash
+bash install.sh --host codex
+bash install.sh --host claude
+bash install.sh --host both
+```
+
+Codex 설치는 Claude를 호출하지 않는다. 이 보조 스킬 설치 경로에는 Codex CLI·Node.js가 필요하며 bootstrap이 준비한다. 기존 마켓플레이스가 있으면 등록된 소스를 유지한다. 개발 중인 다른 로컬 소스로 바꾸려면 먼저 현재 등록 소스를 확인한다. Codex 보조 스킬 위치는 `CODEX_HOME`이 설정되어 있으면 그 아래 `skills`, 아니면 `~/.codex/skills`다. 프로그램·DB가 필요한 보조 기능은 설치 결과에 안내된 선택 설치를 진행한다.
+
+법령·판결의 온라인 검증이 필요하면 `korean-law`를 해당 호스트의 MCP 설정에 연결한다. Codex 설정에서도 실제 서버 실행 명령과 `LAW_OC`를 사용하며 Claude 마켓플레이스 명령을 실행하지 않는다. 사용자 키는 배포본에 넣지 않는다.
+
+기존 서버 설정이 있는데 호출이 실패하면 인증·만료·필수 프로그램부터 확인한다. 설치 목록에 보이는 것만으로 실제 연결 성공을 판정하지 않는다.
+
+### 업데이트
+
+Claude Code는 `/plugin marketplace update jurisupport-plugins`로 갱신하고 호스트 안내에 따라 플러그인을 다시 로드한다. Codex에서 **Git URL로 등록한 마켓플레이스**는 다음처럼 갱신한다:
+
+```bash
+codex plugin marketplace upgrade jurisupport-plugins
+codex plugin add jurisupport@jurisupport-plugins
+```
+
+로컬 경로(`marketplace add .`)로 등록했다면 `marketplace upgrade`를 실행하지 않는다. 해당 저장소의 코드를 먼저 갱신하고 `codex plugin add jurisupport@jurisupport-plugins`를 실행한다. 업데이트 후 새 Codex 작업에서 확인한다. 사무소 플레이북·계정·토큰은 플러그인 캐시 밖의 사용자 설정을 유지한다.
+
+### 호환성 검사
+
+저장소 루트에서 실행:
+
+```bash
+python3 tests/host_compatibility_test.py
+bash tests/plugin_prompt_defaults_test.sh
+bash tests/mock_hearing_legal_reasoning_test.sh
+bash tests/offline_law_fallback_test.sh
+```
+
+인증된 최신 Codex CLI에서 가상 자료로 모델 실행을 검사하려면 다음 선택 검사를 실행한다 (모델 사용량 발생):
+
+```bash
+python3 tests/model_compatibility_smoke.py --output-dir .omx/reports/compatibility
+```
+
+이 검사는 사용자 설정과 외부 MCP를 사용하지 않는 읽기 전용 환경에서 가상 CSV 조회·도구 선택·동의 경계를 확인한다. 설치된 CLI가 새 모델을 거절하면 CLI를 업데이트한 뒤 다시 실행한다. 이번 검증 결과와 한계는 [호환성 확인 기록](COMPATIBILITY.md)에 기록한다.
+
+검사는 매니페스트·동봉 참조·모델 상속·안전 경계를 확인하고, Claude 폴더가 없는 공백 포함 임시 경로에서 CSV 헬퍼를 실행한다. 별도의 설치 검사는 가짜 호스트 명령으로 Codex 전용·Claude·공동 설치 경로를 확인한다. 이런 검사는 실제 Windows 설치나 모든 모델·법률 업무의 정확성을 보증하지 않는다.
+
+Claude용 데이터 보호 Hook은 Claude 도구 규약용이다. Codex에 같은 Hook이 설치·작동했다고 표시하지 않으며 Codex의 자체 권한·승인 정책과 공통 개인정보 처리 규칙을 적용한다.
+
 ### 정책 변경 시
 
 ```bash
@@ -135,13 +214,14 @@ claude --model fable --effort high
 ```bash
 # 공개 템플릿만 커밋
 git add CLAUDE.md.example
-git commit -m "Update template"
+git commit -m "Keep the public playbook aligned with supported workflows"
 ```
 
 ⚠️ **레거시 `CLAUDE.md`나 `~/.jurisupport/playbook.md`를 git에 커밋하지 말 것.** 개인정보 노출 위험.
 
 ## 버전
 
+0.2.12 - Claude/Codex 독립 설치, 공통 실행 규칙, 현재 판결 도구 스키마, 승인 범위 상속 및 동봉 경로 검증
 0.2.11 - Opus 5/high 세션 상속 안내, canonical 플레이북 경로와 비파괴 마이그레이션, 프롬프트 중복 정리
 0.2.9 - mock-hearing 법적 사고 프로토콜 강화(청구권규범 카드, 입증책임 지도, 항변·재항변 트리, 판결 유추·구별 메모, 보강 절차 연계)
 0.2.8 - OC 발급 전 시연·실습용 오프라인 법령 전문 폴백 추가(헌/민/형/상법, 소송법, 주요 특별형법)

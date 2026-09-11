@@ -9,6 +9,8 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TOOLKIT_DIR/../../lib/dry-run.sh" "$@"
+source "$TOOLKIT_DIR/../../lib/install-host.sh"
+jurisupport_select_host "$@"
 
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
@@ -191,10 +193,8 @@ fi
 run_shell_or_plan "chmod +x '$ROOT/scripts/'*.sh '$ROOT/scripts/'*.py 2>/dev/null || true"
 
 # Install skill
-info_or_plan "클로드코드 스킬 설치 중"
-SKILL_DST="$HOME/.claude/skills/case-records"
-run_or_plan mkdir -p "$SKILL_DST"
-run_or_plan cp "$TOOLKIT_DIR/../../skills/case-records/SKILL.md" "$SKILL_DST/SKILL.md"
+info_or_plan "선택한 호스트에 스킬 설치 중"
+jurisupport_copy_skill "$TOOLKIT_DIR/../../skills/case-records" case-records
 
 # Start server (Windows는 PowerShell, 그 외는 bash)
 info_or_plan "검색 서버 시작 (포트 8767)"

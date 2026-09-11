@@ -47,7 +47,7 @@ override 없는 의뢰인은 자동으로 기본 규칙 적용.
 - 폐지된 조문은 시행일·폐지일 명시
 
 ### 3-2. 판례 인용
-- **1차 검증**: `korean-law` MCP `search_precedents` → 결과 있으면 `get_precedent_text`로 본문 확보
+- **1차 검증**: `korean-law` MCP `search_decisions(domain="precedent")` → 검색 결과 ID로 `get_decision_text` 본문 확보. 구형 도구만 제공되면 실제 도구 목록과 스키마를 확인하여 같은 검증을 수행
 - **2차 검증**: 1차에서 못 찾았을 때 `beopgoeul-search` 스킬 (법고을, 대법원도서관 lx.scourt.go.kr — 무료 공식 사이트)
 - 두 검증 경로 모두 실패하면 → "(미확인)" 명시 후 사용자 보고
 - OCR/hallucination으로 인한 가짜 판례번호 절대 금지
@@ -116,8 +116,8 @@ JuriSupport등록: 요청시
 
 | 단계 | 포맷 | 도구 |
 |---|---|---|
-| 초안 작성 | Markdown | Edit/Write |
-| 수정·검토 | Markdown | Edit/Write |
+| 초안 작성 | Markdown | 호스트의 파일 편집 기능 |
+| 수정·검토 | Markdown | 호스트의 파일 편집 기능 |
 | 의뢰인 검토 전달 | Markdown 본문 채팅 출력 | (복사·붙여넣기) |
 | 법원 제출용 | Markdown | (사용자가 별도 출력 요청 시 §4-3) |
 
@@ -167,7 +167,7 @@ JuriSupport 미연동 환경에서는:
 - 사용자가 "MD로 되돌려 수정" 등 명시적 지시를 주면 무시 가능
 - 등록 후 MD에서 별도 편집해 재업로드하지 말 것 (정본 충돌 방지)
 
-연동 방법: [jurisupport.com](https://jurisupport.com) 가입 → MCP 토큰 발급 → Claude 설정에 추가.
+연동 방법: [jurisupport.com](https://jurisupport.com) 가입 → MCP 토큰 발급 → 사용하는 Claude Code 또는 Codex의 MCP 설정에 추가.
 
 ### 4-5. 양식 변환 규칙
 

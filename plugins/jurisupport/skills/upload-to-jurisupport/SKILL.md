@@ -5,6 +5,8 @@ description: 변호사가 확인한 완성 프로필을 웹 동의 확인 후 Ju
 
 # Upload To JuriSupport
 
+먼저 [공통 실행 규칙](../../references/runtime.md)을 읽고 현재 호스트에서 사용 가능한 기능으로 수행한다.
+
 Put a completed personal profile on JuriSupport only when the lawyer explicitly asks.
 
 This workflow receives the completed profile prepared by `/jurisupport:complete-personal-profile`. It never publishes a profile and never approves public exposure by itself.

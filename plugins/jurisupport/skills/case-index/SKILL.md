@@ -9,9 +9,11 @@ metadata:
 
 # CSV 사건 인덱스 (case-index)
 
+먼저 [공통 실행 규칙](../../references/runtime.md)을 읽고 현재 호스트에서 사용 가능한 기능으로 수행한다.
+
 JuriSupport MCP가 없는 사용자도 가볍게 사건 목록을 관리할 수 있도록 CSV 한 파일로 사건 인덱스를 유지한다. 엑셀로 열어 직접 편집할 수도 있고, 본 스킬의 헬퍼 스크립트로 조작할 수도 있다.
 
-시작할 때 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 Read한다. 없으면 `/jurisupport:cold-start-interview`를 먼저 실행한다.
+시작할 때 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 읽는다. 없으면 공통 실행 규칙에 따라 필요한 설정만 확인하거나 `cold-start-interview`를 수행한다.
 
 ## When to use
 
@@ -23,7 +25,7 @@ JuriSupport MCP가 연동되어 있으면 JuriSupport가 정본이고 이 스킬
 
 ## CSV 형식
 
-위치: `<클라우드 사건폴더 경로>/_index.csv` (콜드스타트에서 사용자 입력. 기본 제안 예시는 `onedrive:진행중사건/_index.csv` 또는 로컬 미러)
+위치: `<로컬 동기화 폴더>/_index.csv` 또는 `~/사건/_index.csv` (콜드스타트에서 확인한 로컬 파일 경로). rclone 원격 원본이 있으면 로컬 작업 사본을 사용한다.
 
 컬럼 (고정 순서):
 
@@ -44,11 +46,11 @@ JuriSupport MCP가 연동되어 있으면 JuriSupport가 정본이고 이 스킬
 
 ### 헬퍼 스크립트
 
-플러그인 내 `case_index.py`. CSV 경로는 매번 `--csv` 로 지정.
+이 `SKILL.md`와 같은 폴더의 `case_index.py`를 사용한다. CSV 경로는 매번 `--csv`로 지정한다. 헬퍼는 로컬 파일 경로를 받으며 `onedrive:` 같은 rclone 원격 경로를 직접 넘기지 않는다. 원격 저장소는 사용자가 선택한 로컬 동기화 폴더나 내려받은 작업 사본을 사용한다. 실행 가능한 Python 3을 확인해 호출한다.
 
 ```bash
-PY=/Users/$USER/.claude/plugins/cache/jurisupport-plugins/jurisupport/<version>/skills/case-index/case_index.py
-CSV=<클라우드 사건폴더 경로>/_index.csv   # 플레이북 §5에 저장된 경로 사용
+PY="<이 SKILL.md가 있는 실제 폴더>/case_index.py"
+CSV="<로컬 사건 인덱스 경로>/_index.csv"   # 플레이북 §5에 저장된 경로 사용
 
 # 빈 인덱스 생성
 python3 "$PY" --csv "$CSV" init
@@ -83,7 +85,7 @@ python3 "$PY" --csv "$CSV" update 2025가합10737 \
 python3 "$PY" --csv "$CSV" close 2025가합10737
 ```
 
-### Claude가 자동 호출하는 패턴
+### 에이전트가 호출하는 패턴
 
 | 사용자 발화 | 호출 |
 |---|---|
@@ -111,8 +113,7 @@ OneDrive·iCloud 등 동기화 폴더에 두면 여러 PC·세션이 동시에 �
 
 ```bash
 # 1. 템플릿 복사 (헤더만 들어있는 빈 CSV)
-cp /Users/$USER/.claude/plugins/cache/jurisupport-plugins/jurisupport/<version>/templates/_index.csv \
-   <클라우드 사건폴더 경로>/_index.csv
+cp "<plugin-root>/templates/_index.csv" "<로컬 사건 인덱스 경로>/_index.csv"
 
 # 또는 헬퍼로 직접 생성
 python3 "$PY" --csv <경로>/_index.csv init

@@ -29,7 +29,9 @@ param(
     #   $env:JURISUPPORT_SUPPORT_REPORT="1"; irm .../windows-bootstrap.ps1 | iex
     [switch]$SupportReport,
     [string]$SupportEmail = "",
-    [string]$SupportUploadUrl = ""
+    [string]$SupportUploadUrl = "",
+    # -PluginHost codex, or $env:JURISUPPORT_HOST="codex" for irm | iex
+    [string]$PluginHost = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -281,9 +283,10 @@ function New-SupportBundle {
                 'python --version',
                 'py --version',
                 'jq --version',
-                'rclone version',
-                'claude.cmd --version'
+                'rclone version'
             )
+            if ($PluginHost -ne 'codex') { $commands += 'claude.cmd --version' }
+            if ($PluginHost -ne 'claude') { $commands += 'codex.cmd --version' }
             foreach ($command in $commands) {
                 "`n> $command"
                 try {
@@ -301,7 +304,8 @@ function New-SupportBundle {
         Invoke-SupportCapture -Path $envPath -Title 'npm config' -ScriptBlock {
             "prefix=$(npm config get prefix)"
             "cache=$(npm config get cache)"
-            npm list -g --depth=0 @anthropic-ai/claude-code
+            if ($PluginHost -ne 'codex') { npm list -g --depth=0 @anthropic-ai/claude-code }
+            if ($PluginHost -ne 'claude') { npm list -g --depth=0 @openai/codex }
         }
 
         $repoDir = Join-Path $env:USERPROFILE 'jurisupport-plugins'
@@ -606,6 +610,42 @@ function Resolve-ExternalCommand {
     return $null
 }
 
+function Resolve-PluginHost {
+    param([string]$Requested)
+    if (-not $Requested -or $Requested -eq 'auto') {
+        $hasClaude = Resolve-ExternalCommand -Names @('claude.cmd', 'claude.exe', 'claude')
+        $hasCodex = Resolve-ExternalCommand -Names @('codex.cmd', 'codex.exe', 'codex')
+        if ($hasClaude -and $hasCodex) { return 'both' }
+        if ($hasCodex) { return 'codex' }
+        if ($hasClaude) { return 'claude' }
+        $Requested = Read-Host '사용할 앱을 선택하세요 (claude/codex/both)'
+    }
+    if ($Requested -notin @('claude', 'codex', 'both')) {
+        throw '설치 대상은 claude, codex, both 중 하나여야 합니다. -PluginHost 또는 JURISUPPORT_HOST로 지정하세요.'
+    }
+    return $Requested.ToLowerInvariant()
+}
+
+function Install-CodexClient {
+    $npm = Resolve-ExternalCommand -Names @('npm.cmd', 'npm.exe', 'npm')
+    if (-not $npm) { throw 'npm이 없습니다. PATH 갱신 후 새 PowerShell에서 다시 실행하세요.' }
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $npm install -g @openai/codex --loglevel http 2>&1 | ForEach-Object { Write-Host $_ }
+        $installCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousEap
+    }
+    if ($installCode -ne 0) { throw "Codex 설치/갱신 실패 (exit $installCode). npm install -g @openai/codex 로 재시도하세요." }
+    Write-Info 'Codex CLI 준비 완료. 계정 로그인과 MCP 연결은 별도 확인하세요.'
+}
+
+if (-not $PluginHost) { $PluginHost = $env:JURISUPPORT_HOST }
+$PluginHost = Resolve-PluginHost -Requested $PluginHost
+# Git Bash의 install.sh와 선택 toolkit이 같은 호스트를 사용합니다.
+$env:JURISUPPORT_HOST = $PluginHost
+
 # ============================================================
 # 0. Banner
 # ============================================================
@@ -613,18 +653,18 @@ function Resolve-ExternalCommand {
 
 ============================================================
   jurisupport-plugins bootstrap (Windows 네이티브)
-  변호사용 클로드코드 통합 패키지 자동 설치
+  변호사용 Claude / Codex 통합 패키지 자동 설치
 ============================================================
 
   진행 단계:
     1. winget 사전 점검
-    2. Git, Node, Python, Chrome, jq, Tesseract, Ghostscript, qpdf, rclone
-    3. Claude Code (npm install -g)
+    2. Git, Node (Claude 선택 시 Python, Chrome, jq, OCR, rclone 추가)
+    3. 선택한 CLI: $PluginHost (npm install -g)
     4. jurisupport-plugins git clone
     5. 마무리 안내 (Git Bash로 install.sh 실행)
 
   ⚠ winget 설치 중 UAC 권한 팝업이 여러 번 뜰 수 있습니다.
-  ⚠ Claude Pro 미가입자는 https://claude.ai/upgrade 먼저 가입.
+  선택한 앱의 계정으로 로그인합니다. Codex만 사용하면 Claude 계정은 필요하지 않습니다.
 
   소요 시간: 약 10~15분
 
@@ -722,6 +762,9 @@ $packages = @(
     @{ Name = 'rclone (클라우드 파일 동기화)';    Ids = @('Rclone.Rclone');            Required = $false }
 )
 
+if ($PluginHost -eq 'codex') {
+    $packages = @($packages | Where-Object { $_.Ids[0] -in @('Git.Git', 'OpenJS.NodeJS.LTS') })
+}
 $total = $packages.Count
 $i = 0
 $failedRequired = @()
@@ -812,6 +855,7 @@ if ($failedOptional.Count -gt 0) {
 # 2-B. Ghostscript (winget 카탈로그에 없음 → GitHub release 직접 다운로드)
 # ============================================================
 Write-Host ""
+if ($PluginHost -ne 'codex') {
 Write-Host "[추가] Ghostscript (OCRmyPDF 의존성, winget 카탈로그 부재)" -ForegroundColor Cyan
 
 $gsInstalled = Get-Command gswin64c -ErrorAction SilentlyContinue
@@ -860,6 +904,8 @@ if ($gsInstalled) {
     }
 }
 
+}
+
 # 새 셸 PATH 갱신 (현재 세션에서 즉시 활용)
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + `
             [System.Environment]::GetEnvironmentVariable("Path","User")
@@ -878,6 +924,11 @@ if (Test-Path $gitBash) {
 # ============================================================
 # 3. Claude Code (npm 글로벌)
 # ============================================================
+if ($PluginHost -ne 'claude') {
+    Write-Step '3. Codex CLI (npm install -g)'
+    Install-CodexClient
+}
+if ($PluginHost -ne 'codex') {
 Write-Step "3. Claude Code (npm install -g)"
 
 $NpmCommand = Resolve-ExternalCommand -Names @('npm.cmd', 'npm.exe', 'npm')
@@ -926,6 +977,7 @@ try {
     $ErrorActionPreference = $prevEAP
 }
 Write-Progress -Id 1 -Activity "Step 3/4: Claude Code" -Completed
+}
 
 # ============================================================
 # 4. 본 레포 clone
@@ -1059,6 +1111,9 @@ if (-not (Test-Path $gitBash)) {
     $BootstrapHadErrors = $true
     New-SupportBundle -Reason "install-sh-not-found" | Out-Null
 } else {
+    if ($PluginHost -eq 'codex') {
+        Write-Host 'Codex 기본 플러그인과 보조 스킬을 설치합니다. 선택 toolkit과 MCP는 설치 후 안내합니다.' -ForegroundColor Cyan
+    } else {
     @"
 
   install.sh가 곧 시작됩니다. 12단계 대화식 설치:
@@ -1074,6 +1129,7 @@ if (-not (Test-Path $gitBash)) {
 
   3초 후 시작...
 "@ | Write-Host -ForegroundColor Cyan
+    }
     Start-Sleep -Seconds 3
 
     # irm | iex 실행 시 PowerShell stdin이 파이프로 묶일 수 있으므로
@@ -1113,6 +1169,21 @@ $completionStatus = if ($BootstrapHadErrors) {
 }
 $completionColor = if ($BootstrapHadErrors) { "Yellow" } else { "Green" }
 
+if ($PluginHost -ne 'claude') {
+    @"
+
+$completionStatus
+Codex를 열거나 새 터미널에서 codex.cmd를 실행하고 로그인하세요.
+새 작업에서 “JuriSupport 콜드스타트를 시작해줘”라고 요청하세요.
+기본 플러그인·스킬 설치와 계정/MCP 연결은 별도입니다. 실제 조회로 연결을 확인하세요.
+선택 toolkit: bash ./toolkit/<도구>/install.sh --host codex
+자동 설치 실패 시:
+  codex.cmd plugin marketplace add "$repoDir"
+  codex.cmd plugin add jurisupport@jurisupport-plugins
+전체 가이드: $repoDir\README.md
+"@ | Write-Host -ForegroundColor $completionColor
+}
+if ($PluginHost -ne 'codex') {
 @"
 
 ============================================================
@@ -1167,6 +1238,7 @@ GitHub:      https://github.com/jurisupport/jurisupport-plugins
 문의:        admin@jurisupport.com
 
 "@ | Write-Host -ForegroundColor $completionColor
+}
 
 if ($SupportReportRequested -and $SupportTranscriptStarted -and -not $SupportBundleCreated) {
     try {

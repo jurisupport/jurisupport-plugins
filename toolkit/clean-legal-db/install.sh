@@ -4,7 +4,7 @@
 # Sets up:
 # - ~/clean-legal-db/  (search.py + COPYRIGHT.md + clean_legal.db)
 # - clean_legal.db 다운로드(GitHub Release 자산) + sha256 검증
-# - ~/.claude/skills/clean-legal-db/SKILL.md 설치
+# - 선택한 Claude/Codex 호스트에 clean-legal-db 스킬 설치
 #
 # DB 본체는 git에 없음 — GitHub Release 자산에서 받는다.
 
@@ -15,6 +15,8 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TOOLKIT_DIR/../.." && pwd)"
 source "$REPO_ROOT/lib/dry-run.sh" "$@"
+source "$REPO_ROOT/lib/install-host.sh"
+jurisupport_select_host "$@"
 
 info()  { echo -e "${GREEN}[info]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC} $*"; }
@@ -25,7 +27,6 @@ error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
 # ============================================================
 DEST="$HOME/clean-legal-db"
 DB_PATH="$DEST/clean_legal.db"
-SKILL_DST="$HOME/.claude/skills/clean-legal-db"
 
 # 다운로드 URL (환경변수로 교체 가능)
 CLEAN_LEGAL_DB_URL="${CLEAN_LEGAL_DB_URL:-https://github.com/jurisupport/jurisupport-plugins/releases/download/clean-legal-db-v1/clean_legal.db}"
@@ -92,8 +93,7 @@ fi
 # ============================================================
 # SKILL.md 설치
 # ============================================================
-run_or_plan mkdir -p "$SKILL_DST"
-run_or_plan cp "$REPO_ROOT/skills/clean-legal-db/SKILL.md" "$SKILL_DST/SKILL.md"
+jurisupport_copy_skill "$REPO_ROOT/skills/clean-legal-db" clean-legal-db
 info_or_plan "스킬 설치: clean-legal-db"
 
 # ============================================================

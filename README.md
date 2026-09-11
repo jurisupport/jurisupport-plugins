@@ -1,19 +1,53 @@
 # jurisupport-plugins
 
-> **변호사용 클로드코드 통합 패키지** — 한국 송무 자동화의 표준 워크플로우
+> **Claude Code와 Codex를 위한 법률 업무 플러그인** — 사건자료 검토부터 서면 작성·인용 검증까지
 >
 > 쥬리서포트 주식회사 ([jurisupport.com](https://jurisupport.com))
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
 ![Locale](https://img.shields.io/badge/Locale-ko--KR-red)
-![Claude Code](https://img.shields.io/badge/Claude%20Code-Required-orange)
+![Claude Code](https://img.shields.io/badge/Claude%20Code-Supported-orange)
+![Codex](https://img.shields.io/badge/Codex-Supported-blue)
+![Version](https://img.shields.io/badge/Version-0.2.12-green)
 
 ---
 
 ## 한 줄 요약
 
-사건폴더를 던지면 **사실관계 정리 → 쟁점 추출 → 법령·판례 검증 → 준비서면 초안·완성본까지** 자동 작성합니다. 모든 단계에 변호사 책임 검증을 거치며, 데이터 보호 Hook은 알려진 외부 도구와 한국형 식별정보 패턴을 탐지하는 보조 안전장치로 작동합니다.
+사건자료를 바탕으로 **사실관계 정리 → 쟁점 추출 → 법령·판결 검증 → 서면 작성**을 지원합니다. Claude Code와 Codex 중 사용하는 환경에 설치하면 됩니다. 법률 근거 확인과 변호사의 최종 검토가 필요하며, 법원 전자제출은 사용자가 직접 수행합니다.
+
+> 🏆 **제15회 변호사시험 선택형 3과목 평가에서 각각 3회 만점** — JuriSupport 법률 리서치 도구 사용 조건에서 [공법 40/40](https://github.com/jurisupport/korean-bar-exam-agent-eval)·[민사법 70/70](https://github.com/jurisupport/korean-bar-exam-agent-eval-civil)·[형사법 40/40](https://github.com/jurisupport/korean-bar-exam-agent-eval-criminal)을 각각 3회 모두 기록했습니다.
+
+---
+
+## 0.2.12: Claude·Codex 공통 지원
+
+| 사용하는 환경 | 설치 대상 | 확인한 모델 |
+|---|---|---|
+| Claude Code | `--host claude` | Claude Opus 5 |
+| Codex | `--host codex` | GPT-6 Astra · GPT-5.6 Sol |
+| 두 환경 함께 | `--host both` | 각 세션에서 선택한 모델 상속 |
+
+- **Codex 전용 설치에 Claude 계정·프로그램을 요구하지 않습니다.**
+- 질문·파일 경로·MCP 도구를 실제 실행 환경에 맞추고, 승인된 작성·검증 작업은 불필요한 중간 승인 없이 이어갑니다.
+- 프로필 웹 동의, 외부 전송 승인, 개인정보 보호와 법률 근거 검증은 유지합니다.
+- 세 모델의 가상 사건 조회·도구 선택·동의 경계 검사를 통과했습니다. 전체 법률 업무나 모든 운영체제 설치를 보증하는 결과는 아닙니다. [검증 범위](plugins/jurisupport/COMPATIBILITY.md)
+
+## 그간의 주요 업데이트
+
+JuriSupport는 초기 프로토타입 이후, 설치 안정성·송무 작성 흐름·법률자료 검증·개인정보 보호를 중심으로 개선되어 왔습니다.
+
+- **Claude/Codex 공통 실행 지원**: 호스트별 설치 경로, 세션 모델 상속, 공통 플레이북과 도구 스키마 확인을 지원합니다.
+- **Claude Opus 5/high 지원**: JuriSupport 스킬이 현재 세션의 Opus 5/high 설정을 일관되게 상속하고, 사무소별 로컬 플레이북에서 문체·검증 기준·저장 경로를 불러옵니다.
+- **한 줄 설치 안정화**: macOS/Linux/Windows 설치 흐름을 정리하고, Windows winget·긴 경로·PowerShell·의존성 설치 실패 케이스를 보강했습니다.
+- **송무 워크플로우 통합**: 사건 인테이크부터 쟁점 정리, 법령·판례 검증, 준비서면 초안·정본·PDF 흐름까지 JuriSupport 플러그인 중심으로 통합했습니다.
+- **모의변론 강화**: mock-hearing이 청구권규범, 요건사실, 입증책임, 항변·재항변, 판결 유추·구별 순서로 서면을 점검하도록 개선했습니다.
+- **로컬 법률자료 확장**: 법제처 OC 키가 없어도 실습 가능한 오프라인 법령 폴백과 clean-legal-db 오프라인 검색을 추가했습니다.
+- **과거 사건 활용 개선**: case-records 검색이 실제 준비서면·신청서면 등 재사용 가능한 서면 중심으로 작동하도록 정리했습니다.
+- **법원 양식·판례 검색 보강**: court-forms, beopgoeul-search, lbox-guide 등 공개·로컬 자료 기반의 보조 검색 흐름을 추가했습니다.
+- **개인 프로필 완성 기능**: 변호사가 자신의 사건자료와 작성 이력을 바탕으로 프로필을 정리하고, 명시적 동의 후 JuriSupport에 업로드할 수 있게 했습니다.
+- **보안·동의 흐름 정리**: 의뢰인 정보 보호, 외부 업로드 전 웹 동의, 로컬 토큰 처리, 설치 진단 리포트 흐름을 보강했습니다.
 
 ---
 
@@ -45,22 +79,39 @@ JuriSupport는 초기 프로토타입 이후, 설치 안정성·송무 작성 �
 
 ## 빠른 시작
 
+**Claude Code 또는 Codex 중 사용하는 환경을 선택할 수 있습니다.** Codex만 사용하는 경우 Claude 설치·계정은 필요하지 않습니다. 플러그인은 현재 세션의 모델을 상속하며 Codex의 GPT-6 Astra·GPT-5.6 Sol을 특정 모델로 바꾸지 않습니다.
+
+### Codex에서 플러그인만 설치
+
+```bash
+git clone https://github.com/jurisupport/jurisupport-plugins.git
+cd jurisupport-plugins
+codex plugin marketplace add .
+codex plugin add jurisupport@jurisupport-plugins
+```
+
+새 Codex 작업에서 **“JuriSupport 콜드스타트로 설정해줘”**라고 요청하세요. 외부 계정·MCP·서적/사건 DB는 필요할 때 별도로 설정하며, 미설정 상태를 설치 실패로 처리하지 않습니다.
+
+보조 스킬까지 설치하려면 저장소 루트에서 `bash install.sh --host codex`를 실행하세요. Claude Code는 `--host claude`, 두 환경은 `--host both`를 사용합니다. 상세 범위와 모델·보안 경계는 [플러그인 사용 안내](plugins/jurisupport/README.md), 실제 검사 결과는 [호환성 확인 기록](plugins/jurisupport/COMPATIBILITY.md)을 참조하세요.
+
+
 ### macOS / Linux — 한 줄 자동 설치
+
+Codex만 설치하려면 앞에 `JURISUPPORT_HOST=codex`를 지정하세요. Claude만은 `claude`, 두 호스트는 `both`를 선택합니다. 지정하지 않으면 설치된 CLI를 감지합니다.
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/bootstrap.sh)
 ```
 
-위 한 줄이 **Homebrew → jq·git·python·node → Claude Code → 본 패키지 git clone → install.sh 실행**까지 이어서 설치합니다 (약 5~10분).
+위 한 줄은 필요한 Git·Node와 선택한 CLI를 준비하고 저장소를 내려받아 설치를 이어갑니다. Codex 경로는 핵심 플러그인·보조 스킬을 설치하며, Claude 경로에는 기존 Python·jq·rclone 준비와 선택 도구 설정이 포함됩니다.
 
 보안이 엄격한 사무소 환경에서는 한 줄 설치 전에 스크립트를 내려받아 검토하거나, 릴리스 태그를 고정해 수동 설치하는 방식을 권장합니다.
 
-bootstrap 완료 후:
-```bash
-claude                            # 새 터미널에서 OAuth 로그인 1회
-```
+설치 후 선택한 앱을 열어 로그인하세요. Codex는 새 작업에서 **“JuriSupport 콜드스타트로 설정해줘”**, Claude Code는 `/jurisupport:cold-start-interview`로 시작합니다. 새 GPT 모델을 구버전 CLI가 거절하면 Codex를 최신 버전으로 갱신하세요. 이번 모델 검사는 Codex CLI 0.154.0에서 수행했습니다.
 
 ### Windows — 한 줄 자동 설치 (PowerShell)
+
+Codex 전용 설치는 먼저 `$env:JURISUPPORT_HOST = "codex"`를 설정한 뒤 아래 명령을 실행하세요. 로컬 스크립트 실행에서는 `-PluginHost codex`도 사용할 수 있습니다.
 
 PowerShell 실행 방법:
 
@@ -72,7 +123,7 @@ PowerShell 실행 방법:
 irm https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windows-bootstrap.ps1 | iex
 ```
 
-이 한 줄이 **모든 의존성(Git/Node/Python/Chrome/Tesseract/qpdf/Ghostscript/rclone) + Claude Code + 본 레포 + install.sh까지** 자동으로 끝냅니다 (약 15분).
+이 한 줄이 **선택한 Claude Code/Codex + 본 레포 + install.sh까지** 자동으로 이어집니다. Codex 전용 설치는 기본 경로에 집중하며, Claude 경로에는 기존 보조 도구(Git/Node/Python/Chrome/Tesseract/qpdf/Ghostscript/rclone) 설치가 포함됩니다.
 
 회사 보안 정책이나 ExecutionPolicy 때문에 `irm | iex`가 차단되면 같은 PowerShell 창에서 아래 두 줄을 대신 실행하세요.
 
@@ -83,9 +134,9 @@ iwr https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/windo
 
 PowerShell 한 줄 설치도 빠른 시작용입니다. 조직 보안 정책이 엄격하면 스크립트 내용을 먼저 검토한 뒤 실행하세요.
 
-사용자가 답할 것: UAC 팝업 "예", install.sh 단계별 `[Y/n]`, 법제처 Open API 키가 이미 있으면 `OC` 입력(없으면 Enter로 건너뛰고 오프라인 법령 폴백 사용), (선택) Gemini API 키.
+필요한 운영체제 설치 승인과 선택한 앱의 로그인을 완료하세요. Claude 전체 설치 흐름에서는 단계별 `[Y/n]`, 법제처 `OC`, 선택한 기능의 API 키를 추가로 묻습니다. Codex 핵심 설치는 외부 계정을 자동 연결하지 않습니다.
 
-제3자 PC 설치를 지원해야 하면 진단 리포트 옵션을 켠 뒤 실행하세요. 실패 시 설치 로그·Windows 버전·winget/Git/Node/npm/Python/rclone/Claude Code 상태를 ZIP으로 묶고, 업로드 엔드포인트로 전송을 시도합니다.
+제3자 PC 설치를 지원해야 하면 진단 리포트 옵션을 켠 뒤 실행하세요. 실패 시 설치 로그·Windows 버전·공통 도구와 선택한 Claude Code/Codex 상태를 ZIP으로 묶고, 업로드 엔드포인트로 전송을 시도합니다.
 
 ```powershell
 $env:JURISUPPORT_SUPPORT_REPORT = "1"
@@ -98,7 +149,7 @@ WSL2를 선호하시면 [WINDOWS_WSL.md](WINDOWS_WSL.md) (W2 옵션) 참조 — 
 
 ### 사전 준비
 
-- **클로드 Pro/Max 가입** (https://claude.ai/upgrade) — 결제 필요, 자동화 불가
+- 사용할 **Claude Code 또는 Codex의 설치·로그인** — 해당 서비스에서 사용할 수 있는 계정 필요
 - (Mac/Linux) 관리자 비밀번호 — Homebrew 설치 시 1회 입력
 - (Windows) winget 사용 가능한 Windows 10 22H2+ 또는 Windows 11
 
@@ -110,7 +161,7 @@ cd jurisupport-plugins
 ./install.sh              # Mac/Linux/Windows(Git Bash) 공통
 ```
 
-Windows에서 플러그인이 계속 예전 버전으로 보이면 PowerShell에서 강제 갱신:
+Claude Code 사용 중 Windows에서 플러그인이 계속 예전 버전으로 보이면 PowerShell에서 갱신:
 
 ```powershell
 cd $env:USERPROFILE\jurisupport-plugins
@@ -127,7 +178,7 @@ claude.cmd plugin install jurisupport@jurisupport-plugins
 
 ---
 
-설치 후 첫 사건폴더에서:
+Claude Code 설치 후 첫 사건폴더에서 (Codex는 앱의 새 작업에서 같은 스킬 이름으로 요청):
 
 ```powershell
 cd ~/사건/내사건폴더
@@ -153,7 +204,7 @@ claude
 | 구성요소 | 역할 | 의존성 |
 |---|---|---|
 | **JuriSupport 플러그인** | 사건 인테이크 → 준비서면 자동 작성 표준 절차 | korean-law MCP (공개), OC 발급 전 오프라인 법령 폴백 |
-| **데이터 보호 Hook** | 외부 API 호출 시 의뢰인 정보 자동 감지·차단 | jq |
+| **Claude용 데이터 보호 Hook** | Claude 외부 도구 호출의 의뢰인 정보 감지 보조. Codex에 같은 Hook을 적용하지 않음 | jq |
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 검색. 스킬은 기본 설치, 자동 검색 toolkit은 선택 설치 | Chrome + Python 3.9+ |
 | **court-forms toolkit** | 대한민국 법원 전자소송포털 공개 양식모음 로컬 DB·검색·공식 HWP/PDF 다운로드 | Python 3.9+ |
@@ -168,17 +219,17 @@ claude
 
 | OS | 지원 | 비고 |
 |---|---|---|
-| macOS (Apple Silicon / Intel) | ✅ 완전 지원 | |
-| Linux (Ubuntu 22.04+) | ✅ 완전 지원 | |
-| Windows 10 22H2+ / 11 (네이티브 W1) | ✅ 완전 지원 | [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) — winget 기반, BIOS 가상화 불필요 |
-| Windows + WSL2 (W2) | ✅ 완전 지원 | [WINDOWS_WSL.md](WINDOWS_WSL.md) — 리눅스 환경 그대로 사용 |
+| macOS (Apple Silicon / Intel) | 설치 경로 제공 | |
+| Linux (Ubuntu 22.04+) | 설치 경로 제공 | |
+| Windows 10 22H2+ / 11 (네이티브 W1) | 설치 경로 제공 | [WINDOWS_NATIVE.md](WINDOWS_NATIVE.md) — winget 기반, BIOS 가상화 불필요 |
+| Windows + WSL2 (W2) | 설치 경로 제공 | [WINDOWS_WSL.md](WINDOWS_WSL.md) — 리눅스 환경 그대로 사용 |
 
 ---
 
 ## 사전 준비물
 
-1. **클로드 Pro 또는 Max 계정** (월 20달러 이상) — https://claude.ai/upgrade
-2. **클로드코드 설치** — https://docs.claude.com/claude-code
+1. **사용할 호스트의 계정** — Claude Code 또는 Codex에서 로그인 가능해야 함
+2. **선택한 호스트 설치** — Claude Code 또는 Codex CLI. 플러그인 설치만으로 다른 호스트를 요구하지 않음
 3. **Homebrew** (macOS) 또는 apt (Linux)
 4. **Python 3.9+** (3.10+ 권장)
 5. **법제처 Open API 키** — korean-law MCP 정식 법령·판례 조회용. 발급 전에도 설치와 실습은 가능하며, 오프라인 법령 폴백을 사용합니다 ([발급 가이드](guides/07_law_openapi_key.md))
@@ -189,7 +240,9 @@ claude
 
 ---
 
-## 설치 단계 (install.sh 12단계)
+## Claude 설치 단계 (install.sh 12단계)
+
+Codex 전용 경로는 핵심 플러그인과 보조 스킬 등록을 수행하고 필요한 외부 도구를 선택 설정하도록 안내합니다. 아래는 기존 Claude 설치 경로의 단계입니다.
 
 | 단계 | 내용 | 필수/선택 |
 |---|---|---|
@@ -199,7 +252,7 @@ claude
 | 4 | korean-law MCP 설치 또는 오프라인 법령 폴백 안내 | 권장 |
 | 5 | lbox-guide + beopgoeul-search 스킬 설치 | 필수 |
 | 6 | 사건정보 관리표 템플릿 복사 (~/사건/) | 권장 |
-| 7 | legal-books 검색 서버 설치 | 선택 (책 스캔 후) |
+| 7 | 별도 legal-books 플러그인·검색 서버 설치 | 선택 (별도 저장소, 책 준비 후) |
 | 8 | case-records 검색 서버 설치 | 선택 (사건폴더 인덱싱) |
 | 9 | court-forms 법원 양식 DB toolkit 설치 | 선택 (공개 양식 메타DB, 파일은 필요 시 다운로드) |
 | 10 | beopgoeul-search 자동 검색 toolkit 설치 | 선택 (Chrome 필요, 스킬은 5단계에서 이미 설치) |
@@ -288,9 +341,13 @@ bash toolkit/court-forms/install.sh
 ```bash
 cd ~/jurisupport-plugins
 ./uninstall.sh           # 각 단계마다 Y/n 확인 (10단계)
-./uninstall.sh --yes     # 전 항목 자동 제거 (사용자 데이터는 보존)
+./uninstall.sh --host codex --dry-run # Codex 제거 범위 미리보기
 ./uninstall.sh --dry-run # 미리보기만
 ```
+
+Codex만 제거하려면 `bash uninstall.sh --host codex`를 사용합니다. 핵심 플러그인과 이 저장소에서 설치한 보조 스킬을 제거하며, DB·MCP 인증 설정은 보존합니다. 먼저 `--dry-run`으로 확인할 수 있습니다.
+
+아래는 **Claude 전체 제거 경로**입니다. `--yes`는 데이터 폴더 제거 질문도 승인하므로 백업 여부를 확인한 경우에만 사용하세요.
 
 **제거 대상** (10단계):
 1. 데이터 보호 Hook 등록 해제 (settings.json jq 편집)
@@ -304,7 +361,7 @@ cd ~/jurisupport-plugins
 9. ~/.jurisupport/secrets.env (Gemini API 키 — 확인 후)
 10. JuriSupport MCP 등록 해제 (`claude mcp remove`)
 
-**보존 대상 (기본)**: `~/사건/` 폴더, Claude Code 자체, 시스템 패키지(brew/apt/winget로 깐 것), jurisupport.com 계정·데이터.
+**보존 대상 (기본)**: `~/사건/` 폴더, Claude Code·Codex 자체, 시스템 패키지(brew/apt/winget로 깐 것), jurisupport.com 계정·데이터.
 
 ### Mac — 시스템 패키지까지 모두 제거
 
@@ -352,7 +409,7 @@ MIT License. 본 패키지의 코드·문서·템플릿은 자유롭게 사용·
 
 다만 **다음은 본 패키지와 무관하며, 사용 변호사 본인의 절대적 책임**입니다.
 
-- 클로드코드가 생성한 결과물의 정확성·법적 적합성 검증
+- 선택한 AI가 생성한 결과물의 정확성·법적 적합성 검증
 - 의뢰인 정보 보호·비밀유지의무 (변호사윤리장전·개인정보보호법)
 - 법원·의뢰인·상대방 제출·전달 전 최종 검토
 - 데이터 보호 Hook은 보조 수단이며 완전한 유출 방지를 보장하지 아니함
@@ -375,9 +432,9 @@ JuriSupport SaaS와 연동하면 사건·문서·기일·할일·증거를 통�
 **시작 흐름**:
 1. [jurisupport.com](https://jurisupport.com) 가입 (사건 50건까지 무료)
 2. [jurisupport.com/profile](https://jurisupport.com/profile) 에서 API 토큰 발급
-3. install.sh가 토큰을 입력받아 MCP 등록 (또는 수동: PowerShell은 `claude.cmd mcp add ...`, Git Bash/Mac/Linux는 `claude mcp add ...`)
+3. 사용하는 호스트의 MCP 설정에 토큰 등록. Claude 전체 설치는 입력을 안내하며, Codex는 [별도 연결 안내](plugins/jurisupport/README.md#보조-스킬과-함께-설치)를 따릅니다.
 4. [jurisupport.com/cases](https://jurisupport.com/cases) 에서 사건 등록 — **전자소송 사건목록 엑셀 업로드하면 자동 일괄 등록**
-5. 클로드코드에서 `/jurisupport:brief-protocol` 실행 시 사건 자동 인식
+5. Claude의 `/jurisupport:brief-protocol` 또는 Codex의 “JuriSupport 준비서면 작성” 요청으로 시작
 
 보안 메모: 현재 Claude Code CLI는 HTTP/SSE MCP bearer header를 `--header` 인자로 등록합니다. install.sh는 검증 단계의 argv 노출은 줄이지만, MCP 등록 순간에는 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다. 공용 PC나 감염이 의심되는 환경에서는 토큰 등록을 미루고 안전한 장비에서 진행하세요.
 

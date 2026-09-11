@@ -9,9 +9,11 @@ metadata:
 
 # Records Sync
 
+먼저 [공통 실행 규칙](../../references/runtime.md)을 읽고 현재 호스트에서 사용 가능한 기능으로 수행한다.
+
 사건기록 폴더(받은 자료)와 작성서류 폴더(우리 서면)를 `case-records` 로컬 DB에 함께 인덱싱한다.
 
-시작할 때 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 Read한다. 없으면 `/jurisupport:cold-start-interview`를 먼저 실행한다.
+시작할 때 `~/.jurisupport/playbook.md`(Windows `%USERPROFILE%\.jurisupport\playbook.md`)를 읽는다. 없으면 공통 실행 규칙에 따라 필요한 설정만 확인하거나 `cold-start-interview`를 수행한다.
 
 ## 원칙
 
@@ -22,7 +24,7 @@ metadata:
 
 ## 실행
 
-1. `~/case-records/scripts/sync_records.sh` 존재 확인. 없으면 `bash toolkit/case-records/install.sh` 또는 `~/jurisupport-plugins/toolkit/case-records/install.sh` 실행 안내.
+1. `~/case-records/scripts/sync_records.sh` 존재를 확인한다. 없으면 [설치 안내](../../README.md)에 따라 전체 저장소의 `toolkit/case-records/install.sh --host codex` 또는 `--host claude`로 필요한 프로그램을 설치하도록 안내한다. 플러그인 캐시나 현재 작업 폴더에 toolkit이 있다고 가정하지 않는다.
 2. 경로는 플레이북 §5의 사건기록 디렉토리와 작성문서 디렉토리를 우선 사용한다.
 3. 경로가 없으면 사용자에게 두 경로만 짧게 물어본다.
 4. 실행:

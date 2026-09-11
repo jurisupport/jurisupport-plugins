@@ -9,6 +9,7 @@
 #   ./uninstall.sh          # 대화식 (각 단계마다 Y/n 확인)
 #   ./uninstall.sh --yes    # 모든 항목 자동 제거 (사용자 데이터는 여전히 보존)
 #   ./uninstall.sh --dry-run # 무엇이 제거될지 미리보기만
+#   ./uninstall.sh --host codex # Codex 등록/스킬만 제거 (사용자 데이터 보존)
 
 set -euo pipefail
 
@@ -51,10 +52,47 @@ do_rm() {
   if $DRY_RUN; then
     warn "  [dry-run] 제거 예정: $target"
   else
-    rm -rf "$target"
+    rm -rf "$target" || return $?
     info "  ✓ 제거: $target"
   fi
 }
+
+UNINSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$UNINSTALL_DIR/lib/install-host.sh"
+jurisupport_select_host "$@"
+UNINSTALL_STATUS=0
+if jurisupport_has_host codex; then
+  step 1 "Codex 플러그인·보조 스킬 제거 (toolkit 데이터 보존)"
+  if $DRY_RUN || command -v codex >/dev/null 2>&1; then
+    if ask "Codex의 JuriSupport 플러그인 등록을 제거할까요?"; then
+      if $DRY_RUN; then
+        warn '[dry-run] codex plugin remove jurisupport@jurisupport-plugins'
+      else
+        if codex plugin remove jurisupport@jurisupport-plugins; then
+          :
+        else
+          UNINSTALL_STATUS=$?
+          warn "Codex 플러그인 제거 실패 (exit $UNINSTALL_STATUS). 남은 선택 대상 정리는 계속합니다."
+        fi
+      fi
+    fi
+  else
+    warn 'Codex CLI 없음 → 플러그인 등록은 Codex 설정에서 제거하세요.'
+    UNINSTALL_STATUS=1
+  fi
+  for SKILL in lbox-guide beopgoeul-search court-forms case-records clean-legal-db; do
+    SKILL_DIR="$(jurisupport_path "${CODEX_HOME:-$HOME/.codex}/skills")/$SKILL"
+    if [[ -d "$SKILL_DIR" ]] && ask "Codex 보조 스킬 제거: $SKILL"; then
+      do_rm "$SKILL_DIR" || UNINSTALL_STATUS=$?
+    fi
+  done
+  if [[ "$UNINSTALL_STATUS" -eq 0 ]]; then
+    info 'Codex 처리 완료. 사건자료·toolkit DB·별도 MCP 인증 설정은 보존했습니다.'
+  else
+    warn 'Codex 제거가 일부 완료되지 않았습니다. 사건자료·toolkit DB·별도 MCP 인증 설정은 보존했습니다.'
+  fi
+  [[ "$JURISUPPORT_HOST" == codex ]] && exit "$UNINSTALL_STATUS"
+fi
 
 # ============================================================
 # Banner
@@ -100,7 +138,7 @@ $DRY_RUN && warn "*** DRY-RUN 모드 (실제로 제거하지 않음) ***"
 # ============================================================
 step 1 "데이터 보호 Hook 등록 해제"
 
-SETTINGS="$HOME/.claude/settings.json"
+SETTINGS="$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json")"
 if [[ -f "$SETTINGS" ]] && grep -q "pretool_data_protection.sh" "$SETTINGS"; then
   if ask "settings.json에서 본 패키지 Hook 항목을 제거할까요?"; then
     if command -v jq >/dev/null 2>&1; then
@@ -194,7 +232,7 @@ else
 fi
 
 # 옛 cache 심볼릭 링크가 남아있으면 정리 (구버전 install.sh로 깔린 흔적)
-PLUGIN_CACHE_PARENT="$HOME/.claude/plugins/cache/jurisupport-plugins"
+PLUGIN_CACHE_PARENT="$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/cache/jurisupport-plugins")"
 for PLUGIN_CACHE_NAME in jurisupport songmu-legal; do
   PLUGIN_CACHE_DIR="$PLUGIN_CACHE_PARENT/$PLUGIN_CACHE_NAME"
   if [[ -L "$PLUGIN_CACHE_DIR" || -e "$PLUGIN_CACHE_DIR" ]]; then
@@ -212,7 +250,7 @@ fi
 step 3 "클로드코드 스킬 제거"
 
 for SKILL in lbox-guide beopgoeul-search court-forms legal-books case-records beopgoeul-guide; do
-  SKILL_DIR="$HOME/.claude/skills/$SKILL"
+  SKILL_DIR="$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/$SKILL")"
   if [[ -d "$SKILL_DIR" ]]; then
     if ask "스킬 제거: $SKILL"; then
       do_rm "$SKILL_DIR"
@@ -220,7 +258,7 @@ for SKILL in lbox-guide beopgoeul-search court-forms legal-books case-records be
   fi
 done
 for COMMAND in beopgoeul-search court-forms beopgoeul-guide; do
-  COMMAND_FILE="$HOME/.claude/commands/$COMMAND.md"
+  COMMAND_FILE="$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/$COMMAND.md")"
   if [[ -f "$COMMAND_FILE" ]]; then
     if ask "클로드코드 명령 제거: /$COMMAND"; then
       do_rm "$COMMAND_FILE"
@@ -360,7 +398,11 @@ fi
 # ============================================================
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}✓ 본 패키지 등록·데이터 제거 완료${NC}"
+if [[ "$UNINSTALL_STATUS" -eq 0 ]]; then
+  echo -e "${GREEN}✓ 본 패키지 등록·데이터 제거 완료${NC}"
+else
+  warn '선택 대상 정리를 마쳤지만 Codex 제거 실패가 남아 있습니다. 위 오류를 확인하세요.'
+fi
 echo -e "${GREEN}========================================${NC}"
 
 cat <<EOF
@@ -394,3 +436,4 @@ cat <<EOF
     또는 winget uninstall <패키지>
 
 EOF
+exit "$UNINSTALL_STATUS"

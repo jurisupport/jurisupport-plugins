@@ -1,14 +1,14 @@
 # 콜드스타트 — 패키지 설치 직후, 첫 사건까지 한 페이지로
 
 > 본 패키지를 처음 설치한 변호사를 위한 0 → 1 가이드.
-> 약 30분 ~ 1시간 안에 첫 사건을 클로드코드로 처리하는 데까지 갑니다.
+> 약 30분 ~ 1시간 안에 첫 사건을 선택한 Claude Code 또는 Codex로 처리하는 데까지 갑니다.
 
 ---
 
 ## 0. 준비물
 
-- 클로드 Pro 또는 Max 계정 (월 20달러 이상)
-- Mac 또는 Linux 노트북 (Windows는 WSL2)
+- Claude Code 또는 Codex에서 사용할 수 있는 계정과 로그인
+- macOS·Linux 또는 Windows (Windows 네이티브/Git Bash·WSL 지원)
 - Homebrew (Mac) 또는 apt (Linux)
 - 법제처 Open API 인증키(OC) ([발급 가이드](guides/07_law_openapi_key.md))
 - 첫 사건 1개 (현재 작업 중인 진짜 사건)
@@ -16,12 +16,20 @@
 
 ---
 
-## Step 1. 패키지 설치 (15분)
+## Codex만 사용하는 경우
+
+Claude를 설치하지 않고 시작할 수 있습니다. 저장소를 내려받은 뒤 `bash install.sh --host codex`를 실행하거나, [플러그인만 설치하는 방법](plugins/jurisupport/README.md#codex에서-플러그인만-설치)을 사용하세요. 새 Codex 작업에서 “JuriSupport 콜드스타트로 설정해줘”라고 요청하면 됩니다.
+
+Codex 설치 경로는 핵심 플러그인과 보조 스킬 안내를 등록합니다. 외부 MCP·검색 서버·DB는 필요한 경우에만 설정합니다. CSV 헬퍼에는 Python 3이 필요하며, 없으면 해당 기능의 설치 안내를 따르세요. 사무소 정책은 두 호스트 모두 `~/.jurisupport/playbook.md`에 저장합니다.
+
+아래 명령 예시는 Claude의 전체 설치 흐름입니다. Codex에서는 같은 업무를 앱의 새 작업에서 요청하며 Claude 명령이나 Claude용 Hook을 실행하지 않습니다.
+
+## Step 1. Claude 패키지 설치 (15분)
 
 ```bash
 git clone https://github.com/jurisupport/jurisupport-plugins.git
 cd jurisupport-plugins
-./install.sh
+./install.sh --host claude
 ```
 
 ### install.sh가 묻는 것들 (순서대로 답)
@@ -110,7 +118,7 @@ claude
 - 전자소송 계정 (선택)
 - 사무소 표준 서면 양식
 
-답변이 끝나면 `~/사건/CLAUDE.md` 파일이 자동 생성/갱신됩니다. 이후 모든 송무 작업에 이 플레이북이 적용됩니다.
+답변이 끝나면 `~/.jurisupport/playbook.md` 파일이 자동 생성/갱신됩니다. 이후 모든 송무 작업에 이 플레이북이 적용됩니다.
 
 ---
 
@@ -196,7 +204,7 @@ korean-law MCP로 모두 재확인해줘.
 | 책 스캔하여 legal-books DB 구축 시작 | [legal-books docs/book-scanning.md](https://github.com/jurisupport/legal-books/blob/main/docs/book-scanning.md) |
 | 과거 종결 사건 인덱싱 | `guides/03_case_records.md` |
 | 2세션 병렬 시도 (다른 사건 2개 동시) | 시연스크립트 참조 |
-| 사무소 CLAUDE.md 다듬기 | `~/사건/CLAUDE.md` 직접 편집 |
+| 사무소 플레이북 다듬기 | `~/.jurisupport/playbook.md` 직접 편집 |
 
 ---
 

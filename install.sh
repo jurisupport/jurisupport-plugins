@@ -20,6 +20,8 @@ set -euo pipefail
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/dry-run.sh
 source "$TOOLKIT_DIR/lib/dry-run.sh" "$@"
+source "$TOOLKIT_DIR/lib/install-host.sh"
+jurisupport_select_host "$@"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]; then
@@ -41,6 +43,13 @@ step()  {
   printf '%b|%b 진행: %b%s%b\n' "$CYAN" "$NC" "$GREEN" "$bar" "$NC"
   printf '%b+----------------------------------------------------------+%b\n' "$CYAN" "$NC"
 }
+
+# Codex uses its native plugin CLI; the full Claude flow remains below.
+if jurisupport_has_host codex; then
+  source "$TOOLKIT_DIR/lib/install-codex.sh"
+  jurisupport_install_codex "$TOOLKIT_DIR" || exit 1
+  [[ "$JURISUPPORT_HOST" == codex ]] && exit 0
+fi
 
 # ============================================================
 # 0. Banner + safety check
@@ -179,7 +188,7 @@ step 2 "데이터 보호 Hook 설치"
 HOOK_SRC="$TOOLKIT_DIR/hooks/pretool_data_protection.sh"
 run_or_plan chmod +x "$HOOK_SRC"
 
-SETTINGS="$HOME/.claude/settings.json"
+SETTINGS="$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json")"
 run_or_plan mkdir -p "$(dirname "$SETTINGS")"
 if ! is_dry_run; then
   [[ -f "$SETTINGS" ]] || echo '{}' > "$SETTINGS"
@@ -369,16 +378,12 @@ step 5 "가이드 스킬 설치"
 
 # Always-on: lbox-guide and beopgoeul-search appear immediately.
 # beopgoeul-search tells the user how to enable the optional Selenium toolkit if missing.
-for SKILLS_ROOT in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
-  run_or_plan mkdir -p "$SKILLS_ROOT"
-  for SKILL in lbox-guide beopgoeul-search; do
-    run_or_plan mkdir -p "$SKILLS_ROOT/$SKILL"
-    run_or_plan cp "$TOOLKIT_DIR/skills/$SKILL/SKILL.md" "$SKILLS_ROOT/$SKILL/SKILL.md"
-    info_or_plan "스킬 설치: $SKILL ($SKILLS_ROOT)"
-  done
+for SKILL in lbox-guide beopgoeul-search; do
+  jurisupport_copy_skill "$TOOLKIT_DIR/skills/$SKILL" "$SKILL"
+  info_or_plan "스킬 설치: $SKILL ($JURISUPPORT_HOST)"
 done
-run_or_plan mkdir -p "$HOME/.claude/commands"
-run_or_plan cp "$TOOLKIT_DIR/skills/beopgoeul-search/SKILL.md" "$HOME/.claude/commands/beopgoeul-search.md"
+run_or_plan mkdir -p "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands")"
+run_or_plan cp "$TOOLKIT_DIR/skills/beopgoeul-search/SKILL.md" "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/beopgoeul-search.md")"
 info_or_plan "명령 설치: beopgoeul-search"
 # Step 10 installs the runnable Selenium toolkit for beopgoeul-search.
 
