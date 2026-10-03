@@ -13,7 +13,10 @@
 #   9. (Optional) court-forms DB toolkit
 #   10. (Optional) beopgoeul-search toolkit
 #   11. (Optional) clean-legal-db offline legal database
-#   12. (Recommended) JuriSupport MCP registration
+#   12. (Recommended) JuriSupport MCP registration (all folders)
+#   Then recommended companions: lawyer profile plugin, legal-terminal app,
+#   legal-polish-public plugin, and (optional) e-court tools, followed by a
+#   per-tool status table.
 
 set -euo pipefail
 
@@ -774,8 +777,119 @@ install_legal_terminal_app() {
   esac
 }
 
+legal_polish_installed() {
+  claude plugin list 2>/dev/null | grep -q 'legal-polish-public'
+}
+
+install_legal_polish_plugin() {
+  if env_truthy "${JURISUPPORT_SKIP_LEGAL_POLISH:-}"; then
+    info "문서 다듬기 플러그인 추천 설치를 건너뜁니다."
+    return
+  fi
+
+  if is_dry_run; then
+    info_or_plan "문서 다듬기(legal-polish-public) 플러그인 추천 설치"
+    return
+  fi
+
+  if legal_polish_installed; then
+    info "문서 다듬기 플러그인이 이미 설치되어 있습니다."
+    return
+  fi
+
+  echo ""
+  echo "  - 이미 쓴 준비서면·답변서의 법리·사실·숫자는 그대로 두고 문장과 표현만 다듬는 플러그인입니다."
+  prompt_read ans "문서 다듬기 플러그인을 설치할까요? [Y/n, 엔터=예] "
+  if [[ "$ans" =~ ^[Nn]$ ]]; then
+    info "건너뛰기. 나중에: claude plugin install legal-polish-public@jurisupport-plugins"
+    return
+  fi
+
+  claude plugin install legal-polish-public@jurisupport-plugins \
+    || warn "설치 실패. 수동: claude plugin install legal-polish-public@jurisupport-plugins"
+}
+
+# 전자소송 도구는 운영체제마다 다르다: Windows는 기록 자동 받기(ecourt-cli),
+# macOS는 제출·송달 확인 스킬(ecfs-skill). 둘 다 전자소송 아이디와 인증서 암호를
+# 내 컴퓨터에 암호화해 저장하므로 기본값은 '설치 안 함'이다.
+ECFS_SKILL_DIR="$HOME/.claude/skills/ecfs"
+
+ecourt_tool_installed() {
+  case "$PLATFORM" in
+    windows) [[ -d "$HOME/ecourt-cli" ]] ;;
+    mac) [[ -f "$ECFS_SKILL_DIR/SKILL.md" ]] ;;
+    *) return 1 ;;
+  esac
+}
+
+install_ecourt_tools() {
+  if env_truthy "${JURISUPPORT_SKIP_ECOURT:-}"; then
+    info "전자소송 도구 설치를 건너뜁니다."
+    return
+  fi
+
+  if [[ "$PLATFORM" != "windows" && "$PLATFORM" != "mac" ]]; then
+    info "전자소송 도구는 Windows·macOS용만 있어 건너뜁니다."
+    return
+  fi
+
+  if is_dry_run; then
+    info_or_plan "(선택) 전자소송 도구 설치"
+    return
+  fi
+
+  if ecourt_tool_installed; then
+    info "전자소송 도구가 이미 설치되어 있습니다."
+    return
+  fi
+
+  echo ""
+  if [[ "$PLATFORM" == "windows" ]]; then
+    echo "  - ecourt-cli: 매일 전자소송에 로그인해 진행중 사건의 새 기록을 사건 폴더로 받아 둡니다."
+  else
+    echo "  - ecfs-skill: Claude Code에서 전자소송 송달문서 확인, 서면 임시저장·제출, 소송비용 계산을 돕습니다."
+  fi
+  echo "  - 설치 중 전자소송 아이디와 공동인증서 암호를 묻고, 이 컴퓨터에만 암호화해 저장합니다."
+  prompt_read ans "전자소송 도구를 설치할까요? [y/N, 엔터=아니오] "
+  if [[ ! "$ans" =~ ^[Yy]$ ]]; then
+    if [[ "$PLATFORM" == "windows" ]]; then
+      info "건너뛰기. 나중에: https://github.com/jurisupport/ecourt-cli"
+    else
+      info "건너뛰기. 나중에: https://github.com/jurisupport/ecfs-skill"
+    fi
+    return
+  fi
+
+  case "$PLATFORM" in
+    windows)
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -Command 'irm https://raw.githubusercontent.com/jurisupport/ecourt-cli/main/install.ps1 | iex' \
+        || warn "ecourt-cli 설치 실패. 안내: https://github.com/jurisupport/ecourt-cli"
+      ;;
+    mac)
+      if [[ -d "$ECFS_SKILL_DIR/.git" ]]; then
+        git -C "$ECFS_SKILL_DIR" pull --ff-only || warn "ecfs-skill 갱신 실패. 기존 버전으로 진행."
+      else
+        git clone --depth 1 https://github.com/jurisupport/ecfs-skill.git "$ECFS_SKILL_DIR" \
+          || { warn "ecfs-skill 내려받기 실패. 안내: https://github.com/jurisupport/ecfs-skill"; return; }
+      fi
+      (cd "$ECFS_SKILL_DIR" && ./install.sh) \
+        || warn "ecfs-skill 설치 실패. 다시: cd $ECFS_SKILL_DIR && ./install.sh"
+      ;;
+  esac
+}
+
+legal_terminal_installed() {
+  case "$PLATFORM" in
+    mac) [[ -d "/Applications/legal-terminal.app" || -d "$HOME/Applications/legal-terminal.app" ]] ;;
+    windows) [[ -n "${LOCALAPPDATA:-}" && -d "$(jurisupport_path "$LOCALAPPDATA")/Programs/legal-terminal" ]] ;;
+    *) return 1 ;;
+  esac
+}
+
 install_lawyer_profile_plugin
 install_legal_terminal_app
+install_legal_polish_plugin
+install_ecourt_tools
 
 # ============================================================
 # Done
@@ -789,8 +903,10 @@ if is_dry_run; then
   JURI_MCP_STATUS="DRY-RUN: 등록 여부 확인 안 함"
 else
   JURI_MCP_LINE="$(claude mcp list 2>&1 | grep "^jurisupport:" || true)"
-  if [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
-    JURI_MCP_STATUS="등록됨"
+  if [[ "$JURI_MCP_LINE" == *"Connected"* ]] && claude mcp get jurisupport 2>/dev/null | grep -q "Scope: User"; then
+    JURI_MCP_STATUS="등록됨 (모든 폴더)"
+  elif [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
+    JURI_MCP_STATUS="이 폴더에서만 연결됨 - 설치기를 다시 실행하면 모든 폴더용으로 옮깁니다"
   elif [[ -n "$JURI_MCP_LINE" ]]; then
     JURI_MCP_STATUS="항목은 있으나 연결 확인 필요 - 토큰으로 재등록 권장"
   else
@@ -798,11 +914,53 @@ else
   fi
 fi
 
+# 설치된 JuriSupport 도구를 한 화면에 모아 보여준다. 빠진 도구는 다시 설치기를 돌리면 이어서 설치된다.
+tool_status_line() {
+  local name="$1" state="$2" hint="$3"
+  if [[ "$state" == ok ]]; then
+    printf '  [설치됨]  %s\n' "$name"
+  else
+    printf '  [ 없음 ]  %s  -> %s\n' "$name" "$hint"
+  fi
+}
+
+print_tool_status() {
+  local plugins="" st
+  plugins="$(claude plugin list 2>/dev/null || true)"
+  echo "JuriSupport 도구 상태:"
+  command -v claude >/dev/null 2>&1 && st=ok || st=no
+  tool_status_line "Claude Code" "$st" "https://claude.com/claude-code"
+  grep -q 'jurisupport@jurisupport-plugins' <<<"$plugins" && st=ok || st=no
+  tool_status_line "JuriSupport 송무 플러그인" "$st" "claude plugin install jurisupport@jurisupport-plugins"
+  [[ "$JURI_MCP_STATUS" == 등록됨* ]] && st=ok || st=no
+  tool_status_line "JuriSupport 사건 연결 (모든 폴더)" "$st" "아래 MCP 안내 참고"
+  legal_terminal_installed && st=ok || st=no
+  tool_status_line "legal-terminal 앱" "$st" "https://github.com/jurisupport/legal-terminal"
+  grep -q 'jurisupport-lawyer-profile' <<<"$plugins" && st=ok || st=no
+  tool_status_line "변호사 강점찾기 플러그인" "$st" "https://github.com/jurisupport/jurisupport-lawyer-profile-plugin"
+  grep -q 'legal-polish-public' <<<"$plugins" && st=ok || st=no
+  tool_status_line "문서 다듬기 플러그인" "$st" "claude plugin install legal-polish-public@jurisupport-plugins"
+  [[ -d "$HOME/legal-books" ]] && st=ok || st=no
+  tool_status_line "법률서적 검색 (legal-books, 선택)" "$st" "https://github.com/jurisupport/legal-books"
+  if [[ "$PLATFORM" == windows || "$PLATFORM" == mac ]]; then
+    ecourt_tool_installed && st=ok || st=no
+    tool_status_line "전자소송 도구 (선택)" "$st" "설치기 재실행 또는 https://github.com/jurisupport/$( [[ "$PLATFORM" == windows ]] && echo ecourt-cli || echo ecfs-skill )"
+  fi
+}
+
+if is_dry_run; then
+  TOOL_STATUS="JuriSupport 도구 상태: DRY-RUN이라 확인하지 않음"
+else
+  TOOL_STATUS="$(print_tool_status)"
+fi
+
 cat <<EOF
 
 ========================================
 $(if is_dry_run; then printf '[ok] DRY-RUN 완료 (실제 변경 없음)'; else printf '[ok] 설치 완료'; fi)
 ========================================
+
+$TOOL_STATUS
 
 JuriSupport MCP: $JURI_MCP_STATUS
   claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header "Authorization: Bearer <토큰>"

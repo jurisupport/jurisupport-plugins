@@ -199,6 +199,18 @@ claude
 
 ---
 
+## 설치기 하나로 함께 설치되는 도구
+
+Claude 설치 경로의 한 줄 설치는 이 패키지 외에 아래 JuriSupport 도구도 차례로 물어보고 설치합니다. 이미 설치된 것은 건너뛰고, 끝에 도구별 설치 상태를 한 화면에 보여 줍니다. 빠진 도구가 있으면 설치기를 다시 실행하면 됩니다.
+
+| 도구 | 하는 일 | 기본값 | 건너뛰기 환경변수 |
+|---|---|---|---|
+| JuriSupport 사건 연결 (MCP) | 모든 사건 폴더의 Claude Code와 legal-terminal에서 사건·기일·문서 조회 | 권장 (토큰 입력) | — |
+| [변호사 강점찾기 플러그인](https://github.com/jurisupport/jurisupport-lawyer-profile-plugin) | 내 사건자료로 개인 프로필 완성 | 설치 | `JURISUPPORT_SKIP_LAWYER_PROFILE=1` |
+| [legal-terminal](https://github.com/jurisupport/legal-terminal) | 기록을 옆에 두고 서면을 쓰는 데스크톱 앱 (macOS·Windows) | 설치 | `JURISUPPORT_SKIP_LEGAL_TERMINAL=1` |
+| [문서 다듬기](https://github.com/jurisupport/legal-polish-public) | 의미는 그대로, 문장·표현만 윤문 | 설치 | `JURISUPPORT_SKIP_LEGAL_POLISH=1` |
+| 전자소송 도구 | Windows: [ecourt-cli](https://github.com/jurisupport/ecourt-cli) 새 기록 자동 받기 / macOS: [ecfs-skill](https://github.com/jurisupport/ecfs-skill) 송달 확인·제출 | 설치 안 함 (전자소송 아이디·인증서 암호 필요) | `JURISUPPORT_SKIP_ECOURT=1` |
+
 ## 무엇이 들어 있나
 
 | 구성요소 | 역할 | 의존성 |
