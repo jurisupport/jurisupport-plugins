@@ -432,7 +432,17 @@ JuriSupport SaaS와 연동하면 사건·문서·기일·할일·증거를 통�
 **시작 흐름**:
 1. [jurisupport.com](https://jurisupport.com) 가입 (사건 50건까지 무료)
 2. [jurisupport.com/profile](https://jurisupport.com/profile) 에서 API 토큰 발급
-3. 사용하는 호스트의 MCP 설정에 토큰 등록. Claude 전체 설치는 입력을 안내하며, Codex는 [별도 연결 안내](plugins/jurisupport/README.md#보조-스킬과-함께-설치)를 따릅니다.
+3. 토큰을 한 번만 등록합니다. Claude 전체 설치는 입력을 안내하고, 나중에 등록하거나 30일 뒤 갱신할 때는 아래 한 줄을 씁니다. Claude Code(모든 폴더)와 Codex에 함께 등록되고, [legal-terminal](https://github.com/jurisupport/legal-terminal) 사건 대시보드도 이 등록을 그대로 씁니다.
+
+   ```bash
+   # macOS / Linux
+   curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/connect-mcp.sh | bash
+   ```
+
+   ```powershell
+   # Windows PowerShell
+   irm https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/connect-mcp.ps1 | iex
+   ```
 4. [jurisupport.com/cases](https://jurisupport.com/cases) 에서 사건 등록 — **전자소송 사건목록 엑셀 업로드하면 자동 일괄 등록**
 5. Claude의 `/jurisupport:brief-protocol` 또는 Codex의 “JuriSupport 준비서면 작성” 요청으로 시작
 

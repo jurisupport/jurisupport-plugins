@@ -534,19 +534,36 @@ JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에
 JURI_MCP_URL="https://api.jurisupport.com/mcp"
 JURI_MCP_TRANSPORT="http"
 JURI_MCP_LINE=""
+
+# 예전 설치기는 기본값(local)으로 등록해 ~/jurisupport-plugins 폴더에서만 연결됐다.
+# 이미 연결된 토큰이 있으면 다시 묻지 않고 사용자 전체(user) 등록으로 옮긴다.
+juri_move_mcp_to_user_scope() {
+  local token
+  token="$(claude mcp get jurisupport 2>/dev/null | sed -n 's/^[[:space:]]*Authorization: Bearer //p' | head -n 1 | tr -d '[:space:]')"
+  [[ -n "$token" && "$token" != *"*"* && "$token" != *REDACTED* ]] || return 1
+  claude mcp remove jurisupport -s local >/dev/null 2>&1 || true
+  claude mcp remove jurisupport -s user >/dev/null 2>&1 || true
+  claude mcp add -s user --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $token" >/dev/null
+}
+
 if ! is_dry_run; then
   JURI_MCP_LINE="$(claude mcp list 2>&1 | grep "^jurisupport:" || true)"
 fi
 
 if is_dry_run; then
   info_or_plan "JuriSupport MCP 등록 (가입/토큰 발급/MCP add)"
-elif [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
-  info "JuriSupport MCP 이미 연결됨"
+elif [[ "$JURI_MCP_LINE" == *"Connected"* ]] && claude mcp get jurisupport 2>/dev/null | grep -q "Scope: User"; then
+  info "JuriSupport MCP 이미 연결됨 (모든 폴더)"
+elif [[ "$JURI_MCP_LINE" == *"Connected"* ]] && juri_move_mcp_to_user_scope; then
+  info "[ok] 기존 JuriSupport MCP 연결을 모든 폴더에서 쓰도록 옮겼습니다 (토큰 재입력 불필요)"
 else
   echo ""
   echo "  JuriSupport SaaS - 사건/문서/기일/할일/증거 통합 관리 (한국 변호사 전용)"
   echo "  [팁] 사건 50건까지 무료. 본격 송무 환경 갖추는 데 부담 없이 시작 가능합니다."
-  if [[ -n "$JURI_MCP_LINE" ]]; then
+  if [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
+    echo "  [주의] 기존 JuriSupport MCP가 이 폴더에서만 보이게 등록돼 있고 자동으로 옮기지 못했습니다."
+    echo "         사건 폴더에서도 쓰도록 토큰을 넣어 모든 폴더용으로 다시 등록합니다."
+  elif [[ -n "$JURI_MCP_LINE" ]]; then
     echo "  [주의] 기존 JuriSupport MCP 항목이 있지만 연결 완료 상태가 아닙니다."
     echo "         토큰을 넣어 다시 등록합니다."
   fi
@@ -557,7 +574,7 @@ else
   echo ""
   prompt_read ans "JuriSupport 가입/MCP 연동을 진행할까요? [Y/n, 엔터=예] "
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기. 나중에:  claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+    info "건너뛰기. 나중에:  claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
   else
     echo ""
@@ -652,16 +669,19 @@ else
     done
 
     if [[ -z "$JURI_TOKEN" ]]; then
-      info "나중에 등록:  claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+      info "나중에 등록:  claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
     else
       info "MCP 등록 중..."
       warn "Claude Code CLI는 bearer header 등록 시 --header 인자를 사용합니다. 등록 순간 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다."
-      if [[ -n "$JURI_MCP_LINE" ]]; then
-        claude mcp remove jurisupport >/dev/null 2>&1 || true
-      fi
-      if claude mcp add --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
-        info "[ok] JuriSupport MCP 등록 완료"
-        info "-> 'claude' 안에서 mcp__jurisupport__* 도구 즉시 사용 가능"
+      # 사용자 전체(-s user)로 등록해야 사건 폴더 어디서 claude를 열어도 연결된다.
+      # 기본값(local)은 설치기를 실행한 폴더(~/jurisupport-plugins)에서만 보인다.
+      # 예전 설치가 이 폴더에 남긴 등록도 함께 지운다.
+      claude mcp remove jurisupport -s local >/dev/null 2>&1 || true
+      claude mcp remove jurisupport -s user >/dev/null 2>&1 || true
+      if claude mcp add -s user --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
+        info "[ok] JuriSupport MCP 등록 완료 (모든 폴더)"
+        info "-> 어느 사건 폴더에서 'claude'를 열어도 mcp__jurisupport__* 도구 사용 가능"
+        info "-> legal-terminal 사건 대시보드도 이 등록을 그대로 씁니다 (앱에 토큰 다시 입력 불필요)"
         echo ""
         echo -e "${CYAN}  다음 단계 (사건 작업 시작 전):${NC}"
         echo "    - https://jurisupport.com/cases 에서 사건을 등록한 뒤 진행하시면 좋습니다."
@@ -669,7 +689,7 @@ else
         echo "    - 사건번호만 있으면 클로드코드 안에서 mcp__jurisupport__create_case 로도 추가 가능."
         echo ""
       else
-        warn "등록 실패. 수동: claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+        warn "등록 실패. 수동: claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
       fi
       unset JURI_TOKEN  # 셸 환경에서 토큰 흔적 제거
     fi
@@ -785,7 +805,7 @@ $(if is_dry_run; then printf '[ok] DRY-RUN 완료 (실제 변경 없음)'; else 
 ========================================
 
 JuriSupport MCP: $JURI_MCP_STATUS
-  claude mcp add --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header "Authorization: Bearer <토큰>"
+  claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header "Authorization: Bearer <토큰>"
 
 다음 단계:
   1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
