@@ -1220,7 +1220,9 @@ if ($PluginHost -ne 'codex') {
     [수동 fallback C] JuriSupport MCP (사건 50건까지 무료):
       1) https://jurisupport.com 가입
       2) https://jurisupport.com/profile 에서 API 토큰 발급
-      3) $ClaudePowerShellCommand mcp add --transport http jurisupport https://api.jurisupport.com/mcp ``
+      3) irm https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/connect-mcp.ps1 | iex
+         (토큰만 붙여넣으면 Claude Code·Codex에 모든 폴더용으로 등록. 30일 뒤 갱신도 같은 명령)
+         직접 등록하려면: $ClaudePowerShellCommand mcp add -s user --transport http jurisupport https://api.jurisupport.com/mcp ``
            --header "Authorization: Bearer <발급받은_토큰>"
 
 첫 사건 시작:

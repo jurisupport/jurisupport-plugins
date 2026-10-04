@@ -51,9 +51,10 @@ legal-books는 선택 외부 플러그인입니다: https://github.com/jurisuppo
 이번 설치에서는 추가하지 않았습니다. 해당 저장소에서 Codex 지원 여부와 설치 방법을 확인하세요.
 
 JuriSupport / korean-law MCP는 별도 계정·키 연결이며 이번 단계에서는 변경하지 않았습니다.
-Codex 설정의 MCP 서버에서 https://api.jurisupport.com/mcp 와 발급한 토큰을 등록하세요.
-환경변수 방식은 Codex 앱을 시작하는 환경에 JURISUPPORT_API_TOKEN이 유지되어야 합니다:
-  codex mcp add jurisupport --url https://api.jurisupport.com/mcp --bearer-token-env-var JURISUPPORT_API_TOKEN
+토큰 연결은 아래 한 줄이 Claude Code·Codex에 함께 등록합니다 (토큰 갱신도 같은 명령):
+  curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/connect-mcp.sh | bash
+환경변수 방식을 쓰려면 Codex 앱을 시작하는 환경에 JURISUPPORT_MCP_TOKEN이 유지되어야 합니다:
+  codex mcp add jurisupport --url https://api.jurisupport.com/mcp --bearer-token-env-var JURISUPPORT_MCP_TOKEN
 단순 등록/목록 조회는 인증 성공이 아닙니다. 새 작업에서 실제 조회로 확인하세요.
 법령 API 미연결 시 offline-law-fallback은 실습용이며 실제 제출 전 공식 근거를 재검증하세요.
 데이터 보호 Hook은 Claude 전용입니다. Codex에서는 호스트 권한 정책과 공통 스킬 지침을 따릅니다.
