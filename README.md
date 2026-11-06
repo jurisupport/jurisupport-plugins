@@ -11,6 +11,21 @@
 ![Codex](https://img.shields.io/badge/Codex-Supported-blue)
 ![Version](https://img.shields.io/badge/Version-0.2.12-green)
 
+## Claude Code에 링크를 주고 설치 맡기기
+
+**내 컴퓨터에 접근할 수 있는 Claude Code에서 아래 문장을 보내세요.** Claude Code 자체의 설치와 로그인은 먼저 완료해야 합니다.
+
+```text
+https://github.com/jurisupport/jurisupport-plugins
+이 저장소를 내 컴퓨터에 설치해줘. README와 INSTALL_CLAUDE.md를 읽고 환경 확인, 설치, 오류 복구, 동작 확인까지 진행해줘.
+```
+
+Claude가 기본 플러그인·데이터 보호 Hook·보조 스킬을 먼저 설치하고, 실패한 단계는 원인을 확인해 복구하도록 안내합니다. 외부 계정·검색 DB 등 선택 기능은 필요한 경우 별도로 진행하며, 로그인이나 운영체제 승인이 필요한 때는 알려줍니다. 기존 설정과 사건자료는 보존합니다.
+
+**설치를 수행하는 Claude에게:** [INSTALL_CLAUDE.md](INSTALL_CLAUDE.md)를 먼저 읽고 그 절차를 실행하세요. 사용자에게 설치 명령만 나열하고 끝내지 마세요. GitHub 페이지에서 문서가 보이지 않으면 [원문 설치 안내](https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/INSTALL_CLAUDE.md)를 읽으세요. 링크만 공유되고 설치 의도가 확인되지 않은 경우에는 임의로 설치하지 마세요.
+
+일반 웹 채팅이나 원격 실행 환경에서는 사용자 PC에 직접 설치할 수 없을 수 있습니다. 그 경우 현재 실행 위치를 설명하고 로컬 Claude Code에서 이어갈 수 있게 안내합니다. 기존 한 줄 설치 방법도 아래에 유지합니다.
+
 ---
 
 ## 한 줄 요약

@@ -39,7 +39,7 @@ git status --ignored
 
 다음 항목들이 `Ignored files:`에 있어야 함:
 - `**/secrets.env`
-- `**/CLAUDE.md` (CLAUDE.md.example은 제외)
+- 하위 폴더의 `**/CLAUDE.md` (개인 플레이북). 루트 `/CLAUDE.md`는 공개 설치 지침이며 배포 대상; `CLAUDE.md.example`도 배포 대상.
 - `**/.env`
 
 ---

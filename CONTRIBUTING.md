@@ -31,7 +31,7 @@
 - `CLAUDE.md` (각 플러그인의 사용자 인스턴스)
 - `~/사건/_사건정보관리표.csv`
 
-→ 모두 `.gitignore`됨. 템플릿(`CLAUDE.md.example`)만 커밋.
+→ 모두 `.gitignore`됨. 템플릿(`CLAUDE.md.example`)과 공개 설치 지침인 루트 `/CLAUDE.md`만 커밋. 루트 파일에는 개인 정보나 사무소 설정을 넣지 않습니다.
 
 ---
 

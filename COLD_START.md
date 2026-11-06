@@ -26,6 +26,8 @@ Codex 설치 경로는 핵심 플러그인과 보조 스킬 안내를 등록합�
 
 ## Step 1. Claude 패키지 설치 (15분)
 
+Claude Code가 이미 실행 중이면 [AI 설치 안내](INSTALL_CLAUDE.md)에 따라 설치를 맡기는 방법을 권장합니다. 저장소 링크와 “설치하고 오류가 나면 복구해줘”를 보내세요. 아래는 직접 설치하는 기존 경로입니다.
+
 ```bash
 git clone https://github.com/jurisupport/jurisupport-plugins.git
 cd jurisupport-plugins

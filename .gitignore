@@ -1,5 +1,7 @@
 # 사용자 비밀 (Gemini API 키, 인증서, 토큰 등)
 **/CLAUDE.md
+# 저장소 루트는 공개 설치 지침; 하위 사무소 플레이북은 계속 제외
+!/CLAUDE.md
 !**/CLAUDE.md.example
 **/secrets.env
 **/secrets.*
