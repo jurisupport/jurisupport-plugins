@@ -76,9 +76,16 @@ DETECTED=()
 if echo "$HAYSTACK" | grep -qE "$PATTERN_RRN"; then
   DETECTED+=("주민등록번호 (RRN)")
 fi
-if echo "$HAYSTACK" | grep -qE "$PATTERN_CASE"; then
-  DETECTED+=("사건번호")
-fi
+# jq matches Unicode even when non-login Git Bash has no UTF-8 locale.
+case_status=0
+printf '%s' "$HAYSTACK" | jq -Rse --arg pattern "$PATTERN_CASE" 'test($pattern)' >/dev/null || case_status=$?
+case "$case_status" in
+  0) DETECTED+=("사건번호") ;;
+  1) ;; # No match.
+  *)
+    echo "data-protection hook: case-number check failed; blocking external tool call" >&2
+    exit 2 ;;
+esac
 if echo "$HAYSTACK" | grep -qE "$PATTERN_PHONE"; then
   DETECTED+=("휴대전화번호")
 fi

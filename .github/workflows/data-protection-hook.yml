@@ -1,0 +1,36 @@
+name: Data protection hook
+
+on:
+  push:
+    paths:
+      - 'hooks/pretool_data_protection.sh'
+      - 'tests/pretool_data_protection_test.sh'
+      - '.github/workflows/data-protection-hook.yml'
+  pull_request:
+    paths:
+      - 'hooks/pretool_data_protection.sh'
+      - 'tests/pretool_data_protection_test.sh'
+      - '.github/workflows/data-protection-hook.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  hook:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Allow long paths on the disposable Windows runner
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - name: Lint hook and regression test
+        if: runner.os == 'Linux'
+        run: shellcheck hooks/pretool_data_protection.sh tests/pretool_data_protection_test.sh
+      - name: Check hook with inherited, missing, C and UTF-8 locales
+        shell: bash
+        run: |
+          jq --version
+          bash tests/pretool_data_protection_test.sh

@@ -64,4 +64,5 @@ sudo apt install jq    # Linux
 - **Hook이 작동하지 않음**: `~/.claude/settings.json` 문법 오류 확인 (`jq . ~/.claude/settings.json`로 검증)
 - **jq 오류**: `brew install jq` 또는 `apt install jq` (jq가 없으면 외부 전송 후보 호출은 차단됩니다)
 - **권한 오류**: `chmod +x ...pretool_data_protection.sh`
-- **Hook 우회 필요 시 (테스트용)**: settings.json에서 해당 hook 항목을 일시 주석 처리하세요.
+- **Windows에서 주민번호만 차단되고 사건번호는 통과**: 등록 명령이 가리키는 실제 Hook 파일을 최신 저장소 버전으로 갱신하세요. 최신 Hook은 jq의 Unicode 검사를 사용하므로 로케일 미설정·`LC_ALL=C`에서도 동작합니다. 복사본을 등록했다면 그 복사본도 갱신해야 합니다. `bash tests/pretool_data_protection_test.sh`로 로컬 가상 입력만 검사하세요.
+- **Hook 설정 변경 승인이 필요함**: Claude Code가 요구하는 정상 승인 절차를 따르세요. 문제 해결을 위해 보호 Hook을 끄지 마세요.

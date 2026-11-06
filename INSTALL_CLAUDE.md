@@ -6,6 +6,14 @@
 
 먼저 운영체제, 현재 셸, 사용자 홈, `CLAUDE_CONFIG_DIR` 사용 여부, `claude --version`, Git·Bash·jq 유무를 확인한다. Windows에서는 `Get-Command claude,claude.cmd,git,bash,jq -ErrorAction SilentlyContinue` 등으로 실제 실행 경로를 찾는다. `claude` 예시는 발견한 실행 파일로 치환하고, 공백이 있는 경로는 반드시 인용한다. PowerShell의 실행 파일 경로 호출에는 `&`를 사용한다.
 
+### Windows 데스크톱 앱 확인
+
+- `claude`가 PATH에 없더라도 데스크톱 앱에 CLI가 포함되어 있을 수 있다. 먼저 실행 중인 앱과 설치 위치를 확인한다. 현장에서는 `%LOCALAPPDATA%\Claude-Data\<패키지>\claude-code\<버전>\<해시>\claude.exe`에서 확인됐다. 이 경로 구조를 고정값으로 가정하지 말고, 필요하면 `Get-ChildItem -LiteralPath "$env:LOCALAPPDATA\Claude-Data" -Filter claude.exe -File -Recurse -ErrorAction SilentlyContinue`로 후보를 찾는다. 현재 앱에 해당하는 파일을 선택하고 `& '<확인한 절대 경로>' --version`과 `plugin --help`로 검증한 뒤 모든 CLI 명령에 그 경로를 사용한다. 임의의 첫 검색 결과나 오래된 버전을 선택하지 않는다.
+- `Get-Command bash`가 가리키는 WindowsApps·System32의 `bash.exe`는 WSL 실행기일 수 있다. Hook과 toolkit에는 **Git for Windows의 Bash**를 사용한다. 일반 설치 위치는 `C:\Program Files\Git\bin\bash.exe`이며 사용자별 설치도 확인한다. 후보에 `-c 'uname -s; command -v cygpath'`를 전달해 MINGW/MSYS와 `cygpath`를 확인한다. WSL의 Linux Bash를 Windows Hook에 등록하지 않는다.
+- 설정 파일·Hook 등록은 Claude 데스크톱의 승인 대상일 수 있다. 실제로 승인이 요구되면 **어떤 설정 변경이 왜 차단됐는지** 알리고 정상 승인 절차로 이어간다. 기존 설치 요청으로 허용된 작업마다 승인을 다시 묻지는 않는다. 자동 승인 거절을 우회하거나 권한 검사를 끄지 않는다.
+
+### 기본 설치 범위
+
 - 설치 대상은 **현재 사용자의 로컬 Claude Code**다. 클라우드·컨테이너·SSH에서 실행 중이면 그 환경이 사용자가 요청한 설치 대상인지 확인한다. 원격 환경에 설치하고 사용자 PC 설치가 끝났다고 하지 않는다.
 - 기본 범위: `jurisupport` 플러그인, 데이터 보호 Hook, 다섯 보조 스킬(`lbox-guide`, `beopgoeul-search`, `court-forms`, `case-records`, `clean-legal-db`). 보조 스킬 파일만으로 검색 서버·DB가 설치되지는 않는다.
 - 외부 MCP 계정 연결, 대용량 DB, Chrome, 서적·사건 인덱싱은 선택 단계다. 사용자가 이미 요청한 항목은 재승인 없이 진행하고, 지정하지 않았다면 기본 설치 후 선택 사항으로 안내한다.
@@ -38,7 +46,7 @@ claude plugin marketplace list
 claude plugin list
 ```
 
-- `jurisupport-plugins`가 없으면 `claude plugin marketplace add jurisupport/jurisupport-plugins`로 등록한다.
+- `jurisupport-plugins`가 없으면 **Windows에서는 2절에서 `core.longpaths=true`로 받은 로컬 저장소를 먼저 등록**한다. PowerShell에서 `& '<확인한 claude.exe 절대 경로>' plugin marketplace add '<저장소 Windows 절대 경로>'`를 실행한다. 이 저장소의 법원 양식 경로 때문에 GitHub 소스를 CLI 내부에서 다시 clone하면 `Filename too long`이 발생할 수 있다. 레지스트리의 긴 경로 설정만으로 해결됐다고 판단하지 않는다. macOS/Linux에서는 `claude plugin marketplace add jurisupport/jurisupport-plugins`로 등록한다.
 - 이미 있으면 등록 소스가 이 저장소인지 확인한다. 정상 Git 소스는 그대로 사용한다. 사용자가 지정한 로컬 소스를 임의로 원격 소스로 교체하지 않는다. 같은 이름의 다른 출처가 있으면 사용자에게 충돌을 알린다.
 - 새 설치는 다음 명령을 실행하고 종료 코드와 출력을 확인한다.
 
@@ -46,7 +54,7 @@ claude plugin list
   claude plugin install jurisupport@jurisupport-plugins --scope user
   ```
 
-- 정상 설치본이 있으면 불필요하게 재설치하지 않는다. 사용자가 갱신을 요청했거나 버전 문제가 확인된 경우에만 `claude plugin marketplace update jurisupport-plugins` 후 `claude plugin update jurisupport@jurisupport-plugins`를 사용한다. 사용 가능한 옵션은 해당 CLI의 `--help`가 기준이다.
+- 정상 설치본이 있으면 불필요하게 재설치하지 않는다. 갱신 요청이나 버전 문제가 있을 때 **로컬 디렉터리 소스는 먼저 실제 등록 경로의 소스를 갱신**한다. 2절의 변경 보존 절차를 따르고, Windows에서는 해당 저장소에 `git -C '<저장소 경로>' config core.longpaths true`를 설정한 뒤 `git -C '<저장소 경로>' pull --ff-only`를 실행한다. 사용자 전역 Git 설정을 바꾸지 않는다. 그다음 `claude plugin marketplace update jurisupport-plugins`, `claude plugin update jurisupport@jurisupport-plugins` 순서로 적용한다. GitHub 소스는 CLI의 marketplace 갱신부터 진행한다. 로컬 소스는 GitHub 원본이 자동 갱신되지 않는다는 점을 최종 보고에 남긴다. 사용 가능한 옵션은 해당 CLI의 `--help`가 기준이다.
 - 비활성 상태라면 사용자가 의도적으로 꺼둔 이유나 관리 정책을 확인한다. 이번 설치 요청 범위에서 활성화할 수 있으면 `claude plugin enable jurisupport@jurisupport-plugins`로 활성화한다.
 - 설치 후 `claude plugin list`로 정확한 ID, 버전, 범위와 활성 상태를 확인한다. 권한·신뢰 확인 창은 호스트의 정상 절차를 따른다.
 
@@ -61,6 +69,8 @@ claude plugin list
 3. 실제 소스의 `hooks/pretool_data_protection.sh`를 가리킨다. macOS/Linux에서는 공백을 인용한 절대 경로를 사용하고 실행 권한을 부여한다. Windows에서는 Git Bash 실행 파일과 Hook의 Windows 절대 경로를 각각 인용한다. `install.sh`의 `cygpath` 처리를 참고한다. JSON 문자열은 문자열 치환이 아니라 JSON 직렬화 도구로 생성한다.
 4. 기존 설정을 파싱하고 다른 키와 Hook을 보존한 채 대상 항목만 추가·수정한다. 같은 디렉터리의 임시 파일에 저장 → JSON 파싱 검증 → 원본이 중간에 변경되지 않았는지 확인 → 교체 순서로 적용한다. 검증 실패 시 원본을 유지한다.
 5. [기존 Hook 회귀 검사](tests/pretool_data_protection_test.sh)를 `bash tests/pretool_data_protection_test.sh`로 실행한다. 이어서 **등록된 실제 Hook 명령**에도 같은 검사 파일의 허용·차단용 가상 JSON을 로컬 표준입력으로 전달하여 각각 종료 코드 0·2를 확인한다. 실제 외부 검색이나 실제 개인정보로 검사하지 않는다.
+
+기존 Windows 설치 복구에서는 등록 명령이 가리키는 **실제 Hook 파일**이 최신인지 확인한다. 새 Hook은 jq의 Unicode 검사로 사건번호를 탐지하므로 `LC_ALL` 우회 설정이 필요하지 않다. 기존 경로의 저장소를 갱신하면 같은 등록 명령으로 수정본을 사용한다. 별도로 복사한 Hook이면 백업 후 해당 파일도 갱신한다. 주민번호 검사만으로 완료하지 말고, 로케일 미설정·`LC_ALL=C` 상태의 사건번호 차단까지 확인한다.
 
 Hook은 지정된 도구와 패턴에 대한 보조 방어이며 모든 외부 전송을 막는 장치는 아니다. 설치 오류 해결을 위해 Hook·권한 정책을 끄지 않는다. jq 설치나 Hook 검증이 막히면 기본 설치를 “부분 완료”로 보고한다.
 
@@ -95,6 +105,7 @@ Hook은 지정된 도구와 패턴에 대한 보조 방어이며 모든 외부 �
 |---|---|
 | `command not found`, Windows에서 설치 직후 명령을 못 찾음 | 실제 설치 경로와 PATH 확인 → 절대 경로로 실행 → 필요한 경우 새 터미널 안내. CLI가 보이지 않는다고 앱을 중복 설치하지 않음 |
 | PowerShell이 `claude.ps1` 실행을 차단 | 설치된 `claude.exe` 또는 `claude.cmd` 확인 후 사용. 시스템 전체 ExecutionPolicy를 완화하지 않음 |
+| Windows marketplace clone의 `Filename too long` | 2절의 긴 경로 옵션으로 받은 영구 로컬 저장소를 등록. 실패한 등록이 남았는지 먼저 확인하고 정상 소스를 보존. 등록되지 않은 불완전 캐시를 정상 설치로 오인하지 않음. 로컬 소스의 이후 갱신은 3절 순서를 따름 |
 | GitHub 다운로드·marketplace 등록 실패 | 네트워크·인증·프록시 오류 구분. Git 소스 등록만 실패하고 검증한 로컬 소스가 있으면 `claude plugin marketplace add "<저장소 절대 경로>"` 사용. TLS 검증을 끄지 않음 |
 | `plugin` 명령이나 옵션이 없음 | 현재 `--help`와 공식 문서 확인 → 기존 설치 방식으로 Claude Code 업데이트 → 버전 재확인. 문서에 없는 옵션을 추측하지 않음 |
 | 설치됐는데 스킬이 안 보임 | 정확한 플러그인 ID·활성 상태·설정 루트·설치 범위 확인 → CLI 출력에 따라 `/reload-plugins` 또는 새 로컬 세션 안내. 플러그인 캐시 전체 삭제나 무조건 제거·재설치를 하지 않음 |
