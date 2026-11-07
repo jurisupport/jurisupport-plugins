@@ -35,7 +35,7 @@
 | beopgoeul | Chrome 등 실행환경·자동 검색 toolkit |
 | clean-legal-db | 검색 코드·공개 DB 다운로드 및 무결성 검사 |
 | legal-books | 플러그인·검색 toolkit. 키가 필요한 단계는 입력 대기, 실제 책 등록은 별도 |
-| korean-law | 플러그인·MCP. OC 입력 및 실제 조회 확인 |
+| korean-law | 플러그인·MCP. 브라우저로 법제처 가입·신청·OC 설정을 돕고 실제 조회 확인 |
 | JuriSupport MCP | 계정·토큰 입력 및 읽기 전용 연결 확인 |
 | 변호사 강점찾기 | `jurisupport-lawyer-profile` 플러그인 |
 | 문서 다듬기 | `legal-polish-public` 플러그인 |
@@ -119,7 +119,7 @@ Hook은 지정된 도구와 패턴에 대한 보조 방어이며 모든 외부 �
 
 - 실행 전 각 설치 코드를 읽고 기존 설치에 미치는 영향을 확인한다. 특히 case-records 설치기는 기존 서버를 멈추고 가상환경을 다시 만든다. 정상 서버에는 재실행하지 말고 상태부터 확인한다. DB·토큰·사건 원본은 보존하며, 실행 중인 작업을 중단해야 하면 사용자와 조율한다.
 - Python 버전·실행 경로는 [기존 감지 로직](lib/python-detect.sh)을 참고한다. Windows의 Store 실행 별칭을 정상 Python으로 오인하지 않는다. `python3`라는 이름이 필요한 스크립트는 실제 실행 파일을 확인하고 필요한 범위에서 경로를 맞춘다.
-- `korean-law`는 OC가 준비된 경우 `install.sh`의 4단계와 [키 발급 가이드](guides/07_law_openapi_key.md)를 따른다. OC가 없으면 연결 대기로 표시한다. 오프라인 법령은 실습용이며 현행 법령 조회 성공으로 처리하지 않는다.
+- `korean-law`는 OC 유무만 묻고 종료하지 않는다. [브라우저 초기설정 절차](guides/07_law_openapi_key.md#claude가-브라우저로-초기설정을-도울-때)를 읽고, 사용 가능한 브라우저 도구로 공식 사이트 접속 → 신청 상태 확인·작성 → OC 설정 → 실제 조회까지 돕는다. 로그인·본인확인·약관 동의·민감값 입력 등 사용자가 맡는 구간 뒤에는 같은 단계부터 재개한다. 브라우저 연결이나 신청 승인을 기다릴 때만 구체적 사유를 적어 대기로 남긴다. 최신 플러그인의 공용 한도 조회 성공과 본인 OC 설정 완료를 구분하며, 오프라인 법령을 현행 조회 성공으로 처리하지 않는다.
 - JuriSupport MCP는 [연결 가이드](guides/01_jurisupport_alt.md)와 `install.sh`의 12단계를 읽고 사용자 계정·토큰으로 연결한다. 이미 등록된 서버를 임의로 교체하지 않는다. 토큰은 호스트의 설정 절차로 사용자가 입력하고, 등록 후 권한 있는 읽기 전용 조회로 인증을 확인한다.
 - legal-books는 `install.sh` 7단계와 [별도 저장소](https://github.com/jurisupport/legal-books)의 최신 설치 문서를 먼저 확인한다. `claude plugin install legal-books@jurisupport-plugins --scope user`로 플러그인을 설치하고 검색 서버도 해당 저장소의 `toolkit/install.sh --with-skill` 절차로 준비한다. 플러그인 설치만으로 서버까지 완료 처리하지 않는다. 책 0권이면 검색하지 않는다. 키가 필요한 단계는 입력 대기로 남기며, 사건·서적 인덱싱과 외부 임베딩은 별도 요청·동의 없이 켜지 않는다.
 
