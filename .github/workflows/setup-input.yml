@@ -1,0 +1,33 @@
+name: Setup input
+
+on:
+  push:
+    paths:
+      - 'scripts/configure_korean_law.py'
+      - 'tests/configure_korean_law_test.py'
+      - '.github/workflows/setup-input.yml'
+  pull_request:
+    paths:
+      - 'scripts/configure_korean_law.py'
+      - 'tests/configure_korean_law_test.py'
+      - '.github/workflows/setup-input.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  input:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Allow long paths on Windows runner
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check secret transport and error handling with synthetic values
+        run: python tests/configure_korean_law_test.py
