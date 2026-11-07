@@ -10,7 +10,7 @@
 #   6. Case info CSV template
 #   7. (Optional) legal-books server + skill
 #   8. (Optional) case-records server + skill
-#   9. (Optional) court-forms DB toolkit
+#   9. (Optional) court-forms DB toolkit (+ law-forms hwpx form filler)
 #   10. (Optional) beopgoeul-search toolkit
 #   11. (Optional) clean-legal-db offline legal database
 #   12. (Recommended) JuriSupport MCP registration (all folders)
@@ -485,6 +485,22 @@ else
     bash "$TOOLKIT_DIR/toolkit/court-forms/install.sh" || warn "court-forms 설치 실패. 나중에 다시 시도하세요."
   else
     info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/court-forms/install.sh"
+  fi
+fi
+
+# 9-1. Optional: law-forms toolkit (법령 별지서식·법원 전산양식 hwpx 채우기)
+if is_dry_run; then
+  info_or_plan "법령·법원 서식 hwpx 채우기 toolkit(law-forms) 설치"
+else
+  echo ""
+  echo "  - 자주 쓰는 서식(열람·등사 신청서, 초본 신청서 등)을 필드 이름만으로 채워 hwpx·PDF로 만듭니다."
+  echo "  - 서재에 없는 법령 서식은 법제처에서 받아 kordoc으로 hwpx 변환 후 채웁니다(법제처 OC 필요)."
+  echo ""
+  read -r -p "law-forms를 설치할까요? [Y/n, 엔터=예] " ans
+  if [[ ! "$ans" =~ ^[Nn]$ ]]; then
+    bash "$TOOLKIT_DIR/toolkit/law-forms/install.sh" || warn "law-forms 설치 실패. 나중에 다시 시도하세요."
+  else
+    info "건너뛰기. 나중에 설치: bash $TOOLKIT_DIR/toolkit/law-forms/install.sh"
   fi
 fi
 
