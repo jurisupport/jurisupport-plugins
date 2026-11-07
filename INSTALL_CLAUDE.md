@@ -35,7 +35,7 @@
 | beopgoeul | Chrome 등 실행환경·자동 검색 toolkit |
 | clean-legal-db | 검색 코드·공개 DB 다운로드 및 무결성 검사 |
 | legal-books | 플러그인·검색 toolkit. 키가 필요한 단계는 입력 대기, 실제 책 등록은 별도 |
-| korean-law | 플러그인·MCP. 브라우저로 법제처 가입·신청·OC 설정을 돕고 실제 조회 확인 |
+| korean-law | 플러그인·MCP. 계정이 없으면 브라우저로 회원가입부터 지원하고 API 신청·OC 설정·실제 조회 확인. 가입 중 API 동시 신청은 중복하지 않음 |
 | JuriSupport MCP | 계정·토큰 입력 및 읽기 전용 연결 확인 |
 | 변호사 강점찾기 | `jurisupport-lawyer-profile` 플러그인 |
 | 문서 다듬기 | `legal-polish-public` 플러그인 |
