@@ -12,12 +12,35 @@
 - `Get-Command bash`가 가리키는 WindowsApps·System32의 `bash.exe`는 WSL 실행기일 수 있다. Hook과 toolkit에는 **Git for Windows의 Bash**를 사용한다. 일반 설치 위치는 `C:\Program Files\Git\bin\bash.exe`이며 사용자별 설치도 확인한다. 후보에 `-c 'uname -s; command -v cygpath'`를 전달해 MINGW/MSYS와 `cygpath`를 확인한다. WSL의 Linux Bash를 Windows Hook에 등록하지 않는다.
 - 설정 파일·Hook 등록은 Claude 데스크톱의 승인 대상일 수 있다. 실제로 승인이 요구되면 **어떤 설정 변경이 왜 차단됐는지** 알리고 정상 승인 절차로 이어간다. 기존 설치 요청으로 허용된 작업마다 승인을 다시 묻지는 않는다. 자동 승인 거절을 우회하거나 권한 검사를 끄지 않는다.
 
-### 기본 설치 범위
+### 설치 범위: 전체가 기본
 
 - 설치 대상은 **현재 사용자의 로컬 Claude Code**다. 클라우드·컨테이너·SSH에서 실행 중이면 그 환경이 사용자가 요청한 설치 대상인지 확인한다. 원격 환경에 설치하고 사용자 PC 설치가 끝났다고 하지 않는다.
-- 기본 범위: `jurisupport` 플러그인, 데이터 보호 Hook, 다섯 보조 스킬(`lbox-guide`, `beopgoeul-search`, `court-forms`, `case-records`, `clean-legal-db`). 보조 스킬 파일만으로 검색 서버·DB가 설치되지는 않는다.
-- 외부 MCP 계정 연결, 대용량 DB, Chrome, 서적·사건 인덱싱은 선택 단계다. 사용자가 이미 요청한 항목은 재승인 없이 진행하고, 지정하지 않았다면 기본 설치 후 선택 사항으로 안내한다.
-- 시작할 때 기본 설치 범위를 짧게 설명하고 진행한다. 매 단계마다 “진행할까요?”를 묻지 않는다. 로그인·비밀값·관리자 승인·실제 데이터 삭제가 필요한 경우에만 필요한 사용자 조치를 요청한다. 비밀번호·토큰을 채팅으로 요구하지 않는다.
+- 사용자가 “설치해줘”, “전부 설치”, “빠진 것 설치”라고 요청하면 아래 목록의 **전체 구성요소**를 설치·점검한다. 기존 설치기의 “선택/추천” 표시는 전체 설치 요청에서 제외할 근거가 아니다. “기본만”, “플러그인만”, “DB 제외”처럼 사용자가 명시적으로 제한한 경우에만 범위를 줄인다.
+- 기본 플러그인·보호 Hook·다섯 보조 스킬을 설치한 뒤 반드시 5절로 이어간다. 보조 스킬 파일만으로 검색 서버·DB가 설치되지는 않는다. 이미 기본 설치가 끝난 환경도 아래 목록 전체를 대조하고 누락된 항목을 진행한다.
+- 필요한 Python·Chrome 등 실행 도구와 공개 DB 다운로드도 설치 범위다. 계정·OC·토큰·인증서가 없으면 사용자가 직접 입력할 정상 설정 절차를 안내하고 해당 연결만 대기로 남긴다. 가능한 프로그램 설치를 먼저 진행하며 다른 구성요소 설치를 멈추지 않는다.
+- 시작할 때 전체 설치 범위를 짧게 설명하고 진행한다. 매 구성요소마다 “설치할까요?”를 다시 묻지 않는다. 로그인·비밀값·관리자 승인·실제 데이터 삭제가 필요한 경우에만 필요한 사용자 조치를 요청한다. 비밀번호·토큰을 채팅으로 요구하지 않는다.
+- 전체 설치는 실제 사건·서적 인덱싱, 외부 임베딩 전송, 프로필 업로드, 전자소송 로그인 후 기록 수집·제출, 자동 실행 예약까지 허가한 것이 아니다. 설치와 분리할 수 없는 인증 단계에서는 사용자 조치를 요청하고 상태를 남긴다.
+
+시작할 때 아래 목록을 작업 체크리스트로 삼고, 최신 `install.sh`·`toolkit/`·마켓플레이스 정의와 대조해 새 구성요소가 빠지지 않았는지 확인한다. 끝날 때 **모든 행**의 상태를 보고한다. “선택 사항이라 생략” 상태는 사용자가 명시적으로 제외한 경우에만 허용한다.
+
+| 구성요소 | 설치 범위 / 사용자 입력이 필요한 부분 |
+|---|---|
+| JuriSupport 송무 플러그인 | `jurisupport` 설치·활성화 |
+| 데이터 보호 Hook | 등록·허용/차단 검사 |
+| 보조 스킬 5개 | `lbox-guide`, `beopgoeul-search`, `court-forms`, `case-records`, `clean-legal-db` 각각 확인. lbox 유료 계정은 자동 가입하지 않음 |
+| 사건정보 관리표 | `templates/사건정보_관리표.csv`와 입력 가이드. 기존 파일 보존, 실제 사건 입력은 별도 |
+| court-forms | toolkit·DB·공개 양식 목록 동기화 |
+| law-forms | 서식 작성 스킬·toolkit·공용 서재·변환 실행환경. 법제처 검색은 OC 입력 대기 가능 |
+| case-records | 검색 서버·빈 DB. 실제 사건 인덱싱은 별도 |
+| beopgoeul | Chrome 등 실행환경·자동 검색 toolkit |
+| clean-legal-db | 검색 코드·공개 DB 다운로드 및 무결성 검사 |
+| legal-books | 플러그인·검색 toolkit. 키가 필요한 단계는 입력 대기, 실제 책 등록은 별도 |
+| korean-law | 플러그인·MCP. OC 입력 및 실제 조회 확인 |
+| JuriSupport MCP | 계정·토큰 입력 및 읽기 전용 연결 확인 |
+| 변호사 강점찾기 | `jurisupport-lawyer-profile` 플러그인 |
+| 문서 다듬기 | `legal-polish-public` 플러그인 |
+| legal-terminal | 지원 OS의 데스크톱 앱. 지원하지 않는 OS는 해당 없음으로 표시 |
+| 전자소송 도구 | Windows `ecourt-cli`, macOS `ecfs-skill`. 인증서 설정은 사용자 입력, 다른 OS는 해당 없음 |
 
 기존 `bootstrap.sh`, `windows-bootstrap.ps1`, `install.sh` 전체를 기본 진입점으로 실행하지 않는다. 이들은 별도 일괄 설치 경로다. 특히 `yes | ...`로 선택 설치나 계정 연결에 일괄 동의하지 않는다. 아래의 독립 단계와 기존 toolkit을 재사용한다.
 
@@ -80,13 +103,16 @@ Hook은 지정된 도구와 패턴에 대한 보조 방어이며 모든 외부 �
 
 파일이 같으면 건너뛰고, 기존 파일이 다르면 백업을 남긴다. 사용자 편집이 있으면 변경을 보존하여 병합하고, 충돌을 임의로 덮어쓰지 않는다. 각 대상에 `SKILL.md`가 있는지와 상대 참조 파일이 함께 복사됐는지 확인한다. 새 설치에서는 같은 스킬을 `commands/`에도 중복 등록할 필요가 없다. 기존 명령은 임의로 삭제하지 않는다.
 
-## 5. 선택 기능은 독립적으로 설치
+## 5. 나머지 전체 구성요소를 독립적으로 설치
 
-요청된 기능만 아래 순서와 해당 스킬의 지침으로 처리한다. 모든 명령은 저장소 루트 기준이며 Windows의 `.sh`는 **Git Bash**에서 실행한다. PowerShell에 Bash 문법을 그대로 붙이지 않는다. 대화형 프롬프트는 실제 질문을 읽고 요청 범위에 맞게 응답한다. 터미널 입력을 지원하지 않으면 무작정 재실행하지 말고 해당 구성요소의 수동 절차를 읽어 적용한다.
+전체 설치에서는 아래 항목을 빠짐없이 처리한다. 사용자가 범위를 제한했을 때만 그 제한을 적용한다. 모든 명령은 저장소 루트 기준이며 Windows의 `.sh`는 **Git Bash**에서 실행한다. PowerShell에 Bash 문법을 그대로 붙이지 않는다. 대화형 프롬프트는 실제 질문을 읽고, 단순 구성요소 설치 질문에는 전체 설치 요청에 따라 진행한다. 계정·외부 전송·예약 실행 질문까지 일괄 동의하지 않는다. 터미널 입력을 지원하지 않으면 해당 구성요소의 수동 절차를 읽어 적용한다.
+
+사건정보 관리표는 `install.sh` 6단계의 배치를 참고한다. 기존 사건 폴더·관리표가 있으면 보존하고, 없으면 사용자 홈의 `사건` 폴더에 `templates/사건정보_관리표.csv`를 `_사건정보관리표.csv`로, `templates/사건정보_입력가이드.md`를 `_입력가이드.md`로 복사한다. 새 디렉터리에 만든 예시 파일을 실제 사건 DB로 간주하지 않는다.
 
 | 기능 | 실행 | 설치 후 확인 |
 |---|---|---|
 | 법원 양식 | `bash toolkit/court-forms/install.sh --host claude` | `court_forms.py info`로 목록 개수, `search "주소보정"`으로 결과 확인. 스크립트 위치는 `~/court-forms/scripts/` |
+| 법령·법원 서식 작성 | `bash toolkit/law-forms/install.sh --host claude` | `python3 ~/law-forms/scripts/law_forms.py library list`로 공용 서재 확인. 가상 값으로 서식 채우기·hwpx/PDF 생성 확인. OC가 없으면 외부 검색만 대기 |
 | 과거 사건 검색 | `bash toolkit/case-records/install.sh --host claude` | `http://localhost:8767/health` 확인. 사건 0건이면 인덱싱 전 상태로 보고하고 검색을 시도하지 않음 |
 | 법고을 자동 검색 | `bash toolkit/beopgoeul/install.sh --host claude` | 설치된 `beopgoeul-search` 스킬의 실행 경로로 공개 키워드 검색, Chrome 실행과 결과 확인 |
 | 오프라인 법률 DB | `bash toolkit/clean-legal-db/install.sh --host claude` | 배포 해시 검증, `python3 ~/clean-legal-db/search.py "임대차" --top 3` 실제 결과 확인 |
@@ -95,7 +121,20 @@ Hook은 지정된 도구와 패턴에 대한 보조 방어이며 모든 외부 �
 - Python 버전·실행 경로는 [기존 감지 로직](lib/python-detect.sh)을 참고한다. Windows의 Store 실행 별칭을 정상 Python으로 오인하지 않는다. `python3`라는 이름이 필요한 스크립트는 실제 실행 파일을 확인하고 필요한 범위에서 경로를 맞춘다.
 - `korean-law`는 OC가 준비된 경우 `install.sh`의 4단계와 [키 발급 가이드](guides/07_law_openapi_key.md)를 따른다. OC가 없으면 연결 대기로 표시한다. 오프라인 법령은 실습용이며 현행 법령 조회 성공으로 처리하지 않는다.
 - JuriSupport MCP는 [연결 가이드](guides/01_jurisupport_alt.md)와 `install.sh`의 12단계를 읽고 사용자 계정·토큰으로 연결한다. 이미 등록된 서버를 임의로 교체하지 않는다. 토큰은 호스트의 설정 절차로 사용자가 입력하고, 등록 후 권한 있는 읽기 전용 조회로 인증을 확인한다.
-- legal-books는 별도 저장소의 설치 문서를 먼저 확인한다. 책 0권이면 검색하지 않는다. 사건·서적 인덱싱과 외부 임베딩은 설치와 별개이며 외부 전송 동의 없이 켜지 않는다.
+- legal-books는 `install.sh` 7단계와 [별도 저장소](https://github.com/jurisupport/legal-books)의 최신 설치 문서를 먼저 확인한다. `claude plugin install legal-books@jurisupport-plugins --scope user`로 플러그인을 설치하고 검색 서버도 해당 저장소의 `toolkit/install.sh --with-skill` 절차로 준비한다. 플러그인 설치만으로 서버까지 완료 처리하지 않는다. 책 0권이면 검색하지 않는다. 키가 필요한 단계는 입력 대기로 남기며, 사건·서적 인덱싱과 외부 임베딩은 별도 요청·동의 없이 켜지 않는다.
+
+### 함께 설치할 앱·플러그인
+
+아래 항목도 전체 설치에 포함한다. 기존 `install.sh`의 해당 함수가 사용하는 설치 경로와 중복 설치 방지 환경변수를 재사용한다. `install.sh` 전체를 source해서 함수를 호출하지 않는다(다른 설치 단계도 실행되기 때문). 외부 설치기는 내려받아 내용을 확인하고 현재 OS에서 지원되는 절차만 실행한다.
+
+| 구성요소 | 기존 구현 / 설치 방법 | 완료 확인 |
+|---|---|---|
+| 변호사 강점찾기 | `install_lawyer_profile_plugin`, [저장소](https://github.com/jurisupport/jurisupport-lawyer-profile-plugin). 재귀 설치 방지용 `JURISUPPORT_LAWYER_PROFILE_SKIP_JURISUPPORT=1`, `JURISUPPORT_LAWYER_PROFILE_SKIP_LEGAL_TERMINAL=1`, `JURISUPPORT_CONNECT_MCP=0` 사용 | 플러그인 ID·버전·활성 상태, 새 세션의 스킬 확인 |
+| 문서 다듬기 | `claude plugin install legal-polish-public@jurisupport-plugins --scope user` | 플러그인 ID·활성 상태·스킬 확인 |
+| legal-terminal | `install_legal_terminal_app`, [저장소](https://github.com/jurisupport/legal-terminal)의 해당 OS 설치기. `LEGAL_TERMINAL_INSTALL_JURI_SUPPORT=0`, `LEGAL_TERMINAL_INSTALL_LAWYER_PROFILE=0`으로 이미 처리한 플러그인의 재귀 설치 방지 | 설치된 앱·버전·실행 여부 확인. 단순 폴더 존재만으로 완료 처리하지 않음 |
+| 전자소송 도구 | `install_ecourt_tools`. Windows는 [ecourt-cli](https://github.com/jurisupport/ecourt-cli), macOS는 [ecfs-skill](https://github.com/jurisupport/ecfs-skill)의 설치 문서 확인 | 프로그램·필수 실행환경 설치 확인. 인증서 입력은 사용자 설정 화면에서 진행하며 실제 수집·제출로 테스트하지 않음 |
+
+기존 `JURISUPPORT_SKIP_*` 값이 있으면 사용자가 의도적으로 제외한 설정인지 확인한다. 전체 설치 요청에도 무조건 유지하여 누락시키거나, 사용자가 명시한 제외를 무시하지 않는다. Linux 등 지원하지 않는 OS에는 Windows/macOS용 앱을 억지로 설치하지 말고 해당 없음과 사유를 표시한다.
 
 ## 6. 실패하면 해당 단계부터 복구
 
@@ -122,9 +161,9 @@ Hook은 지정된 도구와 패턴에 대한 보조 방어이며 모든 외부 �
 
 - **검증 완료:** 플러그인 ID·버전·활성 상태, Hook의 등록 명령 검사, 다섯 스킬의 파일 확인과 검사 결과.
 - **활성화 확인:** 현재 세션에서 새 플러그인이 로드됐는지 확인한다. 아직이면 CLI 안내에 따라 다시 로드하거나 새 세션에서 `/jurisupport:cold-start-interview`가 보이는지 확인하도록 인계한다. 실행하지 못한 세션 검사는 “미검증”으로 남긴다. 콜드스타트 인터뷰 답을 임의로 채우지 않는다.
-- **선택 기능:** 기능별로 동작 확인 / 설치됨·미검증 / 미설치 / 사용자 조치 대기를 구분한다. 서버 등록과 실제 인증·조회 성공을 혼동하지 않는다.
+- **전체 구성요소 표:** 1절의 모든 행을 설치·검증 완료 / 설치됨·미검증 / 사용자 조치 대기 / 실패 / 해당 없음 / 사용자 명시 제외로 구분한다. 각 미완료 항목에 이유와 재개 방법을 적는다. 서버 등록과 실제 인증·조회 성공을 혼동하지 않는다.
 - **복구 이력:** 해결한 오류, 남은 원인, 백업 위치, 사용자가 해야 하는 최소 조치와 재개 단계. 비밀값은 포함하지 않는다.
 
-기본 설치 검사 중 하나라도 실패하면 “기본 설치 부분 완료”로 보고한다. 선택 기능이 없다는 이유로 정상 기본 설치를 실패로 보고하지 않는다. 재실행 요청은 1절에서 현 상태를 다시 읽고 성공한 단계는 건너뛴다.
+요청 범위에 미검증·대기·실패가 남아 있으면 **“전체 설치 부분 완료”**로 보고한다. 기본 플러그인만 확인하고 “전체 설치 완료”라고 하지 않는다. 정상 설치된 서버에 실제 사건·책이 없는 것은 오류가 아니며 “설치·빈 DB 확인 완료, 자료 등록 전”으로 명시한다. 재실행 요청은 1절의 목록 전체와 현 상태를 다시 대조하고, 성공한 단계는 건너뛴 뒤 미완료 항목부터 이어간다. 사용자 조치를 기다리는 동안에도 처리 가능한 다른 항목이 있으면 종료하지 말고 계속한다.
 
 공식 참고: [플러그인 설치·관리](https://code.claude.com/docs/en/discover-plugins), [Claude 지침 파일](https://code.claude.com/docs/en/memory). 실제 명령·출력이 이 안내와 다르면 설치된 CLI의 도움말과 공식 문서를 먼저 확인한다.
