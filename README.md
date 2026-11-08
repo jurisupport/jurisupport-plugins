@@ -24,6 +24,8 @@ https://github.com/jurisupport/jurisupport-plugins
 
 korean-law MCP는 [브라우저 초기설정 지원](guides/07_law_openapi_key.md)도 포함합니다. **법제처 계정이 없으면 회원가입부터** Claude가 화면 이동과 일반 정보 작성을 돕습니다. 비밀번호는 공식 사이트나 보호된 입력창에 넣고, 본인확인·약관 동의는 사용자가 처리합니다. OC는 macOS·Windows 팝업에 입력하면 로컬 도구가 플러그인 설정으로 전달합니다. 이후 실제 법령 조회까지 확인하며, 가입 때 API 신청을 함께 했다면 중복 신청하지 않습니다. 브라우저 도구가 없으면 연결 방법과 이어갈 단계를 안내합니다.
 
+본인인증은 **외부 Chrome/Edge**에서 진행합니다. Claude의 Chrome 연동을 우선하고, 사용할 수 없으면 Playwright로 화면이 보이는 브라우저를 엽니다. 가입과 인증 팝업을 같은 브라우저 세션에서 이어가며, 내장 탭의 인증 실패를 반복하지 않습니다.
+
 **설치를 수행하는 Claude에게:** [INSTALL_CLAUDE.md](INSTALL_CLAUDE.md)를 먼저 읽고 그 절차를 실행하세요. 사용자에게 설치 명령만 나열하고 끝내지 마세요. GitHub 페이지에서 문서가 보이지 않으면 [원문 설치 안내](https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/INSTALL_CLAUDE.md)를 읽으세요. 링크만 공유되고 설치 의도가 확인되지 않은 경우에는 임의로 설치하지 마세요.
 
 일반 웹 채팅이나 원격 실행 환경에서는 사용자 PC에 직접 설치할 수 없을 수 있습니다. 그 경우 현재 실행 위치를 설명하고 로컬 Claude Code에서 이어갈 수 있게 안내합니다. 기존 한 줄 설치 방법도 아래에 유지합니다.
