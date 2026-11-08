@@ -5,6 +5,8 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import sys
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
@@ -69,6 +71,28 @@ class ConfigureTest(unittest.TestCase):
                 self.assertEqual(helper.ask_oc(), "TEST_ONLY_OC")
                 self.assertTrue(run.call_args.kwargs["capture_output"])
                 self.assertNotIn("TEST_ONLY_OC", str(run.call_args.args))
+
+    @unittest.skipUnless(sys.platform in ("darwin", "win32"), "Native desktop dialog")
+    def test_native_dialog_source_without_showing_a_window(self):
+        with patch.object(helper.subprocess, "run", return_value=
+                          subprocess.CompletedProcess([], 0, "", "")) as run:
+            helper.ask_oc()
+            command = run.call_args.args[0]
+        if sys.platform == "win32":
+            # Build and dispose the real Windows form without waiting for input.
+            command[-1] = command[-1].replace(
+                "$form.ShowDialog()", "[System.Windows.Forms.DialogResult]::Cancel"
+            )
+            result = subprocess.run(command, capture_output=True, timeout=30)
+        else:
+            with tempfile.TemporaryDirectory() as tmp:
+                source = Path(tmp) / "dialog.applescript"
+                source.write_text(command[-1], encoding="utf-8")
+                result = subprocess.run(
+                    ["osacompile", "-o", str(Path(tmp) / "dialog.scpt"), str(source)],
+                    capture_output=True, timeout=30,
+                )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
