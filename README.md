@@ -9,7 +9,7 @@
 ![Locale](https://img.shields.io/badge/Locale-ko--KR-red)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Supported-orange)
 ![Codex](https://img.shields.io/badge/Codex-Supported-blue)
-![Version](https://img.shields.io/badge/Version-0.2.12-green)
+![Version](https://img.shields.io/badge/Version-0.2.13-green)
 
 ## Claude Code에 링크를 주고 설치 맡기기
 
@@ -24,7 +24,14 @@ https://github.com/jurisupport/jurisupport-plugins
 
 korean-law MCP는 [브라우저 초기설정 지원](guides/07_law_openapi_key.md)도 포함합니다. **법제처 계정이 없으면 회원가입부터** Claude가 화면 이동과 일반 정보 작성을 돕습니다. 비밀번호는 공식 사이트나 보호된 입력창에 넣고, 본인확인·약관 동의는 사용자가 처리합니다. OC는 macOS·Windows 팝업에 입력하면 로컬 도구가 플러그인 설정으로 전달합니다. 이후 실제 법령 조회까지 확인하며, 가입 때 API 신청을 함께 했다면 중복 신청하지 않습니다. 브라우저 도구가 없으면 연결 방법과 이어갈 단계를 안내합니다.
 
-본인인증은 **외부 Chrome/Edge**에서 진행합니다. Claude의 Chrome 연동을 우선하고, 사용할 수 없으면 Playwright로 화면이 보이는 브라우저를 엽니다. 가입과 인증 팝업을 같은 브라우저 세션에서 이어가며, 내장 탭의 인증 실패를 반복하지 않습니다.
+| 사용자가 하는 일 | Claude가 하는 일 |
+|---|---|
+| 계정 소유자·일반 정보 확인, 비밀번호·OC 입력 | 현재 PC의 브라우저 확인, 화면 이동·일반 항목 작성·OC 저장 |
+| 약관·개인정보·Open API 주의사항 동의, 본인인증 | 인증 후 재개, 제출 전 요약, 승인된 제출·실제 조회 검증 |
+
+본인인증은 **현재 PC의 외부 Chrome/Edge**에서 진행합니다. 연결 목록의 기기·로컬 여부와 사용자에게 창이 보이는지를 먼저 확인합니다. 다른 기기에 연결됐거나 확인되지 않으면 양식에 정보를 입력하지 않고 로컬 연결 또는 Playwright로 전환합니다. 가입과 인증 팝업은 같은 브라우저 세션에서 이어갑니다.
+
+자동 모드에서 설치가 차단되면 채팅 승인만으로 해제되지 않을 수 있습니다. [Windows 설치·입력창 안내](guides/08_windows_korean_law.md)에 따라 앱의 플러그인 UI나 사용자가 직접 여는 [설정 메뉴](korean-law-setup.cmd)를 이용하세요. 설치·키 저장·새 세션 조회 결과는 따로 확인합니다.
 
 **설치를 수행하는 Claude에게:** [INSTALL_CLAUDE.md](INSTALL_CLAUDE.md)를 먼저 읽고 그 절차를 실행하세요. 사용자에게 설치 명령만 나열하고 끝내지 마세요. GitHub 페이지에서 문서가 보이지 않으면 [원문 설치 안내](https://raw.githubusercontent.com/jurisupport/jurisupport-plugins/main/INSTALL_CLAUDE.md)를 읽으세요. 링크만 공유되고 설치 의도가 확인되지 않은 경우에는 임의로 설치하지 마세요.
 

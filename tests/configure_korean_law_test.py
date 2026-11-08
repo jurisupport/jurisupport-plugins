@@ -3,6 +3,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,97 @@ spec.loader.exec_module(helper)
 
 
 class ConfigureTest(unittest.TestCase):
+    def test_cli_explicit_path_wins_without_discovery(self):
+        with patch.object(helper.sys, "argv", ["helper", "--claude", "/chosen/claude", "--check"]), \
+                patch.object(helper, "find_claude") as discover, \
+                patch.object(helper, "check_configuration", return_value=0) as check:
+            self.assertEqual(helper.main(), 0)
+        discover.assert_not_called()
+        check.assert_called_once_with("/chosen/claude")
+
+    def test_cli_on_path_wins_over_desktop_search(self):
+        with patch.object(helper.shutil, "which", return_value="/path/claude"), \
+                patch.object(helper.subprocess, "run") as run:
+            self.assertEqual(helper.find_claude(), "/path/claude")
+        run.assert_not_called()
+
+    def test_bundled_cli_selection(self):
+        with tempfile.TemporaryDirectory(prefix="claude bundles ") as tmp:
+            root = Path(tmp) / "Claude-Data"
+
+            def bundle(org, version, digest="hash"):
+                path = root / org / "claude-code" / version / digest / "claude.exe"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+                return path
+
+            with patch.object(helper.sys, "platform", "win32"), \
+                    patch.object(helper.shutil, "which", return_value=None), \
+                    patch.dict(os.environ, {"LOCALAPPDATA": tmp}), \
+                    patch.object(helper.subprocess, "run", return_value=
+                                 subprocess.CompletedProcess([], 0, "[]", "")) as run:
+                self.assertIsNone(helper.find_claude())
+                old = bundle("org-a", "2.1.9")
+                self.assertEqual(helper.find_claude(), str(old))
+                newest = bundle("org-a", "2.1.317")
+                self.assertEqual(helper.find_claude(), str(newest))
+                run.return_value.stdout = json.dumps([str(old)])
+                self.assertEqual(helper.find_claude(), str(old))
+                other = bundle("org-b", "2.1.400")
+                self.assertEqual(helper.find_claude(), str(old))
+                run.return_value.stdout = json.dumps([str(old), str(other)])
+                with self.assertRaises(ValueError):
+                    helper.find_claude()
+                run.return_value.stdout = "[]"
+                with self.assertRaises(ValueError):
+                    helper.find_claude()
+
+    def test_key_state_uses_metadata_and_never_prints_values(self):
+        for configured, unconfigured, status in [(["api_key"], [], 0), ([], ["api_key"], 2), ([], [], 1)]:
+            data = {"configured": configured, "unconfigured": unconfigured,
+                    "inputs": {"api_key": "TEST_ONLY_SECRET"}}
+            with self.subTest(status=status), patch.object(helper, "cli_json", return_value=data), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(helper.check_configuration("cli"), status)
+            self.assertNotIn("TEST_ONLY_SECRET", output.getvalue())
+
+    def test_state_query_failure_does_not_print_cli_exception(self):
+        with patch.object(helper, "cli_json", side_effect=ValueError("TEST_ONLY_SECRET")), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(helper.check_configuration("cli"), 1)
+        self.assertNotIn("TEST_ONLY_SECRET", output.getvalue())
+
+    def test_install_new_plugin_and_stop_if_marketplace_fails(self):
+        for returncode in (0, 1):
+            with self.subTest(returncode=returncode), \
+                    patch.object(helper, "cli_json", side_effect=[[], []]), \
+                    patch.object(helper.subprocess, "run", return_value=
+                                 subprocess.CompletedProcess([], returncode)) as run, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(helper.install_plugin("cli"), returncode)
+            self.assertEqual(run.call_count, 2 if returncode == 0 else 1)
+            self.assertEqual(run.call_args_list[0].args[0], ["cli", "plugin", "marketplace", "add",
+                             "https://github.com/chrisryugj/korean-law-mcp.git"])
+            if not returncode:
+                self.assertEqual(run.call_args.args[0], ["cli", "plugin", "install", helper.PLUGIN, "--scope", "user"])
+
+    def test_existing_install_is_not_replaced(self):
+        market = {"name": "korean-law-marketplace", "repo": "chrisryugj/korean-law-mcp"}
+        with patch.object(helper, "cli_json", side_effect=[[market], [{"id": helper.PLUGIN}]]), \
+                patch.object(helper.subprocess, "run") as run, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(helper.install_plugin("cli"), 0)
+        run.assert_not_called()
+
+    def test_foreign_marketplace_and_failed_inventory_never_install(self):
+        foreign = [{"name": "korean-law-marketplace", "repo": "other/repo"}]
+        for results in ([foreign, []], ValueError("list failed")):
+            with patch.object(helper, "cli_json", side_effect=results), \
+                    patch.object(helper.subprocess, "run") as run, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(helper.install_plugin("cli"), 1)
+            run.assert_not_called()
+
     def run_configure(self, key, final_result):
         output = io.StringIO()
         with patch.object(helper.subprocess, "run", side_effect=[

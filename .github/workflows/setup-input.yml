@@ -5,11 +5,15 @@ on:
     paths:
       - 'scripts/configure_korean_law.py'
       - 'tests/configure_korean_law_test.py'
+      - 'korean-law-setup.cmd'
+      - 'tests/korean_law_setup_launcher_test.ps1'
       - '.github/workflows/setup-input.yml'
   pull_request:
     paths:
       - 'scripts/configure_korean_law.py'
       - 'tests/configure_korean_law_test.py'
+      - 'korean-law-setup.cmd'
+      - 'tests/korean_law_setup_launcher_test.ps1'
       - '.github/workflows/setup-input.yml'
 
 permissions:
@@ -31,3 +35,7 @@ jobs:
           python-version: '3.11'
       - name: Check secret transport and error handling with synthetic values
         run: python tests/configure_korean_law_test.py
+      - name: Check Windows launcher with fake Python
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tests/korean_law_setup_launcher_test.ps1

@@ -221,6 +221,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.13 - 콜드스타트 자유 입력·질문 분리, Windows korean-law 설정 메뉴·CLI 자동 탐색, 로컬 브라우저 확인·신규 가입·새 세션 검증 안내
 0.2.12 - Claude/Codex 독립 설치, 공통 실행 규칙, 현재 판결 도구 스키마, 승인 범위 상속 및 동봉 경로 검증
 0.2.11 - Opus 5/high 세션 상속 안내, canonical 플레이북 경로와 비파괴 마이그레이션, 프롬프트 중복 정리
 0.2.9 - mock-hearing 법적 사고 프로토콜 강화(청구권규범 카드, 입증책임 지도, 항변·재항변 트리, 판결 유추·구별 메모, 보강 절차 연계)
