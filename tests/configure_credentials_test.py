@@ -186,7 +186,9 @@ class CredentialsTest(unittest.TestCase):
             command = run.call_args.args[0]
         if sys.platform == "win32":
             command[-1] = command[-1].replace('$form.ShowDialog()', '[System.Windows.Forms.DialogResult]::Cancel')
-            result = subprocess.run(command, capture_output=True, timeout=30, env=self.desktop_environment)
+            # Windows resolves the executable using the parent's PATH, not env=.
+            with patch.dict(os.environ, self.desktop_environment, clear=True):
+                result = subprocess.run(command, capture_output=True, timeout=30)
         else:
             source = self.root / "selector.applescript"
             source.write_text(command[-1], encoding="utf-8")
