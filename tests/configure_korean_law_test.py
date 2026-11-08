@@ -11,6 +11,8 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+
 spec = importlib.util.spec_from_file_location(
     "configure_korean_law", Path(__file__).resolve().parents[1] / "scripts/configure_korean_law.py"
 )
@@ -83,15 +85,18 @@ class ConfigureTest(unittest.TestCase):
         for returncode in (0, 1):
             with self.subTest(returncode=returncode), \
                     patch.object(helper, "cli_json", side_effect=[[], []]), \
-                    patch.object(helper.subprocess, "run", return_value=
-                                 subprocess.CompletedProcess([], returncode)) as run, \
+                    patch.object(helper.subprocess, "run", side_effect=[
+                        subprocess.CompletedProcess([], returncode),
+                        subprocess.CompletedProcess([], 0, "--config", ""),
+                        subprocess.CompletedProcess([], 0),
+                    ]) as run, \
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(helper.install_plugin("cli"), returncode)
-            self.assertEqual(run.call_count, 2 if returncode == 0 else 1)
+            self.assertEqual(run.call_count, 3 if returncode == 0 else 1)
             self.assertEqual(run.call_args_list[0].args[0], ["cli", "plugin", "marketplace", "add",
                              "https://github.com/chrisryugj/korean-law-mcp.git"])
             if not returncode:
-                self.assertEqual(run.call_args.args[0], ["cli", "plugin", "install", helper.PLUGIN, "--scope", "user"])
+                self.assertEqual(run.call_args.args[0], ["cli", "plugin", "install", helper.PLUGIN, "--scope", "user", "--config", "api_key="])
 
     def test_existing_install_is_not_replaced(self):
         market = {"name": "korean-law-marketplace", "repo": "chrisryugj/korean-law-mcp"}

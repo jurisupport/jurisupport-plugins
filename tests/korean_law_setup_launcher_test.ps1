@@ -6,6 +6,7 @@ $oldPath = $env:PATH
 New-Item -ItemType Directory -Path $temp | Out-Null
 try {
     Copy-Item (Join-Path $root 'korean-law-setup.cmd') $temp
+    Copy-Item (Join-Path $root 'credentials-setup.cmd') $temp
     $stub = Join-Path $temp 'stub.exe'
     Add-Type -OutputAssembly $stub -OutputType ConsoleApplication -TypeDefinition @'
 using System;
@@ -60,6 +61,15 @@ public class LauncherStub {
         }
         $process.Dispose()
     }
+    Remove-Item $env:JURI_TEST_LOG -ErrorAction SilentlyContinue
+    $start.Arguments = '/d /c credentials-setup.cmd'
+    $process = [System.Diagnostics.Process]::Start($start)
+    $process.StandardInput.Close()
+    if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Credential chooser launcher hung' }
+    if ($process.ExitCode -ne 0) { throw 'Credential chooser launcher failed' }
+    $actual = (Get-Content $env:JURI_TEST_LOG -Raw).Trim()
+    if ($actual -ne '-3|scripts\configure_credentials.py') { throw 'Incorrect credential chooser command' }
+    $process.Dispose()
     Write-Output 'ok - Windows setup menu install, popup, check and quit with space-containing path'
 } finally {
     $env:PATH = $oldPath

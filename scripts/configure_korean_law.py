@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import sys
 
+from credential_dialog import ask_secret
+
 PLUGIN = "korean-law@korean-law-marketplace"
 
 
@@ -108,7 +110,12 @@ def install_plugin(claude):
         if existing:
             print("korean-law 플러그인이 이미 설치되어 있습니다. 활성 상태와 OC 설정을 확인하세요.")
             return 0
-        result = subprocess.run([claude, "plugin", "install", PLUGIN, "--scope", "user"])
+        capability = subprocess.run([claude, "plugin", "install", "--help"],
+                                    capture_output=True, text=True, encoding="utf-8", timeout=30)
+        if capability.returncode or "--config" not in capability.stdout:
+            print("이 CLI에서는 앱의 플러그인 화면으로 설치한 뒤 보호 입력창으로 OC를 등록하세요.")
+            return 1
+        result = subprocess.run([claude, "plugin", "install", PLUGIN, "--scope", "user", "--config", "api_key="])
         if result.returncode:
             return 1
         print("플러그인 설치 명령이 성공했습니다. OC 입력창에서 설정하고 새 세션에서 조회를 확인하세요.")
@@ -119,54 +126,8 @@ def install_plugin(claude):
 
 
 def ask_oc():
-    if sys.platform == "darwin":
-        command = ["osascript", "-e", '''
-try
-    set answer to display dialog "법제처 OC를 입력하세요. 값은 이 컴퓨터의 Claude 플러그인 설정에 저장됩니다. 채팅에는 표시하지 않습니다." default answer "" with hidden answer buttons {"취소", "등록"} default button "등록" cancel button "취소" with title "JuriSupport · korean-law 설정"
-    return text returned of answer
-on error number -128
-    return ""
-end try
-''']
-    elif sys.platform == "win32":
-        command = ["powershell.exe", "-NoProfile", "-STA", "-Command", '''
-Add-Type -AssemblyName System.Windows.Forms
-[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
-$form = New-Object System.Windows.Forms.Form
-$form.Text = 'JuriSupport · korean-law 설정'
-$form.ClientSize = New-Object System.Drawing.Size(440, 150)
-$form.StartPosition = 'CenterScreen'
-$form.FormBorderStyle = 'FixedDialog'
-$form.MaximizeBox = $false
-$label = New-Object System.Windows.Forms.Label
-$label.Text = "법제처 OC를 입력하세요. 이 컴퓨터의 Claude 설정에 저장됩니다.`n입력값은 채팅에 표시하지 않습니다."
-$label.SetBounds(16, 16, 408, 40)
-$inputBox = New-Object System.Windows.Forms.TextBox
-$inputBox.UseSystemPasswordChar = $true
-$inputBox.SetBounds(16, 62, 408, 24)
-$ok = New-Object System.Windows.Forms.Button
-$ok.Text = '등록'
-$ok.SetBounds(250, 104, 80, 28)
-$ok.DialogResult = [System.Windows.Forms.DialogResult]::OK
-$cancel = New-Object System.Windows.Forms.Button
-$cancel.Text = '취소'
-$cancel.SetBounds(344, 104, 80, 28)
-$cancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-$form.Controls.AddRange(@($label, $inputBox, $ok, $cancel))
-$form.AcceptButton = $ok
-$form.CancelButton = $cancel
-if ($form.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    [Console]::Write($inputBox.Text)
-}
-$inputBox.Clear()
-$form.Dispose()
-''']
-    else:
-        raise OSError("Native dialog unavailable")
-    result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8")
-    if result.returncode:
-        raise OSError("Dialog failed")
-    return result.stdout.rstrip("\r\n")
+    return ask_secret("JuriSupport · korean-law 설정",
+                      "법제처 OC를 입력하세요. Claude 플러그인 설정에 저장됩니다. 채팅에는 표시하지 않습니다.")
 
 
 def configure(claude, prompt=ask_oc):

@@ -22,6 +22,8 @@ https://github.com/jurisupport/jurisupport-plugins
 
 범위를 따로 제한하지 않은 “설치해줘”는 **전체 구성요소 설치**를 뜻합니다. 플러그인·보호 Hook·보조 스킬뿐 아니라 검색 서버·DB, 변호사 강점찾기, 문서 다듬기, legal-terminal과 해당 운영체제의 전자소송 도구까지 점검하고 설치합니다. 계정·키가 필요한 연결은 사용자 입력을 요청하고, 기다리는 동안 다른 설치를 계속합니다. 기본 플러그인만 설치하고 전체 완료로 보고하지 않습니다. 기존 설정과 사건자료는 보존하며, 실제 사건·서적 업로드나 전자소송 제출은 설치에 포함되지 않습니다.
 
+**토큰·인증키·비밀번호는 입력 UI로 등록합니다.** Windows의 [credentials-setup.cmd](credentials-setup.cmd), macOS의 [credentials-setup.command](credentials-setup.command)를 열면 서비스별 입력창을 선택할 수 있습니다. 웹사이트 비밀번호는 공식 외부 브라우저 입력란을 사용하며 채팅·명령행에는 값을 넣지 않습니다. 대상과 저장 방식은 [자격증명 입력창 안내](guides/09_credentials_ui.md)를 참고하세요.
+
 korean-law MCP는 [브라우저 초기설정 지원](guides/07_law_openapi_key.md)도 포함합니다. **법제처 계정이 없으면 회원가입부터** Claude가 화면 이동과 일반 정보 작성을 돕습니다. 비밀번호는 공식 사이트나 보호된 입력창에 넣고, 본인확인·약관 동의는 사용자가 처리합니다. OC는 macOS·Windows 팝업에 입력하면 로컬 도구가 플러그인 설정으로 전달합니다. 이후 실제 법령 조회까지 확인하며, 가입 때 API 신청을 함께 했다면 중복 신청하지 않습니다. 브라우저 도구가 없으면 연결 방법과 이어갈 단계를 안내합니다.
 
 | 사용자가 하는 일 | Claude가 하는 일 |
@@ -454,21 +456,21 @@ JuriSupport SaaS와 연동하면 사건·문서·기일·할일·증거를 통�
 **시작 흐름**:
 1. [jurisupport.com](https://jurisupport.com) 가입 (사건 50건까지 무료)
 2. [jurisupport.com/profile](https://jurisupport.com/profile) 에서 API 토큰 발급
-3. 토큰을 한 번만 등록합니다. Claude 전체 설치는 입력을 안내하고, 나중에 등록하거나 30일 뒤 갱신할 때는 아래 한 줄을 씁니다. Claude Code(모든 폴더)와 Codex에 함께 등록되고, [legal-terminal](https://github.com/jurisupport/legal-terminal) 사건 대시보드도 이 등록을 그대로 씁니다.
+3. [자격증명 입력창](guides/09_credentials_ui.md)에서 **JuriSupport MCP 토큰**을 선택해 등록합니다. 새로 등록하거나 갱신할 때 모두 같은 창을 씁니다. CLI로 입력창을 열 때도 토큰 값은 명령에 넣지 않습니다.
 
    ```bash
-   # macOS / Linux
-   curl -fsSL https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/connect-mcp.sh | bash
+   # 저장소 루트에서 입력창 열기
+   python3 scripts/configure_credentials.py --service jurisupport
    ```
 
    ```powershell
    # Windows PowerShell
-   irm https://raw.githubusercontent.com/jurisupport/jurisupport-lawyer-profile-plugin/main/connect-mcp.ps1 | iex
+   py -3 scripts/configure_credentials.py --service jurisupport
    ```
 4. [jurisupport.com/cases](https://jurisupport.com/cases) 에서 사건 등록 — **전자소송 사건목록 엑셀 업로드하면 자동 일괄 등록**
 5. Claude의 `/jurisupport:brief-protocol` 또는 Codex의 “JuriSupport 준비서면 작성” 요청으로 시작
 
-보안 메모: 현재 Claude Code CLI는 HTTP/SSE MCP bearer header를 `--header` 인자로 등록합니다. install.sh는 검증 단계의 argv 노출은 줄이지만, MCP 등록 순간에는 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다. 공용 PC나 감염이 의심되는 환경에서는 토큰 등록을 미루고 안전한 장비에서 진행하세요.
+이 입력창의 JuriSupport 대상은 Claude 사용자 MCP 설정입니다. Codex·다른 앱의 연결은 각 앱의 보호 입력 UI와 실제 등록 상태를 별도로 확인합니다. 입력창은 채팅·명령행에 값을 남기지 않지만, 기존 호스트 설정 파일에 저장되는 토큰까지 모두 암호화하는 것은 아닙니다.
 
 SaaS 미사용 시에도 CSV 사건정보 관리표 + [Obsidian](https://obsidian.md)(MD 편집·뷰어) 조합으로 동등한 기능을 활용할 수 있습니다 ([01_jurisupport_alt.md](guides/01_jurisupport_alt.md) 참조).
 

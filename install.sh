@@ -126,21 +126,12 @@ prompt_read() {
   printf -v "$__var" '%s' "$value"
 }
 
-prompt_secret() {
-  local __var="$1"
-  local prompt="$2"
-  local value=""
-
-  if [[ -r /dev/tty && -w /dev/tty ]]; then
-    printf "%s" "$prompt" > /dev/tty
-    IFS= read -r -s value < /dev/tty || value=""
-    printf "\n" > /dev/tty
-  else
-    IFS= read -r -s -p "$prompt" value || value=""
-    echo ""
-  fi
-
-  printf -v "$__var" '%s' "$value"
+configure_credentials() {
+  (
+    source "$TOOLKIT_DIR/lib/python-detect.sh"
+    select_python 3.9 || { warn "입력창을 열려면 Python 3.9 이상이 필요합니다."; return 1; }
+    run_python "$TOOLKIT_DIR/scripts/configure_credentials.py" "$@"
+  )
 }
 
 # ============================================================
@@ -321,56 +312,32 @@ KOREAN_LAW_MARKETPLACE_NAME="korean-law-marketplace"
 KOREAN_LAW_PLUGIN_REF="korean-law@$KOREAN_LAW_MARKETPLACE_NAME"
 
 if is_dry_run; then
-  info_or_plan "법제처 OC가 있으면 korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
-  info_or_plan "법제처 OC가 있으면 korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF"
-  info_or_plan "OC가 없으면 설치는 계속 진행하고 /jurisupport:offline-law-fallback 사용"
+  info_or_plan "korean-law marketplace 등록: $KOREAN_LAW_MARKETPLACE_SOURCE"
+  info_or_plan "korean-law 플러그인 설치: $KOREAN_LAW_PLUGIN_REF (OC는 입력창에서 등록)"
+  info_or_plan "OC가 없으면 공식 가입 화면을 안내하고 다른 설치는 계속 진행"
 else
-  if claude plugin list 2>/dev/null | grep -q "korean-law@"; then
-    info "korean-law 플러그인 이미 설치됨"
-    info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
-  else
-    echo ""
-    echo "  korean-law MCP는 법제처 Open API 키(OC)가 있어야 실제 법령·판례 조회가 됩니다."
-    echo "  OC 발급 전에도 JuriSupport 설치는 계속되며,"
-    echo "  플러그인에 포함된 /jurisupport:offline-law-fallback 으로 헌/민/형/상법 및 주요 특별형법 전문 실습이 가능합니다."
-    echo ""
-    read -r -p "법제처 Open API 키(OC)를 지금 갖고 있나요? [y/N, 엔터=아니오] " has_law_key
-    if [[ "$has_law_key" =~ ^[Yy]$ ]]; then
-      if claude plugin marketplace list 2>/dev/null | grep -q "$KOREAN_LAW_MARKETPLACE_NAME"; then
-        info "marketplace '$KOREAN_LAW_MARKETPLACE_NAME' 이미 등록됨"
-      else
-        info "korean-law marketplace 자동 등록 중: $KOREAN_LAW_MARKETPLACE_SOURCE"
-        if claude plugin marketplace add "$KOREAN_LAW_MARKETPLACE_SOURCE" 2>&1 | tail -3; then
-          info "[ok] korean-law marketplace 등록 완료"
-        else
-          warn "korean-law marketplace 등록 실패. 수동: claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
-        fi
-      fi
-
-      info "korean-law 자동 설치 중..."
-      info "설치 승인 및 법제처 OC 입력 프롬프트가 나오면 그대로 진행하세요."
-      if claude plugin install "$KOREAN_LAW_PLUGIN_REF"; then
-        info "[ok] korean-law 설치 완료"
-        info "-> 법령/판례 검증 시 korean-law MCP 도구 사용 가능"
-      else
-        warn "korean-law 자동 설치가 완료되지 않았습니다. JuriSupport 설치는 계속 진행합니다."
-        warn "수동 재시도: claude plugin install $KOREAN_LAW_PLUGIN_REF"
-      fi
+  if (
+    source "$TOOLKIT_DIR/lib/python-detect.sh"
+    select_python 3.9 && run_python "$TOOLKIT_DIR/scripts/configure_korean_law.py" --install
+  ); then
+    if configure_credentials --service korean-law --check >/dev/null 2>&1; then
+      info "korean-law OC 설정 있음. 실제 법령 조회는 새 Claude 세션에서 확인하세요."
     else
-      warn "OC 미준비 -> korean-law MCP 설치는 건너뜁니다."
-      info "오프라인 실습: 클로드코드에서 /jurisupport:offline-law-fallback 사용"
-      info "포함 범위: 대한민국헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법 전문"
-      read -r -p "법제처 Open API 신청 페이지를 브라우저로 열까요? [y/N] " open_law_page
-      if [[ "$open_law_page" =~ ^[Yy]$ ]]; then
-        info "법제처 Open API 신청 페이지를 브라우저로 엽니다..."
-        open_url "$KOREAN_LAW_OPENAPI_URL"
+      prompt_read has_law_key "법제처 Open API 키(OC)를 지금 갖고 있나요? [y/N, 엔터=아니오] "
+      if [[ "$has_law_key" =~ ^[Yy]$ ]]; then
+        configure_credentials --service korean-law || warn "OC 등록 미완료. 다른 설치는 계속 진행합니다."
+      else
+        info "OC는 공식 사이트에서 준비한 뒤 입력창에서 등록하세요."
+        info "가입·신청 도움: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
+        prompt_read open_law_page "법제처 Open API 신청 페이지를 브라우저로 열까요? [y/N] "
+        if [[ "$open_law_page" =~ ^[Yy]$ ]]; then
+          open_url "$KOREAN_LAW_OPENAPI_URL"
+        fi
+        info "공용 한도 조회와 본인 OC 설정은 별도입니다. 오프라인 실습은 /jurisupport:offline-law-fallback 사용"
       fi
-      echo ""
-      echo "  OC 발급 후 수동 설치:"
-      echo "    claude plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE"
-      echo "    claude plugin install $KOREAN_LAW_PLUGIN_REF"
-      echo "  발급 가이드: $TOOLKIT_DIR/guides/07_law_openapi_key.md"
     fi
+  else
+    warn "korean-law 설치 미완료. 앱의 플러그인 화면 또는 korean-law-setup.cmd에서 이어가세요."
   fi
 fi
 
@@ -436,7 +403,11 @@ else
       git clone --depth 1 "$LEGAL_BOOKS_REPO" "$LEGAL_BOOKS_SRC" || warn "legal-books 저장소 clone 실패."
     fi
     if [[ -f "$LEGAL_BOOKS_SRC/toolkit/install.sh" ]]; then
-      bash "$LEGAL_BOOKS_SRC/toolkit/install.sh" --with-skill || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
+      if configure_credentials --service gemini --check >/dev/null 2>&1 || configure_credentials --service gemini; then
+        bash "$LEGAL_BOOKS_SRC/toolkit/install.sh" --with-skill || warn "legal-books 설치 실패. 나중에 다시 시도하세요."
+      else
+        warn "Gemini 키 입력을 마치지 않아 legal-books 설정을 보류합니다. 터미널로 키를 입력하지 마세요."
+      fi
     else
       warn "수동 설치: git clone $LEGAL_BOOKS_REPO && bash legal-books/toolkit/install.sh --with-skill"
     fi
@@ -550,167 +521,37 @@ step 12 "(권장) JuriSupport 가입/MCP 연동 - 50건까지 무료"
 
 JURI_SIGNUP_URL="https://jurisupport.com"
 JURI_TOKEN_URL="https://jurisupport.com/profile"   # 가입 후 이 페이지에서 토큰 발급
-JURI_MCP_URL="https://api.jurisupport.com/mcp"
-JURI_MCP_TRANSPORT="http"
 JURI_MCP_LINE=""
-
-# 예전 설치기는 기본값(local)으로 등록해 ~/jurisupport-plugins 폴더에서만 연결됐다.
-# 이미 연결된 토큰이 있으면 다시 묻지 않고 사용자 전체(user) 등록으로 옮긴다.
-juri_move_mcp_to_user_scope() {
-  local token
-  token="$(claude mcp get jurisupport 2>/dev/null | sed -n 's/^[[:space:]]*Authorization: Bearer //p' | head -n 1 | tr -d '[:space:]')"
-  [[ -n "$token" && "$token" != *"*"* && "$token" != *REDACTED* ]] || return 1
-  claude mcp remove jurisupport -s local >/dev/null 2>&1 || true
-  claude mcp remove jurisupport -s user >/dev/null 2>&1 || true
-  claude mcp add -s user --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $token" >/dev/null
-}
 
 if ! is_dry_run; then
   JURI_MCP_LINE="$(claude mcp list 2>&1 | grep "^jurisupport:" || true)"
 fi
 
 if is_dry_run; then
-  info_or_plan "JuriSupport MCP 등록 (가입/토큰 발급/MCP add)"
+  info_or_plan "JuriSupport MCP 입력창 등록 (토큰을 터미널·명령행에 넣지 않음)"
 elif [[ "$JURI_MCP_LINE" == *"Connected"* ]] && claude mcp get jurisupport 2>/dev/null | grep -q "Scope: User"; then
-  info "JuriSupport MCP 이미 연결됨 (모든 폴더)"
-elif [[ "$JURI_MCP_LINE" == *"Connected"* ]] && juri_move_mcp_to_user_scope; then
-  info "[ok] 기존 JuriSupport MCP 연결을 모든 폴더에서 쓰도록 옮겼습니다 (토큰 재입력 불필요)"
+  info "기존 JuriSupport MCP 연결 유지 (사용자 범위). 실제 사건 조회는 새 세션에서 확인하세요."
 else
   echo ""
-  echo "  JuriSupport SaaS - 사건/문서/기일/할일/증거 통합 관리 (한국 변호사 전용)"
-  echo "  [팁] 사건 50건까지 무료. 본격 송무 환경 갖추는 데 부담 없이 시작 가능합니다."
-  if [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
-    echo "  [주의] 기존 JuriSupport MCP가 이 폴더에서만 보이게 등록돼 있고 자동으로 옮기지 못했습니다."
-    echo "         사건 폴더에서도 쓰도록 토큰을 넣어 모든 폴더용으로 다시 등록합니다."
-  elif [[ -n "$JURI_MCP_LINE" ]]; then
-    echo "  [주의] 기존 JuriSupport MCP 항목이 있지만 연결 완료 상태가 아닙니다."
-    echo "         토큰을 넣어 다시 등록합니다."
-  fi
-  echo ""
   echo "  - 가입 페이지: $JURI_SIGNUP_URL"
-  echo "  - 토큰 발급:   $JURI_TOKEN_URL  (가입 후)"
-  echo "  - MCP 엔드포인트: $JURI_MCP_URL"
-  echo ""
+  echo "  - 토큰 발급:   $JURI_TOKEN_URL (가입 후)"
   prompt_read ans "JuriSupport 가입/MCP 연동을 진행할까요? [Y/n, 엔터=예] "
   if [[ "$ans" =~ ^[Nn]$ ]]; then
-    info "건너뛰기. 나중에:  claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
-    info "(JuriSupport 없이도 본 패키지 모든 기능 사용 가능. CSV 사건 인덱스로 대체)"
+    info "건너뛰기. 나중에 credentials-setup.cmd 또는 입력창 도구의 jurisupport 항목을 사용하세요."
   else
-    echo ""
-    echo "  [팁] 토큰은 $JURI_TOKEN_URL 에서 발급받을 수 있습니다."
-    echo "     (가입 후 위 페이지 접속 -> API 토큰 생성)"
-    echo ""
     prompt_read has_token "이미 jurisupport.com 계정 + 토큰이 있으신가요? [y/N, 엔터=아니오] "
     if [[ ! "$has_token" =~ ^[Yy]$ ]]; then
-      info "가입 페이지를 브라우저로 엽니다..."
       open_url "$JURI_SIGNUP_URL"
-      echo ""
-      echo "  ------------------------------------------------------------"
-      echo "  1. 브라우저에서 jurisupport.com 가입 (사건 50건까지 무료)"
-      echo "  2. 가입/로그인 완료되면 엔터 -> 프로필 페이지 자동으로 열립니다"
-      echo "  ------------------------------------------------------------"
+      info "브라우저에서 가입·로그인한 뒤 돌아오세요. 비밀번호를 이 터미널에 입력하지 마세요."
       prompt_read _ "가입 완료 후 엔터: "
-      info "프로필 페이지(토큰 발급)를 엽니다..."
       open_url "$JURI_TOKEN_URL"
-      echo ""
-      echo "  ------------------------------------------------------------"
-      echo "  3. 프로필 페이지($JURI_TOKEN_URL)에서 API 토큰 발급"
-      echo "  4. 토큰을 복사한 뒤 이 터미널로 돌아오세요"
-      echo "  ------------------------------------------------------------"
-      prompt_read _ "토큰 복사 완료되면 엔터: "
+      info "브라우저에서 토큰을 발급받으세요. 다음 입력창에만 붙여넣습니다."
+      prompt_read _ "토큰 준비 완료 후 엔터: "
     fi
-
-    # 토큰 입력 + 검증 (최대 3회 재시도)
-    JURI_TOKEN=""
-    attempt=0
-    while [[ $attempt -lt 3 ]]; do
-      echo ""
-      if [[ $attempt -eq 0 ]]; then
-        echo "  토큰을 붙여넣어 주세요 (입력은 화면에 표시되지 않습니다, 보안):"
-      else
-        echo "  토큰을 다시 입력하세요 (시도 $((attempt+1))/3, 건너뛰려면 Enter):"
-      fi
-      prompt_secret JURI_TOKEN "  토큰: "
-
-      if [[ -z "$JURI_TOKEN" ]]; then
-        warn "토큰 미입력 -> MCP 등록 건너뜀."
-        break
-      fi
-
-      # jurisupport.com 토큰 검증 (MCP 엔드포인트에 인증 헤더만 보내 응답 코드 확인)
-      info "토큰 검증 중..."
-      HTTP_CODE=$(
-        CURL_CONFIG="$(mktemp)"
-        chmod 600 "$CURL_CONFIG"
-        trap 'rm -f "$CURL_CONFIG"' EXIT
-        {
-          printf 'silent\n'
-          printf 'output = "/dev/null"\n'
-          printf 'write-out = "%%{http_code}"\n'
-          printf 'max-time = 6\n'
-          printf 'connect-timeout = 4\n'
-          printf 'header = "Authorization: Bearer %s"\n' "$JURI_TOKEN"
-          printf 'header = "Accept: application/json, text/event-stream"\n'
-          printf 'url = "%s"\n' "$JURI_MCP_URL"
-        } > "$CURL_CONFIG"
-        curl --config "$CURL_CONFIG" 2>/dev/null || echo "000"
-      )
-
-      case "$HTTP_CODE" in
-        200|204|000)
-          # 000 = curl timeout: MCP 스트림이 정상 응답하면 keep-alive로 잡힘. 일단 진행.
-          if [[ "$HTTP_CODE" == "000" ]]; then
-            info "[ok] 토큰 응답 정상 (MCP keep-alive, HTTP 000)"
-          else
-            info "[ok] 토큰 검증 성공 (HTTP $HTTP_CODE)"
-          fi
-          break
-          ;;
-        401|403)
-          attempt=$((attempt+1))
-          warn "[fail] 토큰 인증 실패 (HTTP $HTTP_CODE)"
-          if [[ $attempt -lt 3 ]]; then
-            warn "  $JURI_TOKEN_URL 에서 토큰을 다시 확인/재발급 후 입력하세요."
-          else
-            warn "  3회 모두 실패. MCP 등록 건너뜀."
-            JURI_TOKEN=""
-          fi
-          ;;
-        404|405)
-          warn "검증 엔드포인트 응답 형식 변경 가능성 (HTTP $HTTP_CODE) - 그대로 등록 진행"
-          break
-          ;;
-        *)
-          warn "검증 응답 모호 (HTTP $HTTP_CODE) - 그대로 등록 진행"
-          break
-          ;;
-      esac
-    done
-
-    if [[ -z "$JURI_TOKEN" ]]; then
-      info "나중에 등록:  claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
+    if configure_credentials --service jurisupport; then
+      info "JuriSupport 토큰 설정 저장 완료. 인증·실제 조회는 새 Claude 세션에서 확인하세요."
     else
-      info "MCP 등록 중..."
-      warn "Claude Code CLI는 bearer header 등록 시 --header 인자를 사용합니다. 등록 순간 같은 PC의 프로세스 목록에 토큰이 짧게 보일 수 있습니다."
-      # 사용자 전체(-s user)로 등록해야 사건 폴더 어디서 claude를 열어도 연결된다.
-      # 기본값(local)은 설치기를 실행한 폴더(~/jurisupport-plugins)에서만 보인다.
-      # 예전 설치가 이 폴더에 남긴 등록도 함께 지운다.
-      claude mcp remove jurisupport -s local >/dev/null 2>&1 || true
-      claude mcp remove jurisupport -s user >/dev/null 2>&1 || true
-      if claude mcp add -s user --transport "$JURI_MCP_TRANSPORT" jurisupport "$JURI_MCP_URL" --header "Authorization: Bearer $JURI_TOKEN"; then
-        info "[ok] JuriSupport MCP 등록 완료 (모든 폴더)"
-        info "-> 어느 사건 폴더에서 'claude'를 열어도 mcp__jurisupport__* 도구 사용 가능"
-        info "-> legal-terminal 사건 대시보드도 이 등록을 그대로 씁니다 (앱에 토큰 다시 입력 불필요)"
-        echo ""
-        echo -e "${CYAN}  다음 단계 (사건 작업 시작 전):${NC}"
-        echo "    - https://jurisupport.com/cases 에서 사건을 등록한 뒤 진행하시면 좋습니다."
-        echo "    - 전자소송 사건목록 엑셀을 업로드하면 사건이 자동으로 일괄 등록됩니다."
-        echo "    - 사건번호만 있으면 클로드코드 안에서 mcp__jurisupport__create_case 로도 추가 가능."
-        echo ""
-      else
-        warn "등록 실패. 수동: claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header 'Authorization: Bearer <token>'"
-      fi
-      unset JURI_TOKEN  # 셸 환경에서 토큰 흔적 제거
+      warn "JuriSupport 토큰 등록 미완료. 기존 설정은 그대로 두고 다른 설치를 계속합니다."
     fi
   fi
 fi
@@ -832,7 +673,7 @@ ECFS_SKILL_DIR="$HOME/.claude/skills/ecfs"
 
 ecourt_tool_installed() {
   case "$PLATFORM" in
-    windows) [[ -d "$HOME/ecourt-cli" ]] ;;
+    windows) [[ -f "$HOME/ecourt-cli/ecourt_download.py" && -f "$HOME/ecourt-cli/.venv/Scripts/python.exe" ]] ;;
     mac) [[ -f "$ECFS_SKILL_DIR/SKILL.md" ]] ;;
     *) return 1 ;;
   esac
@@ -856,6 +697,13 @@ install_ecourt_tools() {
 
   if ecourt_tool_installed; then
     info "전자소송 도구가 이미 설치되어 있습니다."
+    if [[ "$PLATFORM" == windows ]]; then
+      configure_credentials --service ecourt-cert --check >/dev/null 2>&1 || \
+        configure_credentials --service ecourt-cert || warn "인증서 암호 등록 대기. 기존 도구 설치는 유지합니다."
+    else
+      configure_credentials --service ecfs-cert --check >/dev/null 2>&1 || \
+        configure_credentials --service ecfs-cert || warn "인증서 암호 등록 대기. 기존 도구 설치는 유지합니다."
+    fi
     return
   fi
 
@@ -865,7 +713,7 @@ install_ecourt_tools() {
   else
     echo "  - ecfs-skill: Claude Code에서 전자소송 송달문서 확인, 서면 임시저장·제출, 소송비용 계산을 돕습니다."
   fi
-  echo "  - 설치 중 전자소송 아이디와 공동인증서 암호를 묻고, 이 컴퓨터에만 암호화해 저장합니다."
+  echo "  - 프로그램 설치 후 인증서 암호는 보호 입력창에서 암호화해 저장합니다. 실제 로그인·기록 수집은 실행하지 않습니다."
   prompt_read ans "전자소송 도구를 설치할까요? [y/N, 엔터=아니오] "
   if [[ ! "$ans" =~ ^[Yy]$ ]]; then
     if [[ "$PLATFORM" == "windows" ]]; then
@@ -878,8 +726,33 @@ install_ecourt_tools() {
 
   case "$PLATFORM" in
     windows)
-      powershell.exe -NoProfile -ExecutionPolicy Bypass -Command 'irm https://raw.githubusercontent.com/jurisupport/ecourt-cli/main/install.ps1 | iex' \
-        || warn "ecourt-cli 설치 실패. 안내: https://github.com/jurisupport/ecourt-cli"
+      # The upstream setup_env.ps1 prompts for secrets; install only its runtime here.
+      if (
+        set -e
+        local ecourt_root="$HOME/ecourt-cli" remote
+        if [[ -d "$ecourt_root/.git" ]]; then
+          remote="$(git -C "$ecourt_root" config --get remote.origin.url)"
+          [[ "$remote" == https://github.com/jurisupport/ecourt-cli || "$remote" == https://github.com/jurisupport/ecourt-cli.git ]] || {
+            warn "기존 ecourt-cli 저장소 출처를 확인하세요."; exit 1;
+          }
+          git -C "$ecourt_root" pull --ff-only || exit 1
+        elif [[ -e "$ecourt_root" ]]; then
+          warn "기존 ecourt-cli 폴더를 덮어쓰지 않습니다. 설치 상태를 확인하세요."; exit 1
+        else
+          git clone -c core.longpaths=true --depth 1 https://github.com/jurisupport/ecourt-cli.git "$ecourt_root" || exit 1
+        fi
+        source "$TOOLKIT_DIR/lib/python-detect.sh"
+        select_python 3.10 || exit 1
+        [[ -f "$ecourt_root/.venv/Scripts/python.exe" ]] || run_python -m venv "$ecourt_root/.venv" || exit 1
+        "$ecourt_root/.venv/Scripts/python.exe" -m pip install -r "$ecourt_root/requirements.txt" || exit 1
+        "$ecourt_root/.venv/Scripts/python.exe" -m playwright install msedge || exit 1
+      ); then
+        configure_credentials --service ecourt-cert --check >/dev/null 2>&1 || \
+          configure_credentials --service ecourt-cert || warn "인증서 암호 등록 대기. 입력창에서 나중에 등록하세요."
+        info "전자소송 아이디·인증서 경로 등 일반 설정은 별도 확인하세요. 로그인·자동 수집은 시작하지 않았습니다."
+      else
+        warn "ecourt-cli 설치 미완료. 안내: https://github.com/jurisupport/ecourt-cli"
+      fi
       ;;
     mac)
       if [[ -d "$ECFS_SKILL_DIR/.git" ]]; then
@@ -888,8 +761,13 @@ install_ecourt_tools() {
         git clone --depth 1 https://github.com/jurisupport/ecfs-skill.git "$ECFS_SKILL_DIR" \
           || { warn "ecfs-skill 내려받기 실패. 안내: https://github.com/jurisupport/ecfs-skill"; return; }
       fi
-      (cd "$ECFS_SKILL_DIR" && ./install.sh) \
-        || warn "ecfs-skill 설치 실패. 다시: cd $ECFS_SKILL_DIR && ./install.sh"
+      if (cd "$ECFS_SKILL_DIR" && bash install.sh </dev/null); then
+        configure_credentials --service ecfs-cert --check >/dev/null 2>&1 || \
+          configure_credentials --service ecfs-cert || warn "인증서 암호 등록 대기. 입력창에서 나중에 등록하세요."
+        info "전자소송 일반 설정은 별도 확인하세요. 자동 실행 예약은 설정하지 않았습니다."
+      else
+        warn "ecfs-skill 설치 미완료. 암호를 터미널에 입력하지 말고 입력창 설정으로 이어가세요."
+      fi
       ;;
   esac
 }
@@ -912,8 +790,6 @@ install_ecourt_tools
 # ============================================================
 # MARKETPLACE_PATH 미정의 시 fallback
 MARKETPLACE_PATH="${MARKETPLACE_PATH:-$TOOLKIT_DIR}"
-JURI_MCP_URL="${JURI_MCP_URL:-https://api.jurisupport.com/mcp}"
-JURI_MCP_TRANSPORT="${JURI_MCP_TRANSPORT:-http}"
 
 if is_dry_run; then
   JURI_MCP_STATUS="DRY-RUN: 등록 여부 확인 안 함"
@@ -922,11 +798,11 @@ else
   if [[ "$JURI_MCP_LINE" == *"Connected"* ]] && claude mcp get jurisupport 2>/dev/null | grep -q "Scope: User"; then
     JURI_MCP_STATUS="등록됨 (모든 폴더)"
   elif [[ "$JURI_MCP_LINE" == *"Connected"* ]]; then
-    JURI_MCP_STATUS="이 폴더에서만 연결됨 - 설치기를 다시 실행하면 모든 폴더용으로 옮깁니다"
+    JURI_MCP_STATUS="이 폴더에서만 연결됨 - 입력창 도구에서 사용자 범위 연결을 준비하세요"
   elif [[ -n "$JURI_MCP_LINE" ]]; then
     JURI_MCP_STATUS="항목은 있으나 연결 확인 필요 - 토큰으로 재등록 권장"
   else
-    JURI_MCP_STATUS="미등록 - 토큰을 넣어 아래 명령으로 등록"
+    JURI_MCP_STATUS="미등록 - 입력창 도구의 jurisupport 항목에서 등록"
   fi
 fi
 
@@ -979,7 +855,7 @@ $(if is_dry_run; then printf '[ok] DRY-RUN 완료 (실제 변경 없음)'; else 
 $TOOL_STATUS
 
 JuriSupport MCP: $JURI_MCP_STATUS
-  claude mcp add -s user --transport $JURI_MCP_TRANSPORT jurisupport $JURI_MCP_URL --header "Authorization: Bearer <토큰>"
+  credentials-setup.cmd 또는 scripts/configure_credentials.py --service jurisupport 입력창 사용
 
 다음 단계:
   1. 필독: $TOOLKIT_DIR/guides/00_security.md (5분)
@@ -995,9 +871,10 @@ JuriSupport MCP: $JURI_MCP_STATUS
        /plugin marketplace add "$MARKETPLACE_PATH"
        /plugin install jurisupport@jurisupport-plugins
 
-korean-law MCP는 법제처 OC 발급 후 클로드코드 안에서 수동 설치:
+korean-law MCP 설치·OC 설정을 이어가려면 korean-law-setup.cmd 또는 앱의 플러그인 화면 사용:
        /plugin marketplace add $KOREAN_LAW_MARKETPLACE_SOURCE
        /plugin install $KOREAN_LAW_PLUGIN_REF
+       OC는 credentials-setup.cmd의 korean-law 입력창에서 등록
        (법제처 OC 발급 방법: $TOOLKIT_DIR/guides/07_law_openapi_key.md)
 
 OC 발급 전 시연/실습:

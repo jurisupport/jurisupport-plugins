@@ -4,6 +4,15 @@ on:
   push:
     paths:
       - 'scripts/configure_korean_law.py'
+      - 'scripts/configure_credentials.py'
+      - 'scripts/credential_dialog.py'
+      - 'tests/configure_credentials_test.py'
+      - 'credentials-setup.cmd'
+      - 'credentials-setup.command'
+      - 'install.sh'
+      - 'toolkit/law-forms/install.sh'
+      - 'tests/installer_credentials_ui_test.sh'
+      - 'tests/install_open_url_test.sh'
       - 'tests/configure_korean_law_test.py'
       - 'korean-law-setup.cmd'
       - 'tests/korean_law_setup_launcher_test.ps1'
@@ -11,6 +20,15 @@ on:
   pull_request:
     paths:
       - 'scripts/configure_korean_law.py'
+      - 'scripts/configure_credentials.py'
+      - 'scripts/credential_dialog.py'
+      - 'tests/configure_credentials_test.py'
+      - 'credentials-setup.cmd'
+      - 'credentials-setup.command'
+      - 'install.sh'
+      - 'toolkit/law-forms/install.sh'
+      - 'tests/installer_credentials_ui_test.sh'
+      - 'tests/install_open_url_test.sh'
       - 'tests/configure_korean_law_test.py'
       - 'korean-law-setup.cmd'
       - 'tests/korean_law_setup_launcher_test.ps1'
@@ -34,7 +52,17 @@ jobs:
         with:
           python-version: '3.11'
       - name: Check secret transport and error handling with synthetic values
-        run: python tests/configure_korean_law_test.py
+        run: |
+          python tests/configure_korean_law_test.py
+          python tests/configure_credentials_test.py
+      - name: Check installer UI handoffs
+        shell: bash
+        run: |
+          bash tests/installer_credentials_ui_test.sh
+          bash tests/install_open_url_test.sh
+      - name: Lint installer scripts
+        if: runner.os == 'Linux'
+        run: shellcheck --severity=error install.sh toolkit/law-forms/install.sh toolkit/case-records/install.sh credentials-setup.command tests/installer_credentials_ui_test.sh
       - name: Check Windows launcher with fake Python
         if: runner.os == 'Windows'
         shell: powershell

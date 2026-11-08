@@ -1,5 +1,7 @@
 # Windows에서 korean-law 설치·OC 입력하기
 
+JuriSupport 토큰·Gemini 키·전자소송 인증서 암호 등은 [credentials-setup.cmd](../credentials-setup.cmd)의 서비스 선택창에서 등록합니다. [통합 입력창 안내](09_credentials_ui.md)를 참고하세요. 아래 메뉴는 korean-law 플러그인 설치·OC 설정을 위한 기존 간편 메뉴입니다.
+
 Claude가 설치를 진행할 수 있으면 그대로 맡기세요. 자동 모드가 외부 플러그인 설치를 차단하면 **채팅에서 다시 승인해도 실행되지 않을 수 있습니다.** Claude는 어떤 작업이 왜 막혔는지 설명해야 합니다. 조직에서 금지한 설치는 진행하지 말고 관리자에게 문의하세요.
 
 ## 먼저 앱의 플러그인 화면 확인

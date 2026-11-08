@@ -158,7 +158,7 @@ fi
 SECRETS="$HOME/.jurisupport/secrets.env"
 if [[ ! -f "$SECRETS" ]] || ! grep -q "GEMINI_API_KEY" "$SECRETS"; then
   warn "Gemini API 키 미등록 — 기본 case-records는 로컬 FTS만 사용하므로 계속 진행합니다."
-  warn "의미 기반 검색을 명시적으로 허용하려면 나중에 $SECRETS 에 GEMINI_API_KEY=xxx 를 추가하세요."
+  warn "키 등록은 credentials-setup.cmd 또는 scripts/configure_credentials.py --service gemini 입력창을 사용하세요. 외부 임베딩 활성화는 별도 동의가 필요합니다."
 else
   info_or_plan "기존 Gemini API 키 발견: $SECRETS (명시 옵션 사용 시에만 case-records 임베딩에 사용)"
 fi

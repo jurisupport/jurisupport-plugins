@@ -27,7 +27,9 @@ select_python 3.9 || error "Python 미설치. Python 3.9 이상 필요"
 info "Python $PY_VERSION: $PY_DISPLAY"
 command -v node >/dev/null 2>&1 || warn "Node.js 미설치 — kordoc 실행에 Node.js 18 이상이 필요합니다."
 
-ROOT="$HOME/law-forms"
+ROOT="${LAW_FORMS_HOME:-$HOME/law-forms}"
+ROOT="${ROOT/#\~\//$HOME/}"
+ROOT="$(jurisupport_path "$ROOT")"
 info_or_plan "설치 위치: $ROOT"
 run_or_plan mkdir -p "$ROOT/scripts" "$ROOT/cache" "$ROOT/library" "$ROOT/node"
 
@@ -62,18 +64,12 @@ if jurisupport_has_host claude; then
   run_or_plan cp "$SKILL_SRC" "$(jurisupport_path "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands/law-forms.md")"
 fi
 
-if ! is_dry_run && [[ ! -f "$ROOT/config.json" && -z "${LAW_OC:-}" ]]; then
-  echo ""
-  echo "  법제처 Open API 키(OC)가 있으면 법령 서식을 검색·다운로드할 수 있습니다."
-  echo "  서재에 든 서식만 쓸 때는 없어도 됩니다."
-  read -r -p "법제처 OC를 지금 입력할까요? (엔터=건너뛰기) " law_oc
-  if [[ -n "$law_oc" ]]; then
-    umask 077
-    printf '{"LAW_OC": "%s"}\n' "$law_oc" > "$ROOT/config.json"
-    info "저장: $ROOT/config.json (권한 600)"
-  else
-    info "건너뛰기. 나중에 LAW_OC 환경변수나 $ROOT/config.json 으로 넣을 수 있습니다."
-  fi
+if is_dry_run; then
+  info_or_plan "법제처 OC 미설정이면 보호 입력창에서 등록"
+elif [[ -z "${LAW_OC:-}" ]] && ! run_python "$TOOLKIT_DIR/../../scripts/configure_credentials.py" --service law-forms --check >/dev/null 2>&1; then
+  info "법제처 OC 입력창을 엽니다. 공용 서재만 쓰려면 입력창을 취소해도 됩니다."
+  run_python "$TOOLKIT_DIR/../../scripts/configure_credentials.py" --service law-forms || \
+    warn "OC 등록 미완료. 입력창 도구의 law-forms 항목에서 나중에 등록하세요."
 fi
 
 echo ""

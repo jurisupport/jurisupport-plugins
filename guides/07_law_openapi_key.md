@@ -94,6 +94,8 @@ npx --yes --package @playwright/cli playwright-cli --session jurisupport-law-set
 
 #### 로컬 OC 입력창
 
+다른 토큰·인증서 암호까지 함께 설정하려면 [통합 자격증명 입력창](09_credentials_ui.md)을 사용합니다. `python3 scripts/configure_credentials.py --service korean-law`는 아래 기존 OC 도구로 연결됩니다. 웹사이트 로그인 비밀번호는 공식 외부 브라우저 입력란을 사용합니다.
+
 플러그인 설치 후 저장소 루트에서 [입력창 도구](../scripts/configure_korean_law.py)를 실행합니다. Python 3와 macOS/Windows의 기본 대화상자를 사용하며 별도 웹서버나 UI 패키지를 설치하지 않습니다.
 
 ```bash

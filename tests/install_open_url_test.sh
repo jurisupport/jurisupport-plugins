@@ -64,7 +64,7 @@ expect_contains() {
   local file="$2"
   local pattern="$3"
 
-  if rg -q --fixed-strings "$pattern" "$file"; then
+  if grep -Fq -- "$pattern" "$file"; then
     printf 'ok - %s\n' "$name"
   else
     fail "$name: missing $pattern in $file"
@@ -76,7 +76,7 @@ expect_not_contains() {
   local file="$2"
   local pattern="$3"
 
-  if rg -q --fixed-strings "$pattern" "$file"; then
+  if grep -Fq -- "$pattern" "$file"; then
     fail "$name: unexpected $pattern in $file"
   else
     printf 'ok - %s\n' "$name"
@@ -96,9 +96,9 @@ expect_contains \
   'open_url "$KOREAN_LAW_OPENAPI_URL"'
 
 expect_contains \
-  "korean-law plugin install keeps terminal prompts" \
+  "korean-law plugin install uses non-secret setup helper" \
   "$INSTALL" \
-  'if claude plugin install "$KOREAN_LAW_PLUGIN_REF"; then'
+  'run_python "$TOOLKIT_DIR/scripts/configure_korean_law.py" --install'
 
 expect_not_contains \
   "korean-law plugin install is not piped" \
@@ -116,14 +116,19 @@ expect_contains \
   "이미 jurisupport.com 계정 + 토큰이 있으신가요? [y/N, 엔터=아니오]"
 
 expect_contains \
-  "JuriSupport token input uses resilient secret prompt" \
+  "JuriSupport token input uses protected UI" \
   "$INSTALL" \
-  'prompt_secret JURI_TOKEN "  토큰: "'
+  'configure_credentials --service jurisupport'
 
-expect_contains \
-  "resilient secret prompt reads controlling terminal" \
+expect_not_contains \
+  "installer never passes tokens as authorization arguments" \
   "$INSTALL" \
-  'read -r -s value < /dev/tty || value=""'
+  '--header'
+
+expect_not_contains \
+  "installer no longer has a terminal secret prompt" \
+  "$INSTALL" \
+  'prompt_secret'
 
 if [[ "$failures" -gt 0 ]]; then
   exit 1
