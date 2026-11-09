@@ -12,6 +12,7 @@
 - **`/jurisupport:records-sync`** - 사건기록 폴더와 작성서류 폴더를 함께 읽어 `case-records` DB에 동기화. 기본값으로 주장서면·신청서면만 파싱해 의견서·준비서면 작성 시 과거 서면을 참고할 수 있게 한다.
 - **`/jurisupport:complete-personal-profile`** - 변호사가 본인의 사건자료·작성서류·판결문을 바탕으로 직접 읽고 활용할 수 있는 개인 프로필을 완성한다. 원하면 JuriSupport에 올릴 수 있도록 이어서 정리한다.
 - **`/jurisupport:upload-to-jurisupport`** - 변호사가 확인한 완성 프로필을 웹 동의 후 JuriSupport에 올린다. 공개 승인이나 노출 시작은 별도 검토 절차를 따른다.
+- **`/jurisupport:legal-calc`** - 날짜·금액 계산기. 기간 만료일(민법 제157조·제159조~제161조, 형사소송법 제66조, 공휴일·대체공휴일 반영), 두 날짜 사이 일수, 구간별 이율의 이자·지연손해금을 계산식·근거 조문과 함께 출력한다. 기간의 길이·사건일·이율은 사용자가 확인해 넣는다. Python 3 표준 라이브러리만 사용.
 - **`/jurisupport:offline-law-fallback`** - 법제처 OC 키 발급 전 시연·실습용 오프라인 법령 전문 스냅샷. 헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법을 포함한다. 실제 제출 전에는 온라인 재검증 필수.
 
 ### 참조하는 공개 인프라
@@ -221,6 +222,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.14 - legal-calc 추가(기간 만료일·일수·이자·지연손해금 계산, 공휴일 동봉 자료, 오프라인 회귀 시험)
 0.2.13 - 콜드스타트 자유 입력·질문 분리, Windows korean-law 설정 메뉴·CLI 자동 탐색, 로컬 브라우저 확인·신규 가입·새 세션 검증 안내
 0.2.12 - Claude/Codex 독립 설치, 공통 실행 규칙, 현재 판결 도구 스키마, 승인 범위 상속 및 동봉 경로 검증
 0.2.11 - Opus 5/high 세션 상속 안내, canonical 플레이북 경로와 비파괴 마이그레이션, 프롬프트 중복 정리

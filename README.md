@@ -9,7 +9,7 @@
 ![Locale](https://img.shields.io/badge/Locale-ko--KR-red)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Supported-orange)
 ![Codex](https://img.shields.io/badge/Codex-Supported-blue)
-![Version](https://img.shields.io/badge/Version-0.2.13-green)
+![Version](https://img.shields.io/badge/Version-0.2.14-green)
 
 ## Claude Code에 링크를 주고 설치 맡기기
 
