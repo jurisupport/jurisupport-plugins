@@ -312,6 +312,18 @@ bash toolkit/court-forms/install.sh
 3. **첫 사건 시도** — `/jurisupport:cold-start-interview` 실행하여 사무소 플레이북 작성
 4. **첫 준비서면 작성** — `/jurisupport:brief-protocol` 실행
 
+### 사건 폴더에 작업 규칙(CLAUDE.md) 넣기
+
+사건 폴더에 `CLAUDE.md`를 두면 Claude Code가 그 폴더에서 일할 때마다 먼저 읽습니다. 예시 [templates/사건폴더_CLAUDE.md](templates/사건폴더_CLAUDE.md)를 사건 폴더에 `CLAUDE.md`라는 이름으로 복사하고, 사무소에 맞게 고쳐 쓰세요. 근거 없는 판결·금액을 쓰지 않게 하는 규칙, 5단계 작업 순서, 보고 문체(통제된 한국어), 파일 삭제 전 확인 설정이 들어 있습니다.
+
+Claude Code에 이렇게 맡겨도 됩니다.
+
+```text
+jurisupport-plugins 저장소의 templates/사건폴더_CLAUDE.md를 이 폴더에 CLAUDE.md로 복사해줘. 이미 CLAUDE.md가 있으면 덮어쓰지 말고 빠진 규칙만 보여줘.
+```
+
+본 패키지는 사용자 전역(`~/.claude/CLAUDE.md`)이나 사건 폴더의 CLAUDE.md를 자동으로 만들거나 고치지 않습니다. 사무소 플레이북은 별도 파일(`~/.jurisupport/playbook.md`)에 저장됩니다.
+
 ### legal-books · case-records — 처음엔 빈 DB, 점진적으로 채우기
 
 위 두 toolkit은 설치 직후 **검색 서버·DB만 빈 채로 세워**집니다. 본 패키지가 변호사의 보유 서적·과거 사건을 가져올 방법이 없으므로 사용자가 직접 채워야 합니다.
