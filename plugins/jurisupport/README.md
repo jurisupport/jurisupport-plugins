@@ -223,6 +223,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.16 - legal-calc 초일 산입 예외(0시 시작, `--include-first`) 안내 보강과 시험 1건 추가
 0.2.15 - privacy-consent-interview 추가(개인정보처리방침·동의서 문답 작성, 주제 키 상태 파일로 재질문 방지, 공식 자료 조사, 회귀 사례 R1~R12)
 0.2.14 - legal-calc 추가(기간 만료일·일수·이자·지연손해금 계산, 공휴일 동봉 자료, 오프라인 회귀 시험)
 0.2.13 - 콜드스타트 자유 입력·질문 분리, Windows korean-law 설정 메뉴·CLI 자동 탐색, 로컬 브라우저 확인·신규 가입·새 세션 검증 안내
