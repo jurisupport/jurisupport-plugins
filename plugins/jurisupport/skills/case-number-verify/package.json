@@ -1,0 +1,7 @@
+{
+  "name": "case-number-verify",
+  "private": true,
+  "dependencies": {
+    "playwright-core": "^1.60.0"
+  }
+}

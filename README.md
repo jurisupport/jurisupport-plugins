@@ -70,6 +70,7 @@ JuriSupport는 초기 프로토타입 이후, 설치 안정성·송무 작성 �
 - **개인정보 처리방침·동의서 문답(privacy-consent-interview)**: 예시 구성과 다른 점만 물어 처리방침과 동의서(민감정보·제3자 제공·국외 이전) 초안을 만듭니다.
 - **법령·법원 서식 채우기(law-forms)**: 법제처 별지서식과 법원 전산양식을 받아 hwpx로 바꾸고 사건정보를 채워 hwpx·PDF로 저장합니다.
 - **홍보 콘텐츠(promo-content)**: 판결 원문과 대조한 블로그 글, 쇼츠 원고·사실 대조표, 컷시트, SNS 글, 변호사 광고 규정 점검을 만듭니다.
+- **판결 사건번호 확인(case-number-verify)**: 인용된 판결 사건번호가 실제로 있는지 대법원 사법정보공개포털에서 확인합니다. 자동입력방지 숫자는 사용자가 넣습니다. 존재 여부만 보는 1차 선별이므로 판시 내용은 전문으로 대조합니다.
 - **영상 제작(explainer-video·narration-shorts)**: 컷시트로 설명 영상을, 쇼츠 원고로 내레이션 쇼츠를 만듭니다. 생성 전에 호출 횟수와 비용을 보여 주고 승인을 받습니다.
 - **Claude/Codex 공통 실행 지원**: 호스트별 설치 경로, 세션 모델 상속, 공통 플레이북과 도구 스키마 확인을 지원합니다.
 - **Claude Opus 5/high 지원**: JuriSupport 스킬이 현재 세션의 Opus 5/high 설정을 일관되게 상속하고, 사무소별 로컬 플레이북에서 문체·검증 기준·저장 경로를 불러옵니다.
@@ -237,6 +238,7 @@ Claude 설치 경로의 한 줄 설치는 이 패키지 외에 아래 JuriSuppor
 | **privacy-consent-interview 스킬** (플러그인 포함) | 사무소 개인정보 처리방침·동의서 초안 문답 작성 | 없음 |
 | **promo-content 스킬** (플러그인 포함) | 판결 → 블로그 글·쇼츠 원고·컷시트·SNS 글, 광고 규정 점검 | 없음 |
 | **explainer-video · narration-shorts 스킬** (플러그인 포함) | 설명 영상·내레이션 쇼츠 제작 ([설정 안내](plugins/jurisupport/docs/video-setup.md)) | Python·Pillow·ffmpeg·한글 글꼴, Gemini 또는 OpenAI API 키 |
+| **case-number-verify 스킬** (플러그인 포함) | 판결 사건번호 존재 확인(대법원 사법정보공개포털, 캡차는 사용자 입력) | Node.js 18+, Google Chrome |
 | **law-forms 스킬 + toolkit** | 법령 별지서식·법원 전산양식 hwpx 채우기, PDF 출력 | kordoc(Node), 법제처 OC(검색 시) |
 | **Claude용 데이터 보호 Hook** | Claude 외부 도구 호출의 의뢰인 정보 감지 보조. Codex에 같은 Hook을 적용하지 않음 | jq |
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 | lbox.kr 유료 계정 |
