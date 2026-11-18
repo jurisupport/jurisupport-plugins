@@ -1,0 +1,32 @@
+{
+  "title": "예시: 임차권등기",
+  "style": "flat",
+  "top_title": "보증금, 이사 가도 지킬 수 있다",
+  "end_card": {
+    "title": "○○ 법률사무소",
+    "lines": [
+      "일반 정보이며 개별 사안은 다를 수 있습니다"
+    ]
+  },
+  "cuts": [
+    {
+      "narration": "이사 가면 보증금을 못 받는다고요? 아닙니다.",
+      "subtitle": "이사 가면 보증금 못 받는다? 아닙니다",
+      "image_prompt": "apartment moving boxes"
+    },
+    {
+      "narration": "임차권등기를 먼저 하면 됩니다.",
+      "board": {
+        "title": "임차권등기명령",
+        "lines": [
+          "계약 끝난 뒤 신청",
+          "등기 후 이사해도 대항력 유지"
+        ]
+      }
+    },
+    {
+      "narration": "등기가 된 것을 확인하고 이사하십시오.",
+      "image_prompt": "person checking document"
+    }
+  ]
+}
