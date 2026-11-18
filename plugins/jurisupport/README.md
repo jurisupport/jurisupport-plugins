@@ -17,6 +17,7 @@
 - **`/jurisupport:promo-content`** - 판결 하나나 블로그 글 하나로 홍보 콘텐츠 묶음(블로그 글, 18~22문장 쇼츠 원고와 문장별 사실 대조표, 글자 없는 그림 프롬프트를 담은 컷시트, SNS 글·유튜브 제목·설명)을 만들고 변호사 광고 규정·AI 사용 공개·비밀유지 점검표를 붙인다. 영상 렌더링·게시는 하지 않는다.
 - **`/jurisupport:explainer-video`** - promo-content 컷시트로 판결·법 개정 설명 영상(세로, 플랫 일러스트 + 정보판 + 자막 + 내레이션)을 만든다. 시작할 때 Python·Pillow·ffmpeg·한글 글꼴·API 키를 점검하고 없으면 설치를 안내한다. 그림·음성 생성(유료)은 승인 후 진행. 설정: [docs/setup-explainer-video.md](docs/setup-explainer-video.md)
 - **`/jurisupport:narration-shorts`** - promo-content 쇼츠 원고(18~22문장)로 내레이션형 세로 쇼츠(사실적 장면 그림, 직접 찍은 영상 조각, 배경음악)를 만든다. 환경 점검·설치 안내는 explainer-video와 같다. 설정: [docs/setup-narration-shorts.md](docs/setup-narration-shorts.md)
+- **`/jurisupport:case-number-verify`** - 서면·AI 초안에 인용된 판결 사건번호가 실제로 있는지 대법원 사법정보공개포털 「허위 사건번호 확인」으로 확인한다. 자동입력방지 숫자는 사용자가 직접 넣는다. 존재 여부만 보는 1차 선별 도구이며, 인용 오류·취지 왜곡·지어낸 판시 문장은 판결 전문 대조로 확인한다. Node.js 18+·Google Chrome 필요.
 - **`/jurisupport:offline-law-fallback`** - 법제처 OC 키 발급 전 시연·실습용 오프라인 법령 전문 스냅샷. 헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법을 포함한다. 실제 제출 전에는 온라인 재검증 필수.
 
 ### 참조하는 공개 인프라
@@ -226,6 +227,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.23 - case-number-verify 추가(판결 사건번호 존재 확인, 캡차는 사용자가 입력, 1차 선별용 경고)
 0.2.22 - 영상 스킬 자막·정보판 줄바꿈을 낱말 단위로(사건번호·마침표가 줄 중간에서 끊기지 않게)
 0.2.21 - 0.2.19(privacy-consent-interview example-v1)와 0.2.20(영상 스킬) 병합
 0.2.20 - explainer-video·narration-shorts 추가(컷시트 → 음성·그림·정보판·자막 조립, 환경 점검 check_env.py, 영상 설정 안내 페이지 3종, 무료 시험 경로)
