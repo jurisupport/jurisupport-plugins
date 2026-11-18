@@ -223,6 +223,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.17 - privacy-consent-interview 예시 사무소 구성(example-v1) 추가: 법률사무소 1곳의 구성을 비교 기준으로 보여주고 다른 점만 받아 질문을 1~2회로 줄임, 서비스 조사 카탈로그·공개용 문서 틀 동봉, 회귀 사례 R13~R16
 0.2.16 - legal-calc 초일 산입 예외(0시 시작, `--include-first`) 안내 보강과 시험 1건 추가
 0.2.15 - privacy-consent-interview 추가(개인정보처리방침·동의서 문답 작성, 주제 키 상태 파일로 재질문 방지, 공식 자료 조사, 회귀 사례 R1~R12)
 0.2.14 - legal-calc 추가(기간 만료일·일수·이자·지연손해금 계산, 공휴일 동봉 자료, 오프라인 회귀 시험)
