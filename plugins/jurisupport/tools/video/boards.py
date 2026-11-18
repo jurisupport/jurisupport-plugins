@@ -15,13 +15,22 @@ def arg(name, default=None):
 
 
 def wrap(draw, text, font, width):
+    """낱말(띄어쓰기) 단위로 줄을 나눈다. 한 낱말이 한 줄보다 길 때만 글자 단위로 자른다."""
     lines, cur = [], ""
-    for ch in text:
-        if draw.textlength(cur + ch, font=font) > width and cur:
+    for word in text.split():
+        trial = f"{cur} {word}" if cur else word
+        if draw.textlength(trial, font=font) <= width:
+            cur = trial
+            continue
+        if cur:
             lines.append(cur)
-            cur = ch.lstrip()
-        else:
-            cur += ch
+        cur = ""
+        for ch in word:
+            if draw.textlength(cur + ch, font=font) > width and cur:
+                lines.append(cur)
+                cur = ch
+            else:
+                cur += ch
     if cur:
         lines.append(cur)
     return lines
