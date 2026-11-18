@@ -226,6 +226,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.22 - 영상 스킬 자막·정보판 줄바꿈을 낱말 단위로(사건번호·마침표가 줄 중간에서 끊기지 않게)
 0.2.21 - 0.2.19(privacy-consent-interview example-v1)와 0.2.20(영상 스킬) 병합
 0.2.20 - explainer-video·narration-shorts 추가(컷시트 → 음성·그림·정보판·자막 조립, 환경 점검 check_env.py, 영상 설정 안내 페이지 3종, 무료 시험 경로)
 0.2.19 - privacy-consent-interview 예시 사무소 구성(example-v1) 추가: 법률사무소 1곳의 구성을 비교 기준으로 보여주고 다른 점만 받아 질문을 1~2회로 줄임, 서비스 조사 카탈로그·공개용 문서 틀 동봉, 회귀 사례 R13~R16
