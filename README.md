@@ -66,6 +66,11 @@ korean-law MCP는 [브라우저 초기설정 지원](guides/07_law_openapi_key.m
 
 JuriSupport는 초기 프로토타입 이후, 설치 안정성·송무 작성 흐름·법률자료 검증·개인정보 보호를 중심으로 개선되어 왔습니다.
 
+- **날짜·금액 계산(legal-calc)**: 기간 만료일(공휴일·대체공휴일 반영), 일수, 구간별 이율 지연손해금을 계산식·근거 조문과 함께 출력합니다.
+- **개인정보 처리방침·동의서 문답(privacy-consent-interview)**: 예시 구성과 다른 점만 물어 처리방침과 동의서(민감정보·제3자 제공·국외 이전) 초안을 만듭니다.
+- **법령·법원 서식 채우기(law-forms)**: 법제처 별지서식과 법원 전산양식을 받아 hwpx로 바꾸고 사건정보를 채워 hwpx·PDF로 저장합니다.
+- **홍보 콘텐츠(promo-content)**: 판결 원문과 대조한 블로그 글, 쇼츠 원고·사실 대조표, 컷시트, SNS 글, 변호사 광고 규정 점검을 만듭니다.
+- **영상 제작(explainer-video·narration-shorts)**: 컷시트로 설명 영상을, 쇼츠 원고로 내레이션 쇼츠를 만듭니다. 생성 전에 호출 횟수와 비용을 보여 주고 승인을 받습니다.
 - **Claude/Codex 공통 실행 지원**: 호스트별 설치 경로, 세션 모델 상속, 공통 플레이북과 도구 스키마 확인을 지원합니다.
 - **Claude Opus 5/high 지원**: JuriSupport 스킬이 현재 세션의 Opus 5/high 설정을 일관되게 상속하고, 사무소별 로컬 플레이북에서 문체·검증 기준·저장 경로를 불러옵니다.
 - **한 줄 설치 안정화**: macOS/Linux/Windows 설치 흐름을 정리하고, Windows winget·긴 경로·PowerShell·의존성 설치 실패 케이스를 보강했습니다.
@@ -228,6 +233,11 @@ Claude 설치 경로의 한 줄 설치는 이 패키지 외에 아래 JuriSuppor
 | 구성요소 | 역할 | 의존성 |
 |---|---|---|
 | **JuriSupport 플러그인** | 사건 인테이크 → 준비서면 자동 작성 표준 절차 | korean-law MCP (공개), OC 발급 전 오프라인 법령 폴백 |
+| **legal-calc 스킬** (플러그인 포함) | 기간 만료일·일수·이자·지연손해금 계산(계산식·근거 조문 출력) | Python 3 표준 라이브러리 |
+| **privacy-consent-interview 스킬** (플러그인 포함) | 사무소 개인정보 처리방침·동의서 초안 문답 작성 | 없음 |
+| **promo-content 스킬** (플러그인 포함) | 판결 → 블로그 글·쇼츠 원고·컷시트·SNS 글, 광고 규정 점검 | 없음 |
+| **explainer-video · narration-shorts 스킬** (플러그인 포함) | 설명 영상·내레이션 쇼츠 제작 ([설정 안내](plugins/jurisupport/docs/video-setup.md)) | Python·Pillow·ffmpeg·한글 글꼴, Gemini 또는 OpenAI API 키 |
+| **law-forms 스킬 + toolkit** | 법령 별지서식·법원 전산양식 hwpx 채우기, PDF 출력 | kordoc(Node), 법제처 OC(검색 시) |
 | **Claude용 데이터 보호 Hook** | Claude 외부 도구 호출의 의뢰인 정보 감지 보조. Codex에 같은 Hook을 적용하지 않음 | jq |
 | **lbox-guide 스킬** | lbox.kr 판례 검색 워크플로우 | lbox.kr 유료 계정 |
 | **beopgoeul-search 스킬 + toolkit** | 법고을(lx.scourt.go.kr) 판례 검색. 스킬은 기본 설치, 자동 검색 toolkit은 선택 설치 | Chrome + Python 3.9+ |
