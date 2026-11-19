@@ -36,8 +36,30 @@ if ff:
     r = subprocess.run([ff, "-hide_banner", "-filters"], capture_output=True, text=True)
     zoom = " zoompan " in r.stdout
 add("ffmpeg(영상 조립)", bool(ff), True, "3-ffmpeg", ff or "")
-if ff:
+if ff and mode != "explainer":
     add("ffmpeg zoompan 필터", zoom, True, "3-ffmpeg")
+
+if mode == "explainer":   # 조각 애니메이션: numpy(조각 처리) + Playwright 브라우저(렌더)
+    try:
+        import numpy  # noqa: F401
+        add("numpy(조각 처리)", True, True, "7-cutout", numpy.__version__)
+    except ImportError:
+        add("numpy(조각 처리)", False, True, "7-cutout")
+    try:
+        from playwright.sync_api import sync_playwright
+        ok, note = False, ""
+        with sync_playwright() as p:
+            for kw in ({}, {"channel": "chrome"}):
+                try:
+                    p.chromium.launch(**kw).close()
+                    ok, note = True, "Chrome" if kw else "Chromium"
+                    break
+                except Exception:
+                    continue
+        add("Playwright(렌더)", True, True, "7-cutout")
+        add("렌더용 브라우저(Chromium 또는 Chrome)", ok, True, "7-cutout", note)
+    except ImportError:
+        add("Playwright(렌더)", False, True, "7-cutout")
 
 font = find_font()
 add("한글 글꼴(자막·정보판)", bool(font), True, "4-font", font or "")
