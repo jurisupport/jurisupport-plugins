@@ -20,6 +20,7 @@ from collections import deque
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # python3 -I로 실행해도 같은 폴더 모듈을 찾게
 from scene_lib import PH, PW, load_scene, paths
 from common import find_font  # noqa: E402
 

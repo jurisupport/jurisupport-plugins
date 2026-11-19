@@ -10,6 +10,7 @@ import os
 import shutil
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # python3 -I로 실행해도 같은 폴더 모듈을 찾게
 from scene_lib import Anchors, load_scene, paths
 
 TAIL = 1.0        # 마지막 문장 뒤 여유
