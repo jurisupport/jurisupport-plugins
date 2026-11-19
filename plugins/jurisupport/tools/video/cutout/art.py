@@ -16,6 +16,7 @@ import time
 import urllib.error
 import urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # python3 -I로 실행해도 같은 폴더 모듈을 찾게
 from scene_lib import PH, PW, arg, load_scene, paths
 from common import get_key  # noqa: E402  (scene_lib가 tools/video를 경로에 넣는다)
 

@@ -14,6 +14,7 @@ import wave
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # python3 -I로 실행해도 같은 폴더 모듈을 찾게
 from scene_lib import STRIP, arg, load_scene, paths, plain
 import tts as T  # noqa: E402  tools/video/tts.py의 제공자 함수를 그대로 쓴다
 from common import ffmpeg_bin, get_key, run  # noqa: E402

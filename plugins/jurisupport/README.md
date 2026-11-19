@@ -227,6 +227,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.25 - explainer-video 조각 도구를 python3 -I로 실행할 때 같은 폴더 모듈을 못 찾던 문제 수정
 0.2.24 - explainer-video를 조각 애니메이션으로 교체(배경·캐릭터 분리 생성 → 크로마키·부위 측정 → 캔버스 엔진 렌더, 장면 정의 scene.json, 어절 앵커 타이밍, 효과음 합성, 환경 점검에 numpy·Playwright 추가)
 0.2.23 - case-number-verify 추가(판결 사건번호 존재 확인, 캡차는 사용자가 입력, 1차 선별용 경고)
 0.2.22 - 영상 스킬 자막·정보판 줄바꿈을 낱말 단위로(사건번호·마침표가 줄 중간에서 끊기지 않게)
