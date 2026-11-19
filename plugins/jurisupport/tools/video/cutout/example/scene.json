@@ -1,0 +1,38 @@
+{
+  "title": "예시: 임차권등기",
+  "top_title": "이사 가도 보증금 지키는 법",
+  "voice": "Zephyr",
+  "speed": 1.1,
+  "end_card": {"title": "○○ 법률사무소", "lines": ["일반 정보이며 개별 사안은 다를 수 있습니다"]},
+  "plates": {
+    "거실": {"prompt": "A small apartment living room with moving boxes, a blank wall-mounted whiteboard in the upper middle.", "board": [0.18, 0.14, 0.82, 0.42]},
+    "법원": {"prompt": "A calm court registry office counter with a blank notice board in the upper middle.", "board": [0.18, 0.14, 0.82, 0.42]}
+  },
+  "characters": {
+    "세입자": {"prompt": "A young Korean tenant in a navy hoodie and jeans.", "animate_arms": true},
+    "변호사": {"prompt": "A Korean lawyer in a teal suit holding nothing.", "animate_arms": true}
+  },
+  "sentences": [
+    {"n": 1, "text": "계약이 끝났는데 보증금을 못 받았습니다."},
+    {"n": 2, "text": "이사 가면 보증금을 포기해야 할까요? 아닙니다."},
+    {"n": 3, "text": "임차권등기를 먼저 하면 이사 가도 대항력이 남습니다."},
+    {"n": 4, "text": "등기가 된 것을 확인한 뒤에 이사하십시오."}
+  ],
+  "shots": [
+    {"id": "s01_room", "plate": "거실", "camera": {"z": 1.06, "fy": 1250, "panX": 60},
+     "board": {"lines": [{"text": "보증금 반환", "at": [1, "보증금을"]}]},
+     "chars": [{"name": "세입자", "x": 576, "y": 2030, "h": 1150, "talk": true, "pose": "shrug"}]},
+    {"id": "s02_wrong", "at": [2, "이사"], "plate": "거실", "camera": {"z": 1.8, "focus": "board"},
+     "board": {"lines": [{"text": "이사 = 포기?", "at": [2, "이사"]}]},
+     "fx": [{"type": "x", "in": "board", "at": [2, "아닙니다"]}]},
+    {"id": "s03_head", "at": [3, "임차권등기를"], "wipe": true,
+     "headline": {"text": "임차권등기", "bg": "#2a9d8f", "deco": "blobs", "at": [3, "임차권등기를"]}},
+    {"id": "s04_court", "at": [3, "이사"], "plate": "법원", "camera": {"z": 1.08, "fy": 1200},
+     "board": {"lines": [{"text": "이사해도", "at": [3, "이사"]}, {"text": "대항력 유지", "at": [3, "대항력이"], "color": "red"}]},
+     "chars": [{"name": "변호사", "x": 900, "y": 2030, "h": 1050, "talk": true, "pose": "point_up_left"}],
+     "fx": [{"type": "check", "in": "board", "fx": 0.86, "fy": 0.72, "r": 60, "at": [3, "남습니다"]}]},
+    {"id": "s05_check", "at": [4, "등기가"], "plate": "거실", "camera": {"z": 1.05, "fy": 1250},
+     "board": {"lines": [{"text": "등기 확인 → 이사", "at": [4, "등기가"]}]},
+     "chars": [{"name": "세입자", "x": 576, "y": 2030, "h": 1150, "pose": "down", "poses": [{"at": [4, "이사하십시오"], "pose": "cheer"}], "jump_at": [4, "이사하십시오"]}]}
+  ]
+}

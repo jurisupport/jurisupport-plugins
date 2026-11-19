@@ -15,7 +15,7 @@
 - **`/jurisupport:legal-calc`** - 날짜·금액 계산기. 기간 만료일(민법 제157조·제159조~제161조, 형사소송법 제66조, 공휴일·대체공휴일 반영), 두 날짜 사이 일수, 구간별 이율의 이자·지연손해금을 계산식·근거 조문과 함께 출력한다. 기간의 길이·사건일·이율은 사용자가 확인해 넣는다. Python 3 표준 라이브러리만 사용.
 - **`/jurisupport:privacy-consent-interview`** - 법률사무소 개인정보처리방침·선택 동의서(제3자 제공·민감정보·국외 이전, AI 활용 고지 포함) 초안을 문답으로 작성한다. 이미 답한 사실은 주제 단위 상태 파일(`privacy-intake/state.json`)에 고정해 다시 묻지 않고, 사건관리 프로그램·AI 등 외부 서비스의 약관·처리방침은 공식 자료를 직접 조사한다. 조사하지 못한 업체·국가·보유기간은 지어내지 않고 [미확인]으로 남기며, 주민등록번호·민감정보 처리 등은 법률 검토 항목으로 따로 보여준다.
 - **`/jurisupport:promo-content`** - 판결 하나나 블로그 글 하나로 홍보 콘텐츠 묶음(블로그 글, 18~22문장 쇼츠 원고와 문장별 사실 대조표, 글자 없는 그림 프롬프트를 담은 컷시트, SNS 글·유튜브 제목·설명)을 만들고 변호사 광고 규정·AI 사용 공개·비밀유지 점검표를 붙인다. 영상 렌더링·게시는 하지 않는다.
-- **`/jurisupport:explainer-video`** - promo-content 컷시트로 판결·법 개정 설명 영상(세로, 플랫 일러스트 + 정보판 + 자막 + 내레이션)을 만든다. 시작할 때 Python·Pillow·ffmpeg·한글 글꼴·API 키를 점검하고 없으면 설치를 안내한다. 그림·음성 생성(유료)은 승인 후 진행. 설정: [docs/setup-explainer-video.md](docs/setup-explainer-video.md)
+- **`/jurisupport:explainer-video`** - promo-content 쇼츠 원고로 판결·법 개정 설명 애니메이션(세로 1080×1920)을 만든다. 사람 없는 배경과 크로마 초록 위 캐릭터를 따로 생성해 조각으로 오리고, 브라우저 캔버스 엔진으로 팔 동작·눈 깜빡임·보드 타이핑·빨간 X·날짜 카드·숫자 카운터·화면 전환을 내레이션 어절 시각에 맞춰 움직인다. 시작할 때 Python·Pillow·numpy·Playwright 브라우저·ffmpeg·한글 글꼴·API 키를 점검하고 없으면 설치를 안내한다. 그림·음성 생성(유료)은 승인 후 진행. 설정: [docs/setup-explainer-video.md](docs/setup-explainer-video.md)
 - **`/jurisupport:narration-shorts`** - promo-content 쇼츠 원고(18~22문장)로 내레이션형 세로 쇼츠(사실적 장면 그림, 직접 찍은 영상 조각, 배경음악)를 만든다. 환경 점검·설치 안내는 explainer-video와 같다. 설정: [docs/setup-narration-shorts.md](docs/setup-narration-shorts.md)
 - **`/jurisupport:case-number-verify`** - 서면·AI 초안에 인용된 판결 사건번호가 실제로 있는지 대법원 사법정보공개포털 「허위 사건번호 확인」으로 확인한다. 자동입력방지 숫자는 사용자가 직접 넣는다. 존재 여부만 보는 1차 선별 도구이며, 인용 오류·취지 왜곡·지어낸 판시 문장은 판결 전문 대조로 확인한다. Node.js 18+·Google Chrome 필요.
 - **`/jurisupport:offline-law-fallback`** - 법제처 OC 키 발급 전 시연·실습용 오프라인 법령 전문 스냅샷. 헌법, 민법, 민사소송법, 형법, 형사소송법, 상법, 주요 특별형법을 포함한다. 실제 제출 전에는 온라인 재검증 필수.
@@ -227,6 +227,7 @@ git commit -m "Keep the public playbook aligned with supported workflows"
 
 ## 버전
 
+0.2.24 - explainer-video를 조각 애니메이션으로 교체(배경·캐릭터 분리 생성 → 크로마키·부위 측정 → 캔버스 엔진 렌더, 장면 정의 scene.json, 어절 앵커 타이밍, 효과음 합성, 환경 점검에 numpy·Playwright 추가)
 0.2.23 - case-number-verify 추가(판결 사건번호 존재 확인, 캡차는 사용자가 입력, 1차 선별용 경고)
 0.2.22 - 영상 스킬 자막·정보판 줄바꿈을 낱말 단위로(사건번호·마침표가 줄 중간에서 끊기지 않게)
 0.2.21 - 0.2.19(privacy-consent-interview example-v1)와 0.2.20(영상 스킬) 병합

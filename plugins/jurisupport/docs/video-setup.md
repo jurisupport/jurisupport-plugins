@@ -94,6 +94,19 @@ API 키 없이도 영상 조립까지 시험할 수 있다.
 
 시험 영상으로 컷 길이·자막·정보판을 먼저 확인하고, 원고가 확정되면 유료 생성으로 바꾼다.
 
+<a id="7-cutout"></a>
+## 7. 조각 애니메이션 도구 (explainer-video)
+
+explainer-video는 배경과 캐릭터를 따로 만들어 브라우저 화면에서 움직인 뒤 프레임을 뽑는다. 아래 두 가지가 더 필요하다.
+
+```bash
+python3 -m pip install --user numpy playwright
+python3 -m playwright install chromium
+```
+
+- `playwright install chromium`이 막히는 환경(회사 PC 등)은 Chrome이 설치되어 있으면 그것을 쓴다.
+- 렌더 속도: 1분 영상(30fps)은 일반 노트북에서 1~2분 걸린다.
+
 ## 공개 전 확인
 
 AI로 만든 음성·그림을 쓴 영상은 플랫폼 규정에 따라 공개 표시를 한다(유튜브 업로드 화면의 "변경되거나 합성된 콘텐츠"). 변호사 광고 점검은 `promo-content`의 광고 점검표를 따른다.
