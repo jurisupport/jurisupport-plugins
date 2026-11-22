@@ -9,7 +9,7 @@
 ![Locale](https://img.shields.io/badge/Locale-ko--KR-red)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Supported-orange)
 ![Codex](https://img.shields.io/badge/Codex-Supported-blue)
-![Version](https://img.shields.io/badge/Version-0.2.22-green)
+![Version](https://img.shields.io/badge/Version-0.2.25-green)
 
 ## Claude Code에 링크를 주고 설치 맡기기
 
@@ -40,6 +40,28 @@ korean-law MCP는 [브라우저 초기설정 지원](guides/07_law_openapi_key.m
 일반 웹 채팅이나 원격 실행 환경에서는 사용자 PC에 직접 설치할 수 없을 수 있습니다. 그 경우 현재 실행 위치를 설명하고 로컬 Claude Code에서 이어갈 수 있게 안내합니다. 기존 한 줄 설치 방법도 아래에 유지합니다.
 
 ---
+
+## 강의 영상으로 배우기
+
+서울지방변호사회 「자투리 시간으로 실력 UP!」 제37회(2026. 11. 18.) 강의를 11편으로 나눴습니다. 가상 사건으로 설치부터 준비서면, 한글 파일 출력, 홍보 콘텐츠 제작까지 이 플러그인을 쓰는 과정을 보여 줍니다.
+
+[![AI 에이전트로 송무와 홍보를 한 번에 재생목록](https://img.youtube.com/vi/4jOUiwnj3a0/maxresdefault.jpg)](https://www.youtube.com/playlist?list=PLYUG0ejQTCOo)
+
+| 편 | 내용 |
+|---|---|
+| [1](https://youtu.be/4jOUiwnj3a0) | AI에 사건기록 넣어도 될까: 개인정보와 위임계약 |
+| [2](https://youtu.be/zxu_0SnKxds) | 국내 법률 AI, 상대방 정보, 판례 환각 |
+| [3](https://youtu.be/h46lNd6zef0) | 웹 채팅과 AI 에이전트의 차이, 설치하기 |
+| [4](https://youtu.be/zdyFgKmiG8U) | 가상사건으로 배우는 잘 시키는 법: CLAUDE.md와 권한 모드 |
+| [5](https://youtu.be/ndNzygNOmyA) | 사실관계·주장 파악과 법령·교과서·판결 검토 |
+| [6](https://youtu.be/nCDeAGPo0Xs) | 주장 판단부터 준비서면 초안·퇴고까지 |
+| [7](https://youtu.be/dljjkeq1vpY) | 한글(hwpx) 출력, 가사·민사 꿀팁 |
+| [8](https://youtu.be/5c3qggTQmjw) | 형사 꿀팁: 증거기록 분리, 증거인부서, 열람등사 |
+| [9](https://youtu.be/Cv9OAEPCoSI) | 공통 꿀팁: 서증 정리와 판결 실존 확인 |
+| [10](https://youtu.be/rI2zClliX9w) | 판결 하나로 블로그 글 쓰기 |
+| [11](https://youtu.be/nd9reo4vXWI) | 판결 하나로 설명 영상 만들기와 광고 규정 |
+
+실습 자료와 핸드아웃: [claudecode-songmu-seoulbar37](https://github.com/jurisupport/claudecode-songmu-seoulbar37)
 
 ## 한 줄 요약
 
